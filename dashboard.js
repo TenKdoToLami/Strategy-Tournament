@@ -102,9 +102,16 @@ function update() {
     for (const [name, returns] of Object.entries(globalData.variants)) {
         // Filter Check
         const meta = parseStrategy(name);
-        if (!activeFilters.level.includes(meta.level)) continue;
-        if (!activeFilters.logic.includes(meta.logic)) continue;
-        if (!activeFilters.mix.includes(meta.mix)) continue;
+        
+        if (meta.level === 'Benchmark') {
+            // Benchmarks only respect the level filter
+            if (!activeFilters.level.includes('Benchmark')) continue;
+        } else {
+            // Strategies respect all filters
+            if (!activeFilters.level.includes(meta.level)) continue;
+            if (!activeFilters.logic.includes(meta.logic)) continue;
+            if (!activeFilters.mix.includes(meta.mix)) continue;
+        }
 
         const slice = returns.slice(startIndex, endIndex + 1);
         const color = strategyColorMap[name];
