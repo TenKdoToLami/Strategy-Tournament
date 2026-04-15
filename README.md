@@ -61,10 +61,10 @@ This is our primary Safeties benchmark. It scales internal equity leverage from 
 
 | Tier | Drawdown Range | VOO (1x) | SSO (2x) | SPYU (4x) | DJP | BILL | Eff. Leverage |
 |:-----|:---------------|:---------|:---------|:----------|:----|:-----|:--------------|
-| **Safe (T0)** | 0% to −5% | 20% | 0% | 0% | 40% | 40% | **0.2x** |
-| **T1** | −5% to −10% | 70% | 0% | 0% | 15% | 15% | **0.7x** |
-| **T2** | −10% to −20% | 40% | 40% | 0% | 10% | 10% | **1.2x** |
-| **T3** | −20% to −30% | 0% | 50% | 30% | 10% | 10% | **2.2x** |
+| **Safe (T0)** | 0% to −5% | 80% | 0% | 0% | 10% | 10% | **0.8x** |
+| **T1** | −5% to −10% | 40% | 40% | 0% | 10% | 10% | **1.2x** |
+| **T2** | −10% to −20% | 0% | 80% | 0% | 10% | 10% | **1.6x** |
+| **T3** | −20% to −30% | 0% | 40% | 40% | 10% | 10% | **2.4x** |
 | **T4** | > −30% | 0% | 0% | 80% | 10% | 10% | **3.2x** |
 
 ### The Pure "Ladder" (1.0x to 4.0x)
@@ -82,11 +82,11 @@ Maintains 100% equity exposure at all times.
 
 ## 🏆 The "Honest" Hall of Fame
 
-The **Special** variants are the result of a 100,000-iteration global Monte Carlo optimization using strictly lagged data.
+The **Special** variants are the result of a **500,000-iteration** global optimization at 5% resolution using strictly lagged data.
 
-- **Special BEAST**: The maximum growth engine. Achieves **~20% CAGR** by maintaining high leverage even in bull markets (T0), using Commodities as its primary risk dampener.
-- **Special SCALPEL**: The efficiency king. Optimized for **Sharpe Ratio (0.91)**. It stays in 90% Cash (BILL) during low-volatility regimes and only deploys capital during deep discounts. Max Drawdown: **-16.9%**.
-- **Special SHIELD**: The hybrid champion. Uses **Ratchet Logic** to lock in recovery tiers effectively matching 2x benchmark returns but with half the drawdown.
+- **Special BEAST**: The maximum growth engine. Achieves **20.03% CAGR** using Ratchet Logic and 5% resolution weights. Optimized for absolute wealth accumulation.
+- **Special SCALPEL**: The "Growth Scalpel." Specifically optimized to **beat SPY (11.15% vs 10.65%)** while maintaining an ultra-low **-23.6% Max Drawdown**.
+- **Special SHIELD**: The hybrid efficiency king. Achieves **14.35% CAGR** with a **0.68 Sharpe Ratio**, using high-resolution Daily rebalancing.
 
 ---
 

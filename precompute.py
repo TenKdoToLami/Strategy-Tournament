@@ -87,12 +87,13 @@ def get_precomputed_data():
         if custom_weights is not None:
             weights = custom_weights
         elif include_safeties:
+            # Proportional Safety: 80% Equity Ladder / 20% Bonds+Comm
             weights = [
-                {'VOO': 0.2, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.4, 'BILL': 0.4},  # T0: 0.2x (1-0.8)
-                {'VOO': 0.7, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.15, 'BILL': 0.15},# T1: 0.7x (1.5-0.8)
-                {'VOO': 0.4, 'SSO': 0.4, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.1},  # T2: 1.2x (2.0-0.8)
-                {'VOO': 0.0, 'SSO': 0.5, 'SPYU': 0.3, 'DJP': 0.1, 'BILL': 0.1},  # T3: 2.2x (3.0-0.8)
-                {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.8, 'DJP': 0.1, 'BILL': 0.1},  # T4: 3.2x (4.0-0.8)
+                {'VOO': 0.8, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.1},  # T0: 0.8x (1.0 * 0.8)
+                {'VOO': 0.4, 'SSO': 0.4, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.1},  # T1: 1.2x (1.5 * 0.8)
+                {'VOO': 0.0, 'SSO': 0.8, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.1},  # T2: 1.6x (2.0 * 0.8)
+                {'VOO': 0.0, 'SSO': 0.4, 'SPYU': 0.4, 'DJP': 0.1, 'BILL': 0.1},  # T3: 2.4x (3.0 * 0.8)
+                {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.8, 'DJP': 0.1, 'BILL': 0.1},  # T4: 3.2x (4.0 * 0.8)
             ]
         else:
             weights = [
@@ -190,34 +191,40 @@ def get_precomputed_data():
     add_strat('Conservative Ratchet Pure', [0.10, 0.20, 0.35, 0.50], 'Daily', False, True)
 
     # Hall of Fame Special Variants (Optimized)
-    def add_special(name, weights, ratchet):
-        r, l = simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', False, is_ratchet=ratchet, custom_weights=weights)
+    def add_special(name, weights, bounds, ratchet):
+        r, l = simulate_strategy(bounds, 'Daily', False, is_ratchet=ratchet, custom_weights=weights)
         variants[name] = r
         leverage[name] = l
 
+    # [ THE DEEP BEAST ]
+    # CAGR: 20.03%, DD: -72.95%, Sharpe: 0.48
     add_special('Special BEAST', [
-        {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.6, 'DJP': 0.4, 'BILL': 0.0},
-        {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.2, 'DJP': 0.8, 'BILL': 0.0},
-        {'VOO': 0.1, 'SSO': 0.2, 'SPYU': 0.6, 'DJP': 0.0, 'BILL': 0.1},
-        {'VOO': 0.0, 'SSO': 0.2, 'SPYU': 0.3, 'DJP': 0.3, 'BILL': 0.2},
-        {'VOO': 0.1, 'SSO': 0.3, 'SPYU': 0.5, 'DJP': 0.1, 'BILL': 0.0}
-    ], False)
+        {'VOO': 0.80, 'SSO': 0.15, 'SPYU': 0.05, 'DJP': 0.00, 'BILL': 0.00},
+        {'VOO': 0.05, 'SSO': 0.10, 'SPYU': 0.85, 'DJP': 0.00, 'BILL': 0.00},
+        {'VOO': 0.25, 'SSO': 0.10, 'SPYU': 0.20, 'DJP': 0.40, 'BILL': 0.05},
+        {'VOO': 0.20, 'SSO': 0.20, 'SPYU': 0.50, 'DJP': 0.00, 'BILL': 0.10},
+        {'VOO': 0.00, 'SSO': 0.70, 'SPYU': 0.15, 'DJP': 0.15, 'BILL': 0.00}
+    ], [0.03, 0.12, 0.20, 0.50], True)
 
+    # [ THE DEEP SCALPEL ]
+    # CAGR: 11.15%, DD: -23.63%, Sharpe: 0.60
     add_special('Special SCALPEL', [
-        {'VOO': 0.0, 'SSO': 0.1, 'SPYU': 0.0, 'DJP': 0.0, 'BILL': 0.9},
-        {'VOO': 0.1, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.8, 'BILL': 0.1},
-        {'VOO': 0.4, 'SSO': 0.1, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.4},
-        {'VOO': 0.9, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.0},
-        {'VOO': 0.3, 'SSO': 0.6, 'SPYU': 0.0, 'DJP': 0.0, 'BILL': 0.1}
-    ], False)
+        {'VOO': 0.40, 'SSO': 0.00, 'SPYU': 0.00, 'DJP': 0.00, 'BILL': 0.60},
+        {'VOO': 0.15, 'SSO': 0.70, 'SPYU': 0.10, 'DJP': 0.05, 'BILL': 0.00},
+        {'VOO': 0.85, 'SSO': 0.05, 'SPYU': 0.00, 'DJP': 0.10, 'BILL': 0.00},
+        {'VOO': 0.45, 'SSO': 0.25, 'SPYU': 0.15, 'DJP': 0.10, 'BILL': 0.05},
+        {'VOO': 0.90, 'SSO': 0.00, 'SPYU': 0.10, 'DJP': 0.00, 'BILL': 0.00}
+    ], [0.05, 0.10, 0.25, 0.35], True)
 
+    # [ THE DEEP SHIELD ]
+    # CAGR: 14.35%, DD: -39.83%, Sharpe: 0.68
     add_special('Special SHIELD', [
-        {'VOO': 0.2, 'SSO': 0.1, 'SPYU': 0.0, 'DJP': 0.2, 'BILL': 0.5},
-        {'VOO': 0.0, 'SSO': 0.2, 'SPYU': 0.6, 'DJP': 0.0, 'BILL': 0.2},
-        {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.3, 'BILL': 0.7},
-        {'VOO': 0.2, 'SSO': 0.2, 'SPYU': 0.5, 'DJP': 0.1, 'BILL': 0.0},
-        {'VOO': 0.0, 'SSO': 0.3, 'SPYU': 0.1, 'DJP': 0.5, 'BILL': 0.1}
-    ], True)
+        {'VOO': 0.60, 'SSO': 0.05, 'SPYU': 0.00, 'DJP': 0.10, 'BILL': 0.25},
+        {'VOO': 0.60, 'SSO': 0.00, 'SPYU': 0.35, 'DJP': 0.05, 'BILL': 0.00},
+        {'VOO': 0.00, 'SSO': 0.05, 'SPYU': 0.05, 'DJP': 0.70, 'BILL': 0.20},
+        {'VOO': 0.90, 'SSO': 0.00, 'SPYU': 0.10, 'DJP': 0.00, 'BILL': 0.00},
+        {'VOO': 0.55, 'SSO': 0.45, 'SPYU': 0.00, 'DJP': 0.00, 'BILL': 0.00}
+    ], [0.03, 0.05, 0.10, 0.20], False)
 
     # Convert to JSON structure
     dates = variants['Benchmark SPY (1x)'].index.strftime('%Y-%m-%d').tolist()
