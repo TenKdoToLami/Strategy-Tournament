@@ -141,6 +141,64 @@
             align-items: center; z-index: 1000; font-size: 1.5rem;
         }
 
+        /* Lab Card Styling */
+        .lab-card {
+            background: linear-gradient(135deg, #161b22 0%, #0d1117 100%);
+            border: 2px solid #3366cc;
+            padding: 25px;
+            border-radius: 16px;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+        }
+        .lab-card::before {
+            content: 'LABORATORY';
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            font-size: 4rem;
+            font-weight: 900;
+            color: rgba(51, 102, 204, 0.05);
+            pointer-events: none;
+        }
+        .lab-header { margin-bottom: 20px; }
+        .lab-title { color: #58a6ff; margin: 0; font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
+        .lab-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+        .lab-input-group { display: flex; flex-direction: column; gap: 8px; }
+        .lab-input-group label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; font-weight: bold; }
+        .lab-input-group input {
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #c9d1d9;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .lab-input-group input:focus { border-color: #58a6ff; }
+        .lab-controls { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; }
+        .lab-btn {
+            background: #238636;
+            color: #ffffff;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+        }
+        .lab-btn:hover { background: #2ea043; transform: translateY(-1px); }
+        .lab-btn:active { transform: translateY(0); }
+        .lab-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
+        .lab-toggle input { cursor: pointer; }
+
         /* Filter Toolbar Styling */
         .filter-toolbar {
             display: flex;
@@ -213,6 +271,44 @@
             <label for="end-date">To:</label>
             <input type="date" id="end-date">
             <button id="reset-btn" style="background: none; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 5px 15px; border-radius: 5px; cursor: pointer;">Reset Dates</button>
+        </div>
+
+        <!-- Strategy Laboratory -->
+        <div class="lab-card">
+            <div class="lab-header">
+                <h2 class="lab-title">🧪 Custom Strategy Laboratory</h2>
+            </div>
+            <div class="lab-grid">
+                <div class="lab-input-group">
+                    <label>Tier 1 Bound (%)</label>
+                    <input type="number" id="lab-b1" value="5" step="0.5">
+                </div>
+                <div class="lab-input-group">
+                    <label>Tier 2 Bound (%)</label>
+                    <input type="number" id="lab-b2" value="10" step="0.5">
+                </div>
+                <div class="lab-input-group">
+                    <label>Tier 3 Bound (%)</label>
+                    <input type="number" id="lab-b3" value="20" step="0.5">
+                </div>
+                <div class="lab-input-group">
+                    <label>Tier 4 Bound (%)</label>
+                    <input type="number" id="lab-b4" value="30" step="0.5">
+                </div>
+            </div>
+            <div class="lab-controls">
+                <label class="lab-toggle">
+                    <input type="checkbox" id="lab-ratchet"> Ratchet Logic
+                </label>
+                <label class="lab-toggle">
+                    <input type="checkbox" id="lab-safeties" checked> Include Safeties (Bonds/Comm)
+                </label>
+                <label class="lab-toggle">
+                    <input type="checkbox" id="lab-trend" checked> Trend Filter (SMA200)
+                </label>
+                <div style="flex-grow: 1;"></div>
+                <button class="lab-btn" id="lab-run">Run Simulation</button>
+            </div>
         </div>
 
         <div class="filter-toolbar">

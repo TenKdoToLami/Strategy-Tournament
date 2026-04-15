@@ -63,7 +63,45 @@ async function init() {
             });
         });
 
+        // Load Lab Persistence
+        const savedLab = localStorage.getItem('tournament_lab_settings');
+        if (savedLab) {
+            const settings = JSON.parse(savedLab);
+            document.getElementById('lab-b1').value = settings.bounds[0];
+            document.getElementById('lab-b2').value = settings.bounds[1];
+            document.getElementById('lab-b3').value = settings.bounds[2];
+            document.getElementById('lab-b4').value = settings.bounds[3];
+            document.getElementById('lab-ratchet').checked = settings.ratchet;
+            document.getElementById('lab-safeties').checked = settings.safeties;
+            document.getElementById('lab-trend').checked = settings.trend;
+            
+            // Auto-run if settings exist
+            window.customStrategyResult = simulateCustomStrategy(settings.bounds, settings.ratchet, settings.safeties, settings.trend);
+        }
+
         document.getElementById('loader').style.display = 'none';
+        
+        // Lab Run Button
+        document.getElementById('lab-run').addEventListener('click', () => {
+            const bounds = [
+                parseFloat(document.getElementById('lab-b1').value),
+                parseFloat(document.getElementById('lab-b2').value),
+                parseFloat(document.getElementById('lab-b3').value),
+                parseFloat(document.getElementById('lab-b4').value)
+            ];
+            const ratchet = document.getElementById('lab-ratchet').checked;
+            const safeties = document.getElementById('lab-safeties').checked;
+            const trend = document.getElementById('lab-trend').checked;
+            
+            // Save to localStorage
+            localStorage.setItem('tournament_lab_settings', JSON.stringify({
+                bounds, ratchet, safeties, trend
+            }));
+
+            window.customStrategyResult = simulateCustomStrategy(bounds, ratchet, safeties, trend);
+            update();
+        });
+
         update();
     } catch (e) {
         console.error("Error loading data:", e);
@@ -82,6 +120,68 @@ function parseStrategy(name) {
         logic: parts[1],
         mix: parts[2]
     };
+}
+
+function simulateCustomStrategy(bounds, useRatchet, useSafeties, useTrend) {
+    const raw = globalData.raw_returns;
+    const n = raw.VOO.length;
+    const sma = globalData.signals.sma200;
+    
+    // 1. Calculate Daily Drawdowns for VOO
+    let spyCum = 1.0;
+    let spyAth = 1.0;
+    const dds = new Float32Array(n);
+    for(let i=0; i<n; i++) {
+        spyCum *= (1 + raw.VOO[i]);
+        if (spyCum > spyAth) spyAth = spyCum;
+        dds[i] = (spyCum - spyAth) / spyAth;
+    }
+
+    // 2. Determine Tiers
+    const tiers = new Int8Array(n);
+    let currentMaxTier = 0;
+    for (let i = 0; i < n; i++) {
+        if (i === 0) continue;
+        const yDD = dds[i-1];
+        const ySMA = sma[i-1];
+        
+        let tier = 0;
+        if (yDD <= -bounds[3] / 100) tier = 4;
+        else if (yDD <= -bounds[2] / 100) tier = 3;
+        else if (yDD <= -bounds[1] / 100) tier = 2;
+        else if (yDD <= -bounds[0] / 100) tier = 1;
+        
+        if (useTrend && ySMA === 0) tier = 0;
+        
+        if (useRatchet) {
+            if (yDD >= 0) currentMaxTier = 0;
+            else if (tier > currentMaxTier) currentMaxTier = tier;
+            tiers[i] = currentMaxTier;
+        } else {
+            tiers[i] = tier;
+        }
+    }
+
+    // 3. Calculate Returns & Leverage
+    const results = new Float32Array(n);
+    const leverage = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+        const t = tiers[i];
+        if (useSafeties) {
+            if (t === 0) { results[i] = raw.VOO[i]*0.8 + raw.DJP[i]*0.1 + raw.BILL[i]*0.1; leverage[i] = 0.8; }
+            else if (t === 1) { results[i] = raw.VOO[i]*0.6 + raw.SSO[i]*0.2 + raw.DJP[i]*0.1 + raw.BILL[i]*0.1; leverage[i] = 1.0; }
+            else if (t === 2) { results[i] = raw.VOO[i]*0.3 + raw.SSO[i]*0.25 + raw.SPYU[i]*0.25 + raw.DJP[i]*0.1 + raw.BILL[i]*0.1; leverage[i] = 1.8; }
+            else if (t === 3) { results[i] = raw.VOO[i]*0.1 + raw.SSO[i]*0.35 + raw.SPYU[i]*0.35 + raw.DJP[i]*0.1 + raw.BILL[i]*0.1; leverage[i] = 2.2; }
+            else { results[i] = raw.SSO[i]*0.5 + raw.SPYU[i]*0.5; leverage[i] = 3.0; }
+        } else {
+            if (t === 0) { results[i] = raw.VOO[i]; leverage[i] = 1.0; }
+            else if (t === 1) { results[i] = raw.VOO[i]*0.75 + raw.SSO[i]*0.25; leverage[i] = 1.25; }
+            else if (t === 2) { results[i] = raw.VOO[i]*0.38 + raw.SSO[i]*0.31 + raw.SPYU[i]*0.31; leverage[i] = 2.25; }
+            else if (t === 3) { results[i] = raw.VOO[i]*0.12 + raw.SSO[i]*0.44 + raw.SPYU[i]*0.44; leverage[i] = 2.75; }
+            else { results[i] = raw.SSO[i]*0.5 + raw.SPYU[i]*0.5; leverage[i] = 3.0; }
+        }
+    }
+    return { returns: results, leverage: leverage };
 }
 
 function update() {
@@ -130,27 +230,37 @@ function update() {
     linearTraces.push(JSON.parse(JSON.stringify(inflationTrace)));
     logTraces.push(JSON.parse(JSON.stringify(inflationTrace)));
 
-    for (const [name, returns] of Object.entries(globalData.variants)) {
-        // Filter Check
-        const meta = parseStrategy(name);
+    // Merger variants with custom lab
+    const allVariants = {...globalData.variants};
+    if (window.customStrategyResult) {
+        allVariants['🧪 USER CUSTOM LAB'] = window.customStrategyResult.returns;
+    }
+
+    for (const [name, returns] of Object.entries(allVariants)) {
+        const isCustom = (name === '🧪 USER CUSTOM LAB');
         
-        let color;
-        if (meta.level === 'Benchmark') {
-            if (!activeFilters.level.includes('Benchmark')) continue;
-            color = benchmarkColors[name];
+        let color, meta;
+        if (isCustom) {
+            color = '#39ff14'; // Neon green
+            meta = { level: 'Lab', logic: 'Custom', mix: 'User' };
         } else {
-            if (!activeFilters.level.includes(meta.level)) continue;
-            if (!activeFilters.logic.includes(meta.logic)) continue;
-            if (!activeFilters.mix.includes(meta.mix)) continue;
-            
-            // Assign adaptive color
-            const strategyIdx = activeStrategyNames.indexOf(name);
-            color = getAdaptiveColor(strategyIdx, activeStrategyNames.length);
+            meta = parseStrategy(name);
+            if (meta.level === 'Benchmark') {
+                if (!activeFilters.level.includes('Benchmark')) continue;
+                color = benchmarkColors[name];
+            } else {
+                if (!activeFilters.level.includes(meta.level)) continue;
+                if (!activeFilters.logic.includes(meta.logic)) continue;
+                if (!activeFilters.mix.includes(meta.mix)) continue;
+                
+                const strategyIdx = activeStrategyNames.indexOf(name);
+                color = getAdaptiveColor(strategyIdx, activeStrategyNames.length);
+            }
         }
 
-        const slice = returns.slice(startIndex, endIndex + 1);
-        const levSlice = globalData.leverage[name].slice(startIndex, endIndex + 1);
-        const width = (name.includes('Ratchet') || name.includes('Standard')) ? 3 : 1.5;
+        const slice = isCustom ? returns.slice(startIndex, endIndex + 1) : returns.slice(startIndex, endIndex + 1);
+        const levSlice = isCustom ? window.customStrategyResult.leverage.slice(startIndex, endIndex + 1) : globalData.leverage[name].slice(startIndex, endIndex + 1);
+        const width = (isCustom || name.includes('Ratchet') || name.includes('Standard')) ? 3 : 1.5;
 
         // 1. Growth & Metrics Calculation
         let cum = 1.0;

@@ -189,11 +189,29 @@ def get_precomputed_data():
 
     # Convert to JSON structure
     dates = variants['Benchmark SPY (1x)'].index.strftime('%Y-%m-%d').tolist()
+    
+    # 1. Export raw components for Browser-side "Strategy Lab"
+    # Signals are calculated here to avoid complex price reconstruction in JS
+    raw_sub = returns_raw.loc[SIM_START:]
+    # Calculate price signal using the actual absolute price (not normalized cumulative)
+    spy_absolute_price = raw_df[TICKERS['VOO']].loc[SIM_START:]
+    signal_sma = (spy_absolute_price > spy_sma_200.loc[SIM_START:]).astype(int).tolist()
+    
     data_out = {
         'dates': dates,
         'inflation': inflation_levels.loc[SIM_START:].tolist(),
         'variants': {name: v.tolist() for name, v in variants.items()},
-        'leverage': {name: l.tolist() for name, l in leverage.items()}
+        'leverage': {name: l.tolist() for name, l in leverage.items()},
+        'raw_returns': {
+            'VOO': raw_sub[TICKERS['VOO']].tolist(),
+            'SSO': (raw_sub[TICKERS['VOO']] * 2.0).tolist(),
+            'SPYU': (raw_sub[TICKERS['VOO']] * 4.0).tolist(),
+            'BILL': raw_sub[TICKERS['BILL']].tolist(),
+            'DJP': raw_sub[TICKERS['DJP']].tolist() if TICKERS['DJP'] in raw_sub.columns else [0.0]*len(raw_sub),
+        },
+        'signals': {
+            'sma200': signal_sma
+        }
     }
     
     with open('data.json', 'w') as f:
