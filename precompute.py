@@ -66,6 +66,23 @@ def get_precomputed_data():
     spy_dd_global = (spy_cum_global - spy_ath_global) / spy_ath_global
     spy_sma_200 = raw_df[TICKERS['VOO']].rolling(200).mean()
 
+    # --- Fetch Inflation (CPI) ---
+    print("  Fetching Inflation data (FRED CPIAUCSL)...")
+    try:
+        # Consumer Price Index for All Urban Consumers: All Items in U.S. City Average
+        cpi_url = "https://fred.stlouisfed.org/graph/fredgraph.csv?id=CPIAUCSL"
+        cpi_raw = pd.read_csv(cpi_url, index_col='observation_date', parse_dates=['observation_date'])
+        cpi_monthly = cpi_raw['CPIAUCSL']
+        # Resample and interpolate to daily dates
+        cpi_daily = cpi_monthly.reindex(raw_df.index).interpolate(method='linear').ffill().bfill()
+        # Daily "Multiplier" for inflation (1.0 at start of sim)
+        inflation_levels = cpi_daily / cpi_daily.loc[SIM_START:].iloc[0]
+    except Exception as e:
+        print(f"  WARNING: Could not fetch CPI data ({e}). Falling back to 2.5% fixed.")
+        # Fallback: 2.5% annualized smooth growth
+        days = (raw_df.index - raw_df.index[0]).days
+        inflation_levels = pd.Series(np.exp(days * np.log(1.025) / 365.25), index=raw_df.index)
+
     def simulate_strategy(bounds, rebalance_freq='Daily', include_safeties=True, use_trend_filter=True, is_ratchet=False):
         if include_safeties:
             weights = [
@@ -174,6 +191,7 @@ def get_precomputed_data():
     dates = variants['Benchmark SPY (1x)'].index.strftime('%Y-%m-%d').tolist()
     data_out = {
         'dates': dates,
+        'inflation': inflation_levels.loc[SIM_START:].tolist(),
         'variants': {name: v.tolist() for name, v in variants.items()},
         'leverage': {name: l.tolist() for name, l in leverage.items()}
     }

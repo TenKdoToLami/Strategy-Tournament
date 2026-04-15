@@ -98,7 +98,21 @@ function update() {
     const volTraces = [];
     const yearlyTraces = [];
     const leverageTraces = [];
+    const realTraces = [];
     const metricsArr = [];
+
+    // Inflation normalization for the current range
+    const rangeInflation = globalData.inflation.slice(startIndex, endIndex + 1);
+    const inflationBase = rangeInflation[0];
+    const normalizedInflation = rangeInflation.map(v => v / inflationBase);
+
+    // Add Inflation Benchmark to Growth charts
+    const inflationTrace = {
+        x: slicedDates, y: normalizedInflation, name: 'Inflation (CPI)',
+        line: {color: '#8892b0', width: 2, dash: 'dot'}, type: 'scatter', mode: 'lines'
+    };
+    linearTraces.push(JSON.parse(JSON.stringify(inflationTrace)));
+    logTraces.push(JSON.parse(JSON.stringify(inflationTrace)));
 
     for (const [name, returns] of Object.entries(globalData.variants)) {
         // Filter Check
@@ -204,10 +218,17 @@ function update() {
             x: yearLabels, y: yearVals, name: name, legendgroup: name,
             type: 'bar', marker: {color: color}, showlegend: true
         });
+
+        // 3. Real Returns (Nominal Growth / Inflation Multiplier)
+        const realSeries = cumSeries.map((v, i) => v / normalizedInflation[i]);
+        realTraces.push({
+            x: slicedDates, y: realSeries, name: name, legendgroup: name,
+            type: 'scatter', mode: 'lines', line: {color: color, width: width}, showlegend: true
+        });
     }
 
     renderTable(metricsArr);
-    renderAdvancedCharts(linearTraces, logTraces, drawdownTraces, volTraces, yearlyTraces, leverageTraces);
+    renderAdvancedCharts(linearTraces, logTraces, drawdownTraces, volTraces, yearlyTraces, leverageTraces, realTraces);
 }
 
 // Sorting state
@@ -272,7 +293,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function renderAdvancedCharts(linearTraces, logTraces, drawdownTraces, volTraces, yearlyTraces, leverageTraces) {
+function renderAdvancedCharts(linearTraces, logTraces, drawdownTraces, volTraces, yearlyTraces, leverageTraces, realTraces) {
     const commonLayout = {
         template: 'plotly_dark',
         paper_bgcolor: 'rgba(0,0,0,0)',
@@ -320,6 +341,13 @@ function renderAdvancedCharts(linearTraces, logTraces, drawdownTraces, volTraces
     levLayout.yaxis.tickformat = '.1f';
     levLayout.yaxis.range = [0.5, 4.5]; // Fixed range for better comparison
     Plotly.newPlot('chart-leverage', leverageTraces, levLayout, {responsive: true});
+
+    // 7. Real Performance
+    const realLayout = JSON.parse(JSON.stringify(commonLayout));
+    realLayout.yaxis.title = 'Growth of $1.00 (Inflation Adjusted)';
+    realLayout.yaxis.type = 'log';
+    realLayout.yaxis.tickformat = '.1f';
+    Plotly.newPlot('chart-real', realTraces, realLayout, {responsive: true});
 }
 
 init();

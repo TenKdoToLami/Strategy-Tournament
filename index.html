@@ -295,6 +295,12 @@
                 <p class="chart-subtitle">Shows daily effective multiplier (e.g. 1.0x to 4.0x). Step-line illustrates rebalancing events.</p>
                 <div id="chart-leverage" class="chart-div"></div>
             </div>
+
+            <div class="chart-box">
+                <h2 class="chart-title">Real Performance (Inflation-Adjusted)</h2>
+                <p class="chart-subtitle">Growth of $1.00 adjusted for US Consumer Price Index (CPI). Shows actual purchasing power over time.</p>
+                <div id="chart-real" class="chart-div" style="height: 800px;"></div>
+            </div>
         </div>
 
         <div class="footer-guide">
@@ -447,6 +453,15 @@
                 <li><strong>Rolling 1-Year Volatility</strong>: Instead of a single number, this plot shows how risk levels changed over time. Leveraged strategies show massive spikes in volatility during market turbulence, while the S&amp;P 500 stays relatively flat.</li>
                 <li><strong>Calendar Year Returns</strong>: A year-by-year comparison. This is the ultimate "report card" for identifying which strategies dominated specific market regimes (e.g., the 2008 crash vs. the 2020 recovery).</li>
             </ul>
+            <!-- Section 5: Inflation & Real Returns -->
+            <h3>5. Inflation-Adjusted Performance (Real Returns)</h3>
+            <p>While nominal returns show how much money you have, <strong>Real Returns</strong> show how much that money can actually buy. We use the <em>U.S. Consumer Price Index (CPI-U)</em> from the Federal Reserve (FRED) to calculate the erosion of purchasing power over time.</p>
+            <ul>
+                <li><strong>Nominal Growth</strong>: The standard growth of $1.00 (before inflation).</li>
+                <li><strong>Inflation (CPI)</strong>: The dotted gray line showing the increase in the cost of living.</li>
+                <li><strong>Real Growth</strong>: Calculated as <code>Nominal Growth / (CPI_t / CPI_start)</code>.</li>
+            </ul>
+            <p>During high-inflation periods (like 2021–2022), you will notice the Real Performance chart dipping or flattening even if nominal prices are steady. This chart is the ultimate judge of whether a strategy is truly building wealth or just keeping pace with rising prices.</p>
         </div>
     </div>
 
