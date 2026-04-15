@@ -1,10 +1,24 @@
-let globalData = null;
+// Filter State
+const activeFilters = {
+    level: ['Benchmark', 'Standard', 'Aggressive', 'Conservative'],
+    logic: ['Daily', 'Ratchet'],
+    mix: ['Safeties', 'Pure']
+};
+
+// Color mapping for persistence
+const colors = ['#ff9900', '#00ffcc', '#dc3912', '#3366cc', '#ff00ff', '#109618', '#00bfff', '#990099', '#f2f2f2', '#8da0cb', '#66c2a5', '#fc8d62', '#e78ac3', '#a6d854', '#ffd92f', '#e5c494', '#b3b3b3'];
+let strategyColorMap = {};
 
 async function init() {
     try {
         const response = await fetch('data.json');
         globalData = await response.json();
         
+        // Pre-assign colors
+        Object.keys(globalData.variants).forEach((name, i) => {
+            strategyColorMap[name] = colors[i % colors.length];
+        });
+
         const dates = globalData.dates;
         const startInput = document.getElementById('start-date');
         const endInput = document.getElementById('end-date');
@@ -25,6 +39,23 @@ async function init() {
             update();
         });
 
+        // Toggle Filter Logic
+        document.querySelectorAll('.pill').forEach(pill => {
+            pill.addEventListener('click', () => {
+                const group = pill.parentElement.id.replace('filter-', '');
+                const val = pill.getAttribute('data-value');
+                
+                if (pill.classList.contains('active')) {
+                    pill.classList.remove('active');
+                    activeFilters[group] = activeFilters[group].filter(v => v !== val);
+                } else {
+                    pill.classList.add('active');
+                    activeFilters[group].push(val);
+                }
+                update();
+            });
+        });
+
         document.getElementById('loader').style.display = 'none';
         update();
     } catch (e) {
@@ -33,11 +64,23 @@ async function init() {
     }
 }
 
+function parseStrategy(name) {
+    if (name.startsWith('Benchmark')) {
+        return { level: 'Benchmark', logic: 'Daily', mix: 'Safeties' };
+    }
+    const parts = name.split(' ');
+    // Format: "Level Logic Mix" e.g. "Standard Ratchet Pure"
+    return {
+        level: parts[0],
+        logic: parts[1],
+        mix: parts[2]
+    };
+}
+
 function update() {
     const start = document.getElementById('start-date').value;
     const end = document.getElementById('end-date').value;
     
-    // Find index ranges
     const startIndex = globalData.dates.findIndex(d => d >= start);
     const endIndex = globalData.dates.findLastIndex(d => d <= end);
     
@@ -56,12 +99,15 @@ function update() {
     const yearlyTraces = [];
     const metricsArr = [];
 
-    const colors = ['#ff9900', '#00ffcc', '#dc3912', '#3366cc', '#ff00ff', '#109618', '#00bfff', '#990099', '#f2f2f2', '#8da0cb', '#66c2a5', '#fc8d62', '#e78ac3', '#a6d854', '#ffd92f', '#e5c494', '#b3b3b3'];
-    let colorIdx = 0;
-
     for (const [name, returns] of Object.entries(globalData.variants)) {
+        // Filter Check
+        const meta = parseStrategy(name);
+        if (!activeFilters.level.includes(meta.level)) continue;
+        if (!activeFilters.logic.includes(meta.logic)) continue;
+        if (!activeFilters.mix.includes(meta.mix)) continue;
+
         const slice = returns.slice(startIndex, endIndex + 1);
-        const color = colors[colorIdx % colors.length];
+        const color = strategyColorMap[name];
         const width = (name.includes('Ratchet') || name.includes('Standard')) ? 3 : 1.5;
 
         // 1. Growth & Metrics Calculation

@@ -131,25 +131,28 @@ def get_precomputed_data():
 
     print("Simulating variants...")
     variants = {
-        'S&P 500 (1x)': r_spy.loc[SIM_START:],
-        'SSO (2x Benchmark)': r_sso.loc[SIM_START:],
-        'SPYU (4x Benchmark)': r_spyu.loc[SIM_START:],
-        'Standard (0/5/10/20/30)': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', True),
-        'Standard Pure Equity': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', False),
-        'Ratchet Standard': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', True, is_ratchet=True),
-        'Ratchet Pure Equity': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', False, is_ratchet=True),
-        'Aggressive (0/3/7/12/20)': simulate_strategy([0.03, 0.07, 0.12, 0.20], 'Daily', True),
-        'Aggressive Pure Equity': simulate_strategy([0.03, 0.07, 0.12, 0.20], 'Daily', False),
-        'Aggressive Ratchet': simulate_strategy([0.03, 0.07, 0.12, 0.20], 'Daily', True, is_ratchet=True),
+        'Benchmark SPY (1x)': r_spy.loc[SIM_START:],
+        'Benchmark SSO (2x)': r_sso.loc[SIM_START:],
+        'Benchmark SPYU (4x)': r_spyu.loc[SIM_START:],
+        
+        'Standard Daily Safeties': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', True),
+        'Standard Daily Pure': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', False),
+        'Standard Ratchet Safeties': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', True, is_ratchet=True),
+        'Standard Ratchet Pure': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', False, is_ratchet=True),
+        
+        'Aggressive Daily Safeties': simulate_strategy([0.03, 0.07, 0.12, 0.20], 'Daily', True),
+        'Aggressive Daily Pure': simulate_strategy([0.03, 0.07, 0.12, 0.20], 'Daily', False),
+        'Aggressive Ratchet Safeties': simulate_strategy([0.03, 0.07, 0.12, 0.20], 'Daily', True, is_ratchet=True),
         'Aggressive Ratchet Pure': simulate_strategy([0.03, 0.07, 0.12, 0.20], 'Daily', False, is_ratchet=True),
-        'Conservative (0/10/20/35/50)': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', True),
-        'Conservative Pure Equity': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', False),
-        'Conservative Ratchet': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', True, is_ratchet=True),
+        
+        'Conservative Daily Safeties': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', True),
+        'Conservative Daily Pure': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', False),
+        'Conservative Ratchet Safeties': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', True, is_ratchet=True),
         'Conservative Ratchet Pure': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', False, is_ratchet=True),
     }
 
     # Convert to JSON structure
-    dates = variants['S&P 500 (1x)'].index.strftime('%Y-%m-%d').tolist()
+    dates = variants['Benchmark SPY (1x)'].index.strftime('%Y-%m-%d').tolist()
     data_out = {
         'dates': dates,
         'variants': {name: values.tolist() for name, values in variants.items()}
