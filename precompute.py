@@ -197,34 +197,34 @@ def get_precomputed_data():
         leverage[name] = l
 
     # [ THE DEEP BEAST ]
-    # CAGR: 20.03%, DD: -72.95%, Sharpe: 0.48
+    # CAGR: 33.21%, DD: -72.92%, Sharpe: 0.70
     add_special('Special BEAST', [
-        {'VOO': 0.80, 'SSO': 0.15, 'SPYU': 0.05, 'DJP': 0.00, 'BILL': 0.00},
-        {'VOO': 0.05, 'SSO': 0.10, 'SPYU': 0.85, 'DJP': 0.00, 'BILL': 0.00},
-        {'VOO': 0.25, 'SSO': 0.10, 'SPYU': 0.20, 'DJP': 0.40, 'BILL': 0.05},
-        {'VOO': 0.20, 'SSO': 0.20, 'SPYU': 0.50, 'DJP': 0.00, 'BILL': 0.10},
-        {'VOO': 0.00, 'SSO': 0.70, 'SPYU': 0.15, 'DJP': 0.15, 'BILL': 0.00}
-    ], [0.03, 0.12, 0.20, 0.50], True)
+        {'VOO': 0.38, 'SSO': 0.21, 'SPYU': 0.01, 'DJP': 0.40, 'BILL': 0.00},
+        {'VOO': 0.00, 'SSO': 0.00, 'SPYU': 1.00, 'DJP': 0.00, 'BILL': 0.00},
+        {'VOO': 0.00, 'SSO': 0.00, 'SPYU': 0.00, 'DJP': 1.00, 'BILL': 0.00},
+        {'VOO': 0.00, 'SSO': 0.00, 'SPYU': 1.00, 'DJP': 0.00, 'BILL': 0.00},
+        {'VOO': 0.13, 'SSO': 0.00, 'SPYU': 0.09, 'DJP': 0.48, 'BILL': 0.30}
+    ], [0.01, 0.05, 0.09, 0.53], False)
 
     # [ THE DEEP SCALPEL ]
-    # CAGR: 11.15%, DD: -23.63%, Sharpe: 0.60
+    # CAGR: 10.65%, DD: -13.68%, Sharpe: 0.88
     add_special('Special SCALPEL', [
-        {'VOO': 0.40, 'SSO': 0.00, 'SPYU': 0.00, 'DJP': 0.00, 'BILL': 0.60},
-        {'VOO': 0.15, 'SSO': 0.70, 'SPYU': 0.10, 'DJP': 0.05, 'BILL': 0.00},
-        {'VOO': 0.85, 'SSO': 0.05, 'SPYU': 0.00, 'DJP': 0.10, 'BILL': 0.00},
-        {'VOO': 0.45, 'SSO': 0.25, 'SPYU': 0.15, 'DJP': 0.10, 'BILL': 0.05},
-        {'VOO': 0.90, 'SSO': 0.00, 'SPYU': 0.10, 'DJP': 0.00, 'BILL': 0.00}
-    ], [0.05, 0.10, 0.25, 0.35], True)
+        {'VOO': 0.13, 'SSO': 0.02, 'SPYU': 0.00, 'DJP': 0.07, 'BILL': 0.78},
+        {'VOO': 0.59, 'SSO': 0.03, 'SPYU': 0.00, 'DJP': 0.32, 'BILL': 0.06},
+        {'VOO': 0.06, 'SSO': 0.07, 'SPYU': 0.00, 'DJP': 0.81, 'BILL': 0.06},
+        {'VOO': 0.25, 'SSO': 0.09, 'SPYU': 0.22, 'DJP': 0.20, 'BILL': 0.24},
+        {'VOO': 0.87, 'SSO': 0.10, 'SPYU': 0.00, 'DJP': 0.03, 'BILL': 0.00}
+    ], [0.01, 0.05, 0.30, 0.60], False)
 
     # [ THE DEEP SHIELD ]
-    # CAGR: 14.35%, DD: -39.83%, Sharpe: 0.68
+    # CAGR: 8.02%, DD: -7.86%, Sharpe: 1.03
     add_special('Special SHIELD', [
-        {'VOO': 0.60, 'SSO': 0.05, 'SPYU': 0.00, 'DJP': 0.10, 'BILL': 0.25},
-        {'VOO': 0.60, 'SSO': 0.00, 'SPYU': 0.35, 'DJP': 0.05, 'BILL': 0.00},
-        {'VOO': 0.00, 'SSO': 0.05, 'SPYU': 0.05, 'DJP': 0.70, 'BILL': 0.20},
-        {'VOO': 0.90, 'SSO': 0.00, 'SPYU': 0.10, 'DJP': 0.00, 'BILL': 0.00},
-        {'VOO': 0.55, 'SSO': 0.45, 'SPYU': 0.00, 'DJP': 0.00, 'BILL': 0.00}
-    ], [0.03, 0.05, 0.10, 0.20], False)
+        {'VOO': 0.01, 'SSO': 0.07, 'SPYU': 0.01, 'DJP': 0.00, 'BILL': 0.91},
+        {'VOO': 0.04, 'SSO': 0.00, 'SPYU': 0.00, 'DJP': 0.80, 'BILL': 0.16},
+        {'VOO': 0.02, 'SSO': 0.22, 'SPYU': 0.00, 'DJP': 0.01, 'BILL': 0.75},
+        {'VOO': 0.73, 'SSO': 0.00, 'SPYU': 0.20, 'DJP': 0.05, 'BILL': 0.02},
+        {'VOO': 0.01, 'SSO': 0.34, 'SPYU': 0.01, 'DJP': 0.63, 'BILL': 0.01}
+    ], [0.05, 0.10, 0.39, 0.58], False)
 
     # Convert to JSON structure
     dates = variants['Benchmark SPY (1x)'].index.strftime('%Y-%m-%d').tolist()
