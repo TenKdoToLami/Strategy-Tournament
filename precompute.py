@@ -196,27 +196,27 @@ def get_precomputed_data():
         leverage[name] = l
 
     add_special('Special BEAST', [
-        {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.7, 'BILL': 0.3},
-        {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.9, 'DJP': 0.0, 'BILL': 0.1},
-        {'VOO': 0.7, 'SSO': 0.0, 'SPYU': 0.1, 'DJP': 0.0, 'BILL': 0.2},
-        {'VOO': 0.1, 'SSO': 0.1, 'SPYU': 0.7, 'DJP': 0.1, 'BILL': 0.0},
-        {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.5, 'DJP': 0.5, 'BILL': 0.0}
+        {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.6, 'DJP': 0.4, 'BILL': 0.0},
+        {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.2, 'DJP': 0.8, 'BILL': 0.0},
+        {'VOO': 0.1, 'SSO': 0.2, 'SPYU': 0.6, 'DJP': 0.0, 'BILL': 0.1},
+        {'VOO': 0.0, 'SSO': 0.2, 'SPYU': 0.3, 'DJP': 0.3, 'BILL': 0.2},
+        {'VOO': 0.1, 'SSO': 0.3, 'SPYU': 0.5, 'DJP': 0.1, 'BILL': 0.0}
     ], False)
 
     add_special('Special SCALPEL', [
-        {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.9},
-        {'VOO': 0.1, 'SSO': 0.0, 'SPYU': 0.7, 'DJP': 0.2, 'BILL': 0.0},
-        {'VOO': 0.6, 'SSO': 0.3, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.0},
-        {'VOO': 0.4, 'SSO': 0.4, 'SPYU': 0.1, 'DJP': 0.1, 'BILL': 0.0},
-        {'VOO': 0.7, 'SSO': 0.0, 'SPYU': 0.2, 'DJP': 0.1, 'BILL': 0.0}
-    ], True)
+        {'VOO': 0.0, 'SSO': 0.1, 'SPYU': 0.0, 'DJP': 0.0, 'BILL': 0.9},
+        {'VOO': 0.1, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.8, 'BILL': 0.1},
+        {'VOO': 0.4, 'SSO': 0.1, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.4},
+        {'VOO': 0.9, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.0},
+        {'VOO': 0.3, 'SSO': 0.6, 'SPYU': 0.0, 'DJP': 0.0, 'BILL': 0.1}
+    ], False)
 
     add_special('Special SHIELD', [
-        {'VOO': 0.1, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.8},
-        {'VOO': 0.2, 'SSO': 0.2, 'SPYU': 0.5, 'DJP': 0.0, 'BILL': 0.1},
-        {'VOO': 0.3, 'SSO': 0.1, 'SPYU': 0.1, 'DJP': 0.4, 'BILL': 0.1},
-        {'VOO': 0.1, 'SSO': 0.6, 'SPYU': 0.0, 'DJP': 0.2, 'BILL': 0.1},
-        {'VOO': 0.1, 'SSO': 0.4, 'SPYU': 0.1, 'DJP': 0.0, 'BILL': 0.4}
+        {'VOO': 0.2, 'SSO': 0.1, 'SPYU': 0.0, 'DJP': 0.2, 'BILL': 0.5},
+        {'VOO': 0.0, 'SSO': 0.2, 'SPYU': 0.6, 'DJP': 0.0, 'BILL': 0.2},
+        {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.3, 'BILL': 0.7},
+        {'VOO': 0.2, 'SSO': 0.2, 'SPYU': 0.5, 'DJP': 0.1, 'BILL': 0.0},
+        {'VOO': 0.0, 'SSO': 0.3, 'SPYU': 0.1, 'DJP': 0.5, 'BILL': 0.1}
     ], True)
 
     # Convert to JSON structure
