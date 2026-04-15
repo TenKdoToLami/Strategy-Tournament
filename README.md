@@ -8,7 +8,7 @@ A high-performance, interactive backtesting dashboard that evaluates **dynamic d
 
 ## Overview
 
-This tool compares **9 strategy variants** — differing in leverage bounds, rebalancing frequency, and asset composition — against the S&P 500. The core idea: **buy more leverage when the market is deeply discounted, de-leverage when near all-time highs**.
+This tool compares **14 strategy variants** — differing in leverage bounds, rebalancing frequency, and asset composition — against the S&P 500. The core idea: **buy more leverage when the market is deeply discounted, de-leverage when near all-time highs**.
 
 All simulations begin on **July 1, 2002**, capturing:
 - The post-dot-com recovery (2002–2007)
@@ -71,6 +71,9 @@ These hold 10% Bonds + 10% Commodities in Tiers 0–3 as a volatility dampener.
 ### Standard (0/5/10/20/30)
 The baseline dynamic strategy. Uses the standard tier matrix with drawdown bounds at 5%, 10%, 20%, and 30%. Rebalances **daily**. Includes the 20% safety net (Bonds + Commodities). This is the "balanced workhorse."
 
+### Standard Pure Equity
+Same bounds as Standard (5/10/20/30) but uses the **Pure Equity** matrix (100% stock exposure at all times). No bonds or commodities.
+
 ### Ratchet Standard
 Same tier matrix as Standard, but with **path-dependent lock-in logic**. Once the market crashes and the strategy enters a higher tier (e.g., Tier 3 at −20%), it *refuses to de-leverage* even if the market bounces to −5%. It only resets to Tier 0 when a **brand new All-Time High (0% drawdown)** is reached. This captures the full recovery rally.
 
@@ -78,13 +81,22 @@ Same tier matrix as Standard, but with **path-dependent lock-in logic**. Once th
 Same ratchet lock-in logic, but with 100% equities (no bonds/commodities). Maximum aggression during recoveries. Highest potential return but also the most volatile.
 
 ### Pure Equities (No Bonds)
-Standard de-leverage logic (no ratchet), but with no safety net. 100% allocated to equities at all times.
+Standard de-leverage logic (no ratchet), but with no safety net. 100% allocated to equities at all times. This is the same as **Standard Pure Equity**.
 
 ### Aggressive (0/3/7/12/20)
 Uses much tighter drawdown bounds: 3%, 7%, 12%, 20%. Leverage kicks in *much earlier* during small dips. Can over-leverage during prolonged declines. Includes the 20% safety net.
 
 ### Conservative (0/10/20/35/50)
-Uses very wide drawdown bounds: 10%, 20%, 35%, 50%. This "patient hunter" barely leverages up until a major crash occurs. Lower overall returns but excellent crash survival.
+Uses very wide drawdown bounds: 10%, 20%, 35%, 50%. This "patient hunter" barely leverages up until a major crash occurs. Lower overall returns but excellent crash survival. Includes the 20% safety net.
+
+### Conservative Pure Equity
+Same wide bounds as Conservative (10/20/35/50) but with 100% equity exposure. No safety net.
+
+### Conservative Ratchet
+Combines the patient Conservative bounds (10/20/35/50) with the **Ratchet** lock-in logic. It waits for the crash, leverages up, and then "ratchets" that leverage all the way back to the recovery peak. Includes the 20% safety net.
+
+### Conservative Ratchet Pure
+The most extreme "patient recovery" play. Uses Conservative bounds, Ratchet lock-in, and 100% equity exposure. It stays quiet during small dips but becomes a monster during major bear market recoveries.
 
 ### Benchmarks: S&P 500 (1x), SSO (2x), SPYU (4x)
 Static buy-and-hold positions for comparison. The leveraged benchmarks include simulated borrowing costs and demonstrate the effect of daily compounding drag.

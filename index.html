@@ -209,6 +209,9 @@
             <h4 style="color: #3366cc;">Standard (0/5/10/20/30)</h4>
             <p>The baseline dynamic strategy. Uses the standard tier matrix above with drawdown bounds at 5%, 10%, 20%, and 30%. Rebalances <strong>daily</strong>. Includes the 20% safety net (Bonds + Commodities). This is the "balanced workhorse" — designed to capture crash recoveries while limiting downside via diversification.</p>
 
+            <h4 style="color: #00bfff;">Standard Pure Equity</h4>
+            <p>Same bounds as Standard (5/10/20/30) but uses the **Pure Equity** matrix (100% stock exposure at all times). No bonds or commodities. This is for investors who want the dynamic leverage of the Standard strategy but without any non-equity "drag".</p>
+
             <h4 style="color: #ff00ff;">Ratchet Standard</h4>
             <p>Same tier matrix as Standard, but with <strong>path-dependent lock-in logic</strong>. Once the market crashes and the strategy enters a higher tier (e.g., Tier 3 at −20%), it <em>refuses to de-leverage</em> even if the market bounces to −5%. It only resets to Tier 0 when a <strong>brand new All-Time High (0% drawdown)</strong> is reached. This captures the full recovery rally without prematurely reducing exposure.</p>
 
@@ -223,6 +226,15 @@
 
             <h4 style="color: #f2f2f2;">Conservative (0/10/20/35/50)</h4>
             <p>Uses very wide drawdown bounds: 10%, 20%, 35%, 50%. This "patient hunter" barely leverages up until a major crash occurs. Lower overall returns but excellent crash survival. Includes the 20% safety net.</p>
+
+            <h4 style="color: #66c2a5;">Conservative Pure Equity</h4>
+            <p>Same wide bounds as Conservative (10/20/35/50) but with 100% equity exposure. No safety net. This waits for massive crashes before deploying aggressive leverage, but stays 100% in stocks during normal times.</p>
+
+            <h4 style="color: #fc8d62;">Conservative Ratchet</h4>
+            <p>Combines the patient Conservative bounds (10/20/35/50) with the **Ratchet** lock-in logic. It waits for the crash, leverages up, and then "ratchets" that leverage all the way back to the recovery peak. Includes the 20% safety net.</p>
+
+            <h4 style="color: #8da0cb;">Conservative Ratchet Pure</h4>
+            <p>The most extreme "patient recovery" play. Uses Conservative bounds, Ratchet lock-in, and 100% equity exposure. It stays quiet during small dips but becomes an absolute monster during the recovery phases of major bear markets.</p>
 
             <h4 style="color: #ff9900;">S&amp;P 500 (1x Benchmark)</h4>
             <p>Buy-and-hold the S&amp;P 500 index. No leverage, no rebalancing. This is the baseline that every strategy must beat to justify its complexity.</p>
