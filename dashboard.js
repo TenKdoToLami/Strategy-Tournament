@@ -191,7 +191,6 @@ function update() {
             type: 'bar', marker: {color: color}, showlegend: true
         });
 
-        colorIdx++;
     }
 
     renderTable(metricsArr);
