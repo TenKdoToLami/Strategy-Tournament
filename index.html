@@ -473,9 +473,10 @@
                     <tr><td><strong>SPYU</strong> (4x S&amp;P 500)</td><td><em>Simulated</em></td><td>4x Leveraged Equity</td></tr>
                     <tr><td><strong>BILL</strong> (Treasury Bonds)</td><td>VFISX</td><td>Cash-equivalent safe haven</td></tr>
                     <tr><td><strong>DJP</strong> (Commodities)</td><td>PCRIX</td><td>Inflation hedge</td></tr>
+                    <tr><td><strong>CPI</strong> (Inflation)</td><td>FRED: CPIAUCSL</td><td>Consumer Price Index (Macro context)</td></tr>
                 </tbody>
             </table>
-            <p style="margin-top:10px; color: #8892b0;"><em>Leveraged returns are simulated as: <code>Return = (Leverage × SPY) − ((Leverage − 1) × VFISX)</code>. This models the real-world borrowing cost of maintaining a leveraged position.</em></p>
+            <p style="margin-top:10px; color: #8892b0;"><em>Leveraged returns are simulated as: <code>Return = (Leverage × SPY) − ((Leverage − 1) × VFISX)</code>. This models the real-world borrowing cost of maintaining a leveraged position. Inflation data is fetched monthly from the St. Louis Fed and interpolated daily.</em></p>
 
             <!-- Section 2: Tier Matrices -->
             <h3>2. Asset Allocation Tier Matrices</h3>
@@ -609,14 +610,18 @@
                 <li><strong>Calendar Year Returns</strong>: A year-by-year comparison. This is the ultimate "report card" for identifying which strategies dominated specific market regimes (e.g., the 2008 crash vs. the 2020 recovery).</li>
             </ul>
             <!-- Section 5: Inflation & Real Returns -->
-            <h3>5. Inflation-Adjusted Performance (Real Returns)</h3>
-            <p>While nominal returns show how much money you have, <strong>Real Returns</strong> show how much that money can actually buy. We use the <em>U.S. Consumer Price Index (CPI-U)</em> from the Federal Reserve (FRED) to calculate the erosion of purchasing power over time.</p>
-            <ul>
-                <li><strong>Nominal Growth</strong>: The standard growth of $1.00 (before inflation).</li>
-                <li><strong>Inflation (CPI)</strong>: The dotted gray line showing the increase in the cost of living.</li>
-                <li><strong>Real Growth</strong>: Calculated as <code>Nominal Growth / (CPI_t / CPI_start)</code>.</li>
-            </ul>
             <p>During high-inflation periods (like 2021–2022), you will notice the Real Performance chart dipping or flattening even if nominal prices are steady. This chart is the ultimate judge of whether a strategy is truly building wealth or just keeping pace with rising prices.</p>
+
+            <!-- Section 9: Laboratory Guide -->
+            <h3>9. Custom Strategy Laboratory Guide</h3>
+            <p>The Laboratory allows you to break away from precomputed models and test your own parameters in real-time. Unlike the main variants which are calculated on the server, the Lab runs a **high-performance simulation engine directly in your browser** using raw ticker data.</p>
+            <ul>
+                <li><strong>Dynamic Bounds</strong>: Set the specific drawdown levels that trigger leverage tiers. Narrower bounds (e.g., 2% / 5%) create a hyper-responsive strategy.</li>
+                <li><strong>Interactive Allocation Table</strong>: Click "Configure Allocations" to define exactly how much of each asset (VOO, SSO, SPYU, DJP, BILL) is held at each tier. The system automatically normalizes your weights to 100%.</li>
+                <li><strong>Logic Toggles</strong>: Test the impact of path-dependency (Ratchet) or trend-following (SMA200) on your specific configuration.</li>
+                <li><strong>Persistence</strong>: Your laboratory "recipe" is saved to your browser's <code>localStorage</code>, so your data persists even after closing the tab.</li>
+            </ul>
+        </div>
         </div>
     </div>
 
