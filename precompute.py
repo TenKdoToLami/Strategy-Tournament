@@ -135,11 +135,14 @@ def get_precomputed_data():
         'SSO (2x Benchmark)': r_sso.loc[SIM_START:],
         'SPYU (4x Benchmark)': r_spyu.loc[SIM_START:],
         'Standard (0/5/10/20/30)': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', True),
+        'Standard Pure Equity': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', False),
         'Ratchet Standard': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', True, is_ratchet=True),
         'Ratchet Pure Equity': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', False, is_ratchet=True),
-        'Pure Equities (No Bonds)': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', False),
         'Aggressive (0/3/7/12/20)': simulate_strategy([0.03, 0.07, 0.12, 0.20], 'Daily', True),
         'Conservative (0/10/20/35/50)': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', True),
+        'Conservative Pure Equity': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', False),
+        'Conservative Ratchet': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', True, is_ratchet=True),
+        'Conservative Ratchet Pure': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', False, is_ratchet=True),
     }
 
     # Convert to JSON structure
