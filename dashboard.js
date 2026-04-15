@@ -130,12 +130,23 @@ function update() {
     renderCharts(plotDataArr);
 }
 
+// Sorting state
+let currentSortKey = 'CAGR';
+let currentSortAsc = false; // descending by default
+
 function renderTable(metrics) {
     const tbody = document.getElementById('metrics-body');
     tbody.innerHTML = '';
     
-    // Default sort by CAGR descending
-    metrics.sort((a, b) => b.CAGR - a.CAGR);
+    // Sort by current key
+    metrics.sort((a, b) => {
+        const aVal = a[currentSortKey];
+        const bVal = b[currentSortKey];
+        if (typeof aVal === 'string') {
+            return currentSortAsc ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+        }
+        return currentSortAsc ? aVal - bVal : bVal - aVal;
+    });
 
     metrics.forEach(m => {
         const tr = document.createElement('tr');
@@ -143,16 +154,40 @@ function renderTable(metrics) {
             <td style="font-weight:bold">${m.Strategy}</td>
             <td style="color:${m["Total %"] >= 0 ? '#00ffcc' : '#ff4444'}">${(m["Total %"] * 100).toFixed(1)}%</td>
             <td>${(m.CAGR * 100).toFixed(1)}%</td>
-            <td>${(m.AvgAnnRet * 100).toFixed(1)}%</td>
+            <td>${(m["Avg Ann Ret"] * 100).toFixed(1)}%</td>
             <td style="color:#ff4444">${(m["Max DD"] * 100).toFixed(1)}%</td>
             <td>${m.Sharpe.toFixed(2)}</td>
             <td>${(m["Ann. Vol"] * 100).toFixed(1)}%</td>
         `;
-        // Handle the fix for AvgAnnRet key naming inconsistency if needed
-        tr.cells[3].innerText = (m["Avg Ann Ret"] * 100).toFixed(1) + "%";
         tbody.appendChild(tr);
     });
+
+    // Update header arrows
+    document.querySelectorAll('#metrics-table thead th').forEach(th => {
+        const key = th.getAttribute('data-sort');
+        const arrow = key === currentSortKey ? (currentSortAsc ? ' ▲' : ' ▼') : '';
+        // Strip old arrow and re-add
+        const baseText = th.textContent.replace(/ [▲▼]$/, '');
+        th.textContent = baseText + arrow;
+    });
 }
+
+// Attach sort handlers to table headers
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('#metrics-table thead th').forEach(th => {
+        th.addEventListener('click', () => {
+            const key = th.getAttribute('data-sort');
+            if (!key) return;
+            if (key === currentSortKey) {
+                currentSortAsc = !currentSortAsc; // toggle direction
+            } else {
+                currentSortKey = key;
+                currentSortAsc = false; // default descending for new column
+            }
+            update(); // re-render with new sort
+        });
+    });
+});
 
 function renderCharts(traces) {
     const layout = {
