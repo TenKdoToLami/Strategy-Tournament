@@ -5,6 +5,15 @@ const activeFilters = {
     mix: ['Safeties', 'Pure']
 };
 
+// Laboratory Custom Weights (Default: Standard Safeties)
+let labWeights = [
+    { VOO: 80, SSO: 0, SPYU: 0, DJP: 10, BILL: 10 },  // Tier 0
+    { VOO: 60, SSO: 20, SPYU: 0, DJP: 10, BILL: 10 }, // Tier 1
+    { VOO: 30, SSO: 25, SPYU: 25, DJP: 10, BILL: 10 }, // Tier 2
+    { VOO: 10, SSO: 35, SPYU: 35, DJP: 10, BILL: 10 }, // Tier 3
+    { VOO: 0, SSO: 50, SPYU: 50, DJP: 0, BILL: 0 }    // Tier 4
+];
+
 // Benchmark Anchors (Stable Colors)
 const benchmarkColors = {
     'Benchmark SPY (1x)': '#ffcc00',      // Gold
@@ -81,6 +90,51 @@ async function init() {
 
         document.getElementById('loader').style.display = 'none';
         
+        // --- Laboratory Configuration ---
+        const configBtn = document.getElementById('lab-config-btn');
+        const modal = document.getElementById('modal-weights');
+        const closeModal = document.getElementById('close-modal');
+        const cancelBtn = document.getElementById('modal-cancel');
+        const saveBtn = document.getElementById('modal-save');
+        const weightBody = document.getElementById('weight-tbody');
+
+        function renderWeightTable() {
+            weightBody.innerHTML = '';
+            labWeights.forEach((row, i) => {
+                const tr = document.createElement('tr');
+                const sum = row.VOO + row.SSO + row.SPYU + row.DJP + row.BILL;
+                tr.innerHTML = `
+                    <td style="font-size: 0.8rem; font-weight: bold; color: #8b949e;">Tier ${i}</td>
+                    <td><input type="number" data-tier="${i}" data-asset="VOO" value="${row.VOO}"></td>
+                    <td><input type="number" data-tier="${i}" data-asset="SSO" value="${row.SSO}"></td>
+                    <td><input type="number" data-tier="${i}" data-asset="SPYU" value="${row.SPYU}"></td>
+                    <td><input type="number" data-tier="${i}" data-asset="DJP" value="${row.DJP}"></td>
+                    <td><input type="number" data-tier="${i}" data-asset="BILL" value="${row.BILL}"></td>
+                    <td class="row-total ${Math.abs(sum-100) < 0.1 ? 'total-ok' : 'total-bad'}">${sum}%</td>
+                `;
+                tr.querySelectorAll('input').forEach(inp => {
+                    inp.addEventListener('input', (e) => {
+                        const tier = e.target.getAttribute('data-tier');
+                        const asset = e.target.getAttribute('data-asset');
+                        labWeights[tier][asset] = parseFloat(e.target.value) || 0;
+                        renderWeightTable();
+                    });
+                });
+                weightBody.appendChild(tr);
+            });
+        }
+
+        configBtn.addEventListener('click', () => { modal.style.display = 'flex'; renderWeightTable(); });
+        [closeModal, cancelBtn].forEach(b => b.addEventListener('click', () => { modal.style.display = 'none'; }));
+        saveBtn.addEventListener('click', () => {
+            localStorage.setItem('tournament_lab_weights', JSON.stringify(labWeights));
+            modal.style.display = 'none';
+        });
+
+        // Load Persistent Weights
+        const savedWeights = localStorage.getItem('tournament_lab_weights');
+        if (savedWeights) labWeights = JSON.parse(savedWeights);
+
         // Lab Run Button
         document.getElementById('lab-run').addEventListener('click', () => {
             const bounds = [
@@ -165,21 +219,30 @@ function simulateCustomStrategy(bounds, useRatchet, useSafeties, useTrend) {
     // 3. Calculate Returns & Leverage
     const results = new Float32Array(n);
     const leverage = new Float32Array(n);
+    
+    // Pre-calculate normalized weights (0.0 to 1.0)
+    const normWeights = labWeights.map(row => {
+        const sum = (row.VOO + row.SSO + row.SPYU + row.DJP + row.BILL) || 100;
+        return {
+            VOO: row.VOO / sum,
+            SSO: row.SSO / sum,
+            SPYU: row.SPYU / sum,
+            DJP: row.DJP / sum,
+            BILL: row.BILL / sum
+        };
+    });
+
     for (let i = 0; i < n; i++) {
         const t = tiers[i];
-        if (useSafeties) {
-            if (t === 0) { results[i] = raw.VOO[i]*0.8 + raw.DJP[i]*0.1 + raw.BILL[i]*0.1; leverage[i] = 0.8; }
-            else if (t === 1) { results[i] = raw.VOO[i]*0.6 + raw.SSO[i]*0.2 + raw.DJP[i]*0.1 + raw.BILL[i]*0.1; leverage[i] = 1.0; }
-            else if (t === 2) { results[i] = raw.VOO[i]*0.3 + raw.SSO[i]*0.25 + raw.SPYU[i]*0.25 + raw.DJP[i]*0.1 + raw.BILL[i]*0.1; leverage[i] = 1.8; }
-            else if (t === 3) { results[i] = raw.VOO[i]*0.1 + raw.SSO[i]*0.35 + raw.SPYU[i]*0.35 + raw.DJP[i]*0.1 + raw.BILL[i]*0.1; leverage[i] = 2.2; }
-            else { results[i] = raw.SSO[i]*0.5 + raw.SPYU[i]*0.5; leverage[i] = 3.0; }
-        } else {
-            if (t === 0) { results[i] = raw.VOO[i]; leverage[i] = 1.0; }
-            else if (t === 1) { results[i] = raw.VOO[i]*0.75 + raw.SSO[i]*0.25; leverage[i] = 1.25; }
-            else if (t === 2) { results[i] = raw.VOO[i]*0.38 + raw.SSO[i]*0.31 + raw.SPYU[i]*0.31; leverage[i] = 2.25; }
-            else if (t === 3) { results[i] = raw.VOO[i]*0.12 + raw.SSO[i]*0.44 + raw.SPYU[i]*0.44; leverage[i] = 2.75; }
-            else { results[i] = raw.SSO[i]*0.5 + raw.SPYU[i]*0.5; leverage[i] = 3.0; }
-        }
+        const w = normWeights[t];
+        
+        results[i] = raw.VOO[i] * w.VOO + 
+                     raw.SSO[i] * w.SSO + 
+                     raw.SPYU[i] * w.SPYU + 
+                     raw.DJP[i] * w.DJP + 
+                     raw.BILL[i] * w.BILL;
+                     
+        leverage[i] = (w.VOO * 1.0) + (w.SSO * 2.0) + (w.SPYU * 4.0) + (w.DJP * 1.0) + (w.BILL * 0.0);
     }
     return { returns: results, leverage: leverage };
 }
@@ -227,7 +290,6 @@ function update() {
         x: slicedDates, y: normalizedInflation, name: 'Inflation (CPI)',
         line: {color: benchmarkColors['Inflation (CPI)'], width: 2, dash: 'dot'}, type: 'scatter', mode: 'lines'
     };
-    linearTraces.push(JSON.parse(JSON.stringify(inflationTrace)));
     logTraces.push(JSON.parse(JSON.stringify(inflationTrace)));
 
     // Merger variants with custom lab
@@ -238,6 +300,8 @@ function update() {
 
     for (const [name, returns] of Object.entries(allVariants)) {
         const isCustom = (name === '🧪 USER CUSTOM LAB');
+        const customReturns = (isCustom && window.customStrategyResult) ? window.customStrategyResult.returns : null;
+        if (isCustom && !customReturns) continue;
         
         let color, meta;
         if (isCustom) {
@@ -258,7 +322,7 @@ function update() {
             }
         }
 
-        const slice = isCustom ? returns.slice(startIndex, endIndex + 1) : returns.slice(startIndex, endIndex + 1);
+        const slice = isCustom ? customReturns.slice(startIndex, endIndex + 1) : returns.slice(startIndex, endIndex + 1);
         const levSlice = isCustom ? window.customStrategyResult.leverage.slice(startIndex, endIndex + 1) : globalData.leverage[name].slice(startIndex, endIndex + 1);
         const width = (isCustom || name.includes('Ratchet') || name.includes('Standard')) ? 3 : 1.5;
 
