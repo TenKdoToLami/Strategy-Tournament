@@ -5,20 +5,27 @@ const activeFilters = {
     mix: ['Safeties', 'Pure']
 };
 
-// Color mapping for persistence
-const colors = ['#ff9900', '#00ffcc', '#dc3912', '#3366cc', '#ff00ff', '#109618', '#00bfff', '#990099', '#f2f2f2', '#8da0cb', '#66c2a5', '#fc8d62', '#e78ac3', '#a6d854', '#ffd92f', '#e5c494', '#b3b3b3'];
-let strategyColorMap = {};
+// Benchmark Anchors (Stable Colors)
+const benchmarkColors = {
+    'Benchmark SPY (1x)': '#ffcc00',      // Gold
+    'Benchmark SSO (2x)': '#ff4d4d',      // Red-Orange
+    'Benchmark SPYU (4x)': '#cc0000',      // Deep Red
+    'Benchmark DJP (1x)': '#00cc99',       // Teal
+    'Inflation (CPI)': '#8892b0'           // Gray
+};
+
+function getAdaptiveColor(index, total) {
+    if (total === 0) return '#ffffff';
+    // Use HSL for maximum visual distinction (evenly spaced hues)
+    const hue = (index * 360) / total;
+    return `hsl(${hue}, 75%, 60%)`;
+}
 
 async function init() {
     try {
         const response = await fetch('data.json');
         globalData = await response.json();
         
-        // Pre-assign colors
-        Object.keys(globalData.variants).forEach((name, i) => {
-            strategyColorMap[name] = colors[i % colors.length];
-        });
-
         const dates = globalData.dates;
         const startInput = document.getElementById('start-date');
         const endInput = document.getElementById('end-date');
@@ -92,6 +99,15 @@ function update() {
     const slicedDates = globalData.dates.slice(startIndex, endIndex + 1);
     const years = (new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24 * 365.25);
     
+    // 1. Identify active strategies (excluding benchmarks) for adaptive coloring
+    const activeStrategyNames = Object.keys(globalData.variants).filter(name => {
+        if (name.startsWith('Benchmark')) return false;
+        const meta = parseStrategy(name);
+        return activeFilters.level.includes(meta.level) && 
+               activeFilters.logic.includes(meta.logic) && 
+               activeFilters.mix.includes(meta.mix);
+    });
+    
     const linearTraces = [];
     const logTraces = [];
     const drawdownTraces = [];
@@ -109,7 +125,7 @@ function update() {
     // Add Inflation Benchmark to Growth charts
     const inflationTrace = {
         x: slicedDates, y: normalizedInflation, name: 'Inflation (CPI)',
-        line: {color: '#8892b0', width: 2, dash: 'dot'}, type: 'scatter', mode: 'lines'
+        line: {color: benchmarkColors['Inflation (CPI)'], width: 2, dash: 'dot'}, type: 'scatter', mode: 'lines'
     };
     linearTraces.push(JSON.parse(JSON.stringify(inflationTrace)));
     logTraces.push(JSON.parse(JSON.stringify(inflationTrace)));
@@ -118,19 +134,22 @@ function update() {
         // Filter Check
         const meta = parseStrategy(name);
         
+        let color;
         if (meta.level === 'Benchmark') {
-            // Benchmarks only respect the level filter
             if (!activeFilters.level.includes('Benchmark')) continue;
+            color = benchmarkColors[name];
         } else {
-            // Strategies respect all filters
             if (!activeFilters.level.includes(meta.level)) continue;
             if (!activeFilters.logic.includes(meta.logic)) continue;
             if (!activeFilters.mix.includes(meta.mix)) continue;
+            
+            // Assign adaptive color
+            const strategyIdx = activeStrategyNames.indexOf(name);
+            color = getAdaptiveColor(strategyIdx, activeStrategyNames.length);
         }
 
         const slice = returns.slice(startIndex, endIndex + 1);
         const levSlice = globalData.leverage[name].slice(startIndex, endIndex + 1);
-        const color = strategyColorMap[name];
         const width = (name.includes('Ratchet') || name.includes('Standard')) ? 3 : 1.5;
 
         // 1. Growth & Metrics Calculation
