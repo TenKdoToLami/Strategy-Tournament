@@ -93,7 +93,7 @@ def get_precomputed_data():
                 {'VOO': 0.4, 'SSO': 0.4, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.1},  # T1: 1.2x (1.5 * 0.8)
                 {'VOO': 0.0, 'SSO': 0.8, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.1},  # T2: 1.6x (2.0 * 0.8)
                 {'VOO': 0.0, 'SSO': 0.4, 'SPYU': 0.4, 'DJP': 0.1, 'BILL': 0.1},  # T3: 2.4x (3.0 * 0.8)
-                {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.8, 'DJP': 0.1, 'BILL': 0.1},  # T4: 3.2x (4.0 * 0.8)
+                {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 1.0, 'DJP': 0.0, 'BILL': 0.0},  # T4: 4.0x (All-in at the bottom)
             ]
         else:
             weights = [
