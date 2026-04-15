@@ -88,19 +88,19 @@ def get_precomputed_data():
             weights = custom_weights
         elif include_safeties:
             weights = [
-                {'VOO': 0.80, 'SSO': 0.00, 'SPYU': 0.00, 'DJP': 0.10, 'BILL': 0.10}, 
-                {'VOO': 0.60, 'SSO': 0.20, 'SPYU': 0.00, 'DJP': 0.10, 'BILL': 0.10},
-                {'VOO': 0.30, 'SSO': 0.25, 'SPYU': 0.25, 'DJP': 0.10, 'BILL': 0.10},
-                {'VOO': 0.10, 'SSO': 0.35, 'SPYU': 0.35, 'DJP': 0.10, 'BILL': 0.10},
-                {'VOO': 0.00, 'SSO': 0.50, 'SPYU': 0.50, 'DJP': 0.00, 'BILL': 0.00},
+                {'VOO': 0.2, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.4, 'BILL': 0.4},  # T0: 0.2x (1-0.8)
+                {'VOO': 0.7, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.15, 'BILL': 0.15},# T1: 0.7x (1.5-0.8)
+                {'VOO': 0.4, 'SSO': 0.4, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.1},  # T2: 1.2x (2.0-0.8)
+                {'VOO': 0.0, 'SSO': 0.5, 'SPYU': 0.3, 'DJP': 0.1, 'BILL': 0.1},  # T3: 2.2x (3.0-0.8)
+                {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.8, 'DJP': 0.1, 'BILL': 0.1},  # T4: 3.2x (4.0-0.8)
             ]
         else:
             weights = [
-                {'VOO': 1.00, 'SSO': 0.00, 'SPYU': 0.00, 'DJP': 0.00, 'BILL': 0.00},
-                {'VOO': 0.75, 'SSO': 0.25, 'SPYU': 0.00, 'DJP': 0.00, 'BILL': 0.00},
-                {'VOO': 0.38, 'SSO': 0.31, 'SPYU': 0.31, 'DJP': 0.00, 'BILL': 0.00},
-                {'VOO': 0.12, 'SSO': 0.44, 'SPYU': 0.44, 'DJP': 0.00, 'BILL': 0.00},
-                {'VOO': 0.00, 'SSO': 0.50, 'SPYU': 0.50, 'DJP': 0.00, 'BILL': 0.00},
+                {'VOO': 1.0, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.0, 'BILL': 0.0},  # T0: 1.0x
+                {'VOO': 0.5, 'SSO': 0.5, 'SPYU': 0.0, 'DJP': 0.0, 'BILL': 0.0},  # T1: 1.5x
+                {'VOO': 0.0, 'SSO': 1.0, 'SPYU': 0.0, 'DJP': 0.0, 'BILL': 0.0},  # T2: 2.0x
+                {'VOO': 0.0, 'SSO': 0.5, 'SPYU': 0.5, 'DJP': 0.0, 'BILL': 0.0},  # T3: 3.0x
+                {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 1.0, 'DJP': 0.0, 'BILL': 0.0},  # T4: 4.0x
             ]
         
         y_dd = spy_dd_global.shift(1).fillna(0)

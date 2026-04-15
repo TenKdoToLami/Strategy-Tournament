@@ -7,11 +7,11 @@ const activeFilters = {
 
 // Laboratory Custom Weights (Default: Standard Safeties)
 let labWeights = [
-    { VOO: 80, SSO: 0, SPYU: 0, DJP: 10, BILL: 10 },  // Tier 0
-    { VOO: 60, SSO: 20, SPYU: 0, DJP: 10, BILL: 10 }, // Tier 1
-    { VOO: 30, SSO: 25, SPYU: 25, DJP: 10, BILL: 10 }, // Tier 2
-    { VOO: 10, SSO: 35, SPYU: 35, DJP: 10, BILL: 10 }, // Tier 3
-    { VOO: 0, SSO: 50, SPYU: 50, DJP: 0, BILL: 0 }    // Tier 4
+    { VOO: 100, SSO: 0, SPYU: 0, DJP: 0, BILL: 0 },  // Tier 0 (1.0x)
+    { VOO: 50, SSO: 50, SPYU: 0, DJP: 0, BILL: 0 },  // Tier 1 (1.5x)
+    { VOO: 0, SSO: 100, SPYU: 0, DJP: 0, BILL: 0 },  // Tier 2 (2.0x)
+    { VOO: 0, SSO: 50, SPYU: 50, DJP: 0, BILL: 0 },  // Tier 3 (3.0x)
+    { VOO: 0, SSO: 0, SPYU: 100, DJP: 0, BILL: 0 }   // Tier 4 (4.0x)
 ];
 
 // Benchmark Anchors (Stable Colors)

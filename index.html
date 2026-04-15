@@ -513,16 +513,16 @@
             <h3>3. Individual Strategy Descriptions</h3>
 
             <h4 style="border-left: 4px solid #3366cc; padding-left: 10px;">Standard Daily Safeties</h4>
-            <p>The baseline dynamic strategy. Uses bounds at 5%, 10%, 20%, and 30%. Rebalances <strong>daily</strong>. Includes the 20% safety net (Bonds + Commodities). This is the "balanced workhorse."</p>
+            <p>Our official "Ladder" model. Scales internal equity leverage from <strong>1.0x (T0)</strong> to <strong>4.0x (T4)</strong>. To keep risk under control, this variant reduces total leverage by 0.8x and shifts that capital into a Commodities/Treasury safety buffer.</p>
 
             <h4 style="border-left: 4px solid #00bfff; padding-left: 10px;">Standard Daily Pure</h4>
-            <p>Same bounds as Standard (5/10/20/30) but with 100% stock exposure at all times. No bonds or commodities.</p>
+            <p>The "Growth Ladder" at full intensity. Maintains 100% equity exposure at all times, ramping leverage from 1x to 4x (using VOO/SSO/SPYU) as drawdowns deepen. Fast recovery, high volatility.</p>
 
             <h4 style="border-left: 4px solid #ff00ff; padding-left: 10px;">Standard Ratchet Safeties</h4>
-            <p>Same tier matrix as Standard, but with <strong>path-dependent lock-in logic</strong>. It refuses to de-leverage until a <strong>brand new All-Time High</strong> is reached. Includes the 20% safety net.</p>
+            <p>Uses the 1x-4x Ladder weights with a <strong>path-dependent lock-in logic</strong>. It refuses to de-leverage until a <strong>brand new All-Time High</strong> is reached. Includes the 0.8x leverage reduction safety net.</p>
 
             <h4 style="border-left: 4px solid #109618; padding-left: 10px;">Standard Ratchet Pure</h4>
-            <p>Same ratchet lock-in logic, but with 100% equities (no bonds/commodities). Maximum aggression during recoveries.</p>
+            <p>The "Growth Ladder" but with ratchet lock-in logic and 100% equities. Maximum aggression during recoveries as it locks in the 4x leverage tier until parity is restored.</p>
 
             <h4 style="border-left: 4px solid #990099; padding-left: 10px;">Aggressive Daily Safeties</h4>
             <p>Uses much tighter drawdown bounds: 3%, 7%, 12%, 20%. Leverage kicks in <em>much earlier</em>. Includes the 20% safety net.</p>
