@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced Strategy Tournament</title>
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto+Mono&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto+Mono&display=swap"
+        rel="stylesheet">
     <style>
         :root {
             --bg-color: #0d0e12;
@@ -74,7 +76,8 @@
             border: 1px solid var(--border-color);
         }
 
-        th, td {
+        th,
+        td {
             text-align: left;
             padding: 15px;
             border-bottom: 1px solid var(--border-color);
@@ -88,8 +91,13 @@
             user-select: none;
         }
 
-        tr:last-child td { border-bottom: none; }
-        tr:hover { background-color: #1c222d; }
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover {
+            background-color: #1c222d;
+        }
 
         .footer-guide {
             margin-top: 50px;
@@ -100,9 +108,17 @@
             line-height: 1.8;
         }
 
-        .footer-guide h2 { color: var(--accent-color); border-bottom: 1px solid #333; padding-bottom: 15px; }
-        .footer-guide h3 { color: #fff; margin-top: 30px; }
-        
+        .footer-guide h2 {
+            color: var(--accent-color);
+            border-bottom: 1px solid #333;
+            padding-bottom: 15px;
+        }
+
+        .footer-guide h3 {
+            color: #fff;
+            margin-top: 30px;
+        }
+
         /* Analytics Suite Styling */
         .chart-box {
             background-color: var(--card-bg);
@@ -110,7 +126,7 @@
             border: 1px solid var(--border-color);
             padding: 30px;
             margin-bottom: 40px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
 
         .chart-title {
@@ -136,9 +152,17 @@
         }
 
         .loading {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); display: flex; justify-content: center;
-            align-items: center; z-index: 1000; font-size: 1.5rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            font-size: 1.5rem;
         }
 
         /* Lab Card Styling */
@@ -148,10 +172,11 @@
             padding: 25px;
             border-radius: 16px;
             margin-bottom: 40px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
             position: relative;
             overflow: hidden;
         }
+
         .lab-card::before {
             content: 'LABORATORY';
             position: absolute;
@@ -162,16 +187,40 @@
             color: rgba(51, 102, 204, 0.05);
             pointer-events: none;
         }
-        .lab-header { margin-bottom: 20px; }
-        .lab-title { color: #58a6ff; margin: 0; font-size: 1.4rem; display: flex; align-items: center; gap: 10px; }
+
+        .lab-header {
+            margin-bottom: 20px;
+        }
+
+        .lab-title {
+            color: #58a6ff;
+            margin: 0;
+            font-size: 1.4rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .lab-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             gap: 20px;
             margin-bottom: 25px;
         }
-        .lab-input-group { display: flex; flex-direction: column; gap: 8px; }
-        .lab-input-group label { font-size: 0.75rem; color: #8b949e; text-transform: uppercase; font-weight: bold; }
+
+        .lab-input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .lab-input-group label {
+            font-size: 0.75rem;
+            color: #8b949e;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+
         .lab-input-group input {
             background: #0d1117;
             border: 1px solid #30363d;
@@ -182,8 +231,18 @@
             outline: none;
             transition: border-color 0.2s;
         }
-        .lab-input-group input:focus { border-color: #58a6ff; }
-        .lab-controls { display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-end; }
+
+        .lab-input-group input:focus {
+            border-color: #58a6ff;
+        }
+
+        .lab-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: flex-end;
+        }
+
         .lab-btn {
             background: #238636;
             color: #ffffff;
@@ -194,38 +253,124 @@
             cursor: pointer;
             transition: transform 0.1s, background 0.2s;
         }
-        .lab-btn:hover { background: #2ea043; transform: translateY(-1px); }
-        .lab-btn:active { transform: translateY(0); }
-        .lab-toggle { display: flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; }
-        .lab-toggle input { cursor: pointer; }
+
+        .lab-btn:hover {
+            background: #2ea043;
+            transform: translateY(-1px);
+        }
+
+        .lab-btn:active {
+            transform: translateY(0);
+        }
+
+        .lab-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .lab-toggle input {
+            cursor: pointer;
+        }
 
         /* Modal Styling */
         .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
-            display: none; justify-content: center; align-items: center; z-index: 2000;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
         }
-        .modal-content {
-            background: #161b22; border: 1px solid #30363d;
-            padding: 30px; border-radius: 16px; max-width: 900px; width: 95%;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.7);
-        }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-title { margin: 0; font-size: 1.5rem; color: #58a6ff; }
-        .close-modal { background: none; border: none; color: #8b949e; font-size: 1.5rem; cursor: pointer; }
-        .close-modal:hover { color: #fff; }
 
-        .weight-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-        .weight-table th, .weight-table td { padding: 12px; text-align: center; border-bottom: 1px solid #30363d; }
-        .weight-table th { font-size: 0.8rem; color: #8b949e; text-transform: uppercase; }
-        .weight-table input {
-            width: 60px; background: #0d1117; border: 1px solid #30363d;
-            color: #fff; padding: 6px; border-radius: 4px; text-align: center;
+        .modal-content {
+            background: #161b22;
+            border: 1px solid #30363d;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 900px;
+            width: 95%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
         }
-        .weight-table input:focus { border-color: #58a6ff; outline: none; }
-        .row-total { font-size: 0.8rem; font-weight: bold; }
-        .total-ok { color: #238636; }
-        .total-bad { color: #f85149; }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            margin: 0;
+            font-size: 1.5rem;
+            color: #58a6ff;
+        }
+
+        .close-modal {
+            background: none;
+            border: none;
+            color: #8b949e;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: #fff;
+        }
+
+        .weight-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .weight-table th,
+        .weight-table td {
+            padding: 12px;
+            text-align: center;
+            border-bottom: 1px solid #30363d;
+        }
+
+        .weight-table th {
+            font-size: 0.8rem;
+            color: #8b949e;
+            text-transform: uppercase;
+        }
+
+        .weight-table input {
+            width: 60px;
+            background: #0d1117;
+            border: 1px solid #30363d;
+            color: #fff;
+            padding: 6px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .weight-table input:focus {
+            border-color: #58a6ff;
+            outline: none;
+        }
+
+        .row-total {
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .total-ok {
+            color: #238636;
+        }
+
+        .total-bad {
+            color: #f85149;
+        }
 
         /* Filter Toolbar Styling */
         .filter-toolbar {
@@ -284,6 +429,7 @@
         }
     </style>
 </head>
+
 <body>
     <div id="loader" class="loading">Fetching precalculated data...</div>
 
@@ -298,7 +444,9 @@
             <input type="date" id="start-date">
             <label for="end-date">To:</label>
             <input type="date" id="end-date">
-            <button id="reset-btn" style="background: none; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 5px 15px; border-radius: 5px; cursor: pointer;">Reset Dates</button>
+            <button id="reset-btn"
+                style="background: none; border: 1px solid var(--accent-color); color: var(--accent-color); padding: 5px 15px; border-radius: 5px; cursor: pointer;">Reset
+                Dates</button>
         </div>
 
         <!-- Strategy Laboratory -->
@@ -346,7 +494,8 @@
                     <h2 class="modal-title">Adjust Tier Allocations</h2>
                     <button class="close-modal" id="close-modal">&times;</button>
                 </div>
-                <p style="color: #8b949e; margin-bottom: 20px; font-size: 0.9rem;">Assign weights (0-100) for each asset at each drawdown tier. Rows will be normalized automatically to 100%.</p>
+                <p style="color: #8b949e; margin-bottom: 20px; font-size: 0.9rem;">Assign weights (0-100) for each asset
+                    at each drawdown tier. Rows will be normalized automatically to 100%.</p>
                 <table class="weight-table">
                     <thead>
                         <tr>
@@ -448,13 +597,15 @@
 
             <div class="chart-box">
                 <h2 class="chart-title">Historical Leverage Exposure</h2>
-                <p class="chart-subtitle">Shows daily effective multiplier (e.g. 1.0x to 4.0x). Step-line illustrates rebalancing events.</p>
+                <p class="chart-subtitle">Shows daily effective multiplier (e.g. 1.0x to 4.0x). Step-line illustrates
+                    rebalancing events.</p>
                 <div id="chart-leverage" class="chart-div"></div>
             </div>
 
             <div class="chart-box">
                 <h2 class="chart-title">Real Performance (Inflation-Adjusted)</h2>
-                <p class="chart-subtitle">Growth of $1.00 adjusted for US Consumer Price Index (CPI). Shows actual purchasing power over time.</p>
+                <p class="chart-subtitle">Growth of $1.00 adjusted for US Consumer Price Index (CPI). Shows actual
+                    purchasing power over time.</p>
                 <div id="chart-real" class="chart-div" style="height: 800px;"></div>
             </div>
         </div>
@@ -464,48 +615,196 @@
 
             <!-- Section 1: Overview -->
             <h3>1. Overview &amp; Data Source</h3>
-            <p>This tool compares <strong>17 strategy variants</strong> — differing in leverage bounds, rebalancing frequency, and asset composition — against the S&amp;P 500. The core idea: <strong>buy more leverage when the market is deeply discounted, de-leverage when near all-time highs</strong>. All simulations begin on <strong>July 1, 2002</strong> — chosen to capture the post-dot-com recovery, the 2008 financial crisis, the 2020 COVID crash, and the 2022 bear market. Data is refreshed automatically every night via GitHub Actions.</p>
-            <p>All returns are <strong>Total Return</strong> (dividends and interest reinvested). The data is sourced from Yahoo Finance using the following proxies:</p>
+            <p>This tool compares <strong>17 strategy variants</strong> — ranging from our optimized <strong>Hall of Fame</strong> (Beast, Scalpel, Shield) to the new <strong>1x–4x Ladder</strong> standard. The core thesis: <strong>Aggressively buy the dip using logarithmic leverage scaling, and protect capital using trend-filters and safety buffers</strong>. All simulations are <strong>"Honest" backtests</strong>—meaning they use strictly lagged data (Shift-1) to eliminate look-ahead bias and reflect achievable real-world performance. Simulations begin on <strong>July 1, 2002</strong>, capturing the 2008 GFC, the 2020 COVID crash, and the 2022 inflationary bear market.</p>
+            <p>All returns are <strong>Total Return</strong> (dividends and interest reinvested). The data is sourced
+                from Yahoo Finance using the following proxies:</p>
             <table>
-                <thead><tr><th>Asset</th><th>Ticker Proxy</th><th>Role</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Asset</th>
+                        <th>Ticker Proxy</th>
+                        <th>Role</th>
+                    </tr>
+                </thead>
                 <tbody>
-                    <tr><td><strong>VOO</strong> (S&amp;P 500)</td><td>SPY</td><td>1x Core Equity</td></tr>
-                    <tr><td><strong>SSO</strong> (2x S&amp;P 500)</td><td><em>Simulated</em></td><td>2x Leveraged Equity</td></tr>
-                    <tr><td><strong>SPYU</strong> (4x S&amp;P 500)</td><td><em>Simulated</em></td><td>4x Leveraged Equity</td></tr>
-                    <tr><td><strong>BILL</strong> (Treasury Bonds)</td><td>VFISX</td><td>Cash-equivalent safe haven</td></tr>
-                    <tr><td><strong>DJP</strong> (Commodities)</td><td>PCRIX</td><td>Inflation hedge</td></tr>
-                    <tr><td><strong>CPI</strong> (Inflation)</td><td>FRED: CPIAUCSL</td><td>Consumer Price Index (Macro context)</td></tr>
+                    <tr>
+                        <td><strong>VOO</strong> (S&amp;P 500)</td>
+                        <td>SPY</td>
+                        <td>1x Core Equity</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SSO</strong> (2x S&amp;P 500)</td>
+                        <td><em>Simulated</em></td>
+                        <td>2x Leveraged Equity</td>
+                    </tr>
+                    <tr>
+                        <td><strong>SPYU</strong> (4x S&amp;P 500)</td>
+                        <td><em>Simulated</em></td>
+                        <td>4x Leveraged Equity</td>
+                    </tr>
+                    <tr>
+                        <td><strong>BILL</strong> (Treasury Bonds)</td>
+                        <td>VFISX</td>
+                        <td>Cash-equivalent safe haven</td>
+                    </tr>
+                    <tr>
+                        <td><strong>DJP</strong> (Commodities)</td>
+                        <td>PCRIX</td>
+                        <td>Inflation hedge</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CPI</strong> (Inflation)</td>
+                        <td>FRED: CPIAUCSL</td>
+                        <td>Consumer Price Index (Macro context)</td>
+                    </tr>
                 </tbody>
             </table>
-            <p style="margin-top:10px; color: #8892b0;"><em>Leveraged returns are simulated as: <code>Return = (Leverage × SPY) − ((Leverage − 1) × VFISX)</code>. This models the real-world borrowing cost of maintaining a leveraged position. Inflation data is fetched monthly from the St. Louis Fed and interpolated daily.</em></p>
+            <p style="margin-top:10px; color: #8892b0;"><em>Leveraged returns are simulated as:
+                    <code>Return = (Leverage × SPY) − ((Leverage − 1) × VFISX)</code>. This models the real-world
+                    borrowing cost of maintaining a leveraged position. Inflation data is fetched monthly from the St.
+                    Louis Fed and interpolated daily.</em></p>
 
             <!-- Section 2: Tier Matrices -->
             <h3>2. Asset Allocation Tier Matrices</h3>
-            <p>Each strategy dynamically shifts its portfolio weights based on the <strong>previous day's drawdown</strong> (distance from All-Time High). This prevents look-ahead bias — you only act on yesterday's information.</p>
+            <p>Each strategy dynamically shifts its portfolio weights based on the <strong>previous day's
+                    drawdown</strong> (distance from All-Time High). This prevents look-ahead bias — you only act on
+                yesterday's information.</p>
 
             <h4 style="color: #00bfff; margin-top: 25px;">Standard Variants (20% Safety Net)</h4>
             <p>These hold 10% Bonds + 10% Commodities in Tiers 0–3 as a volatility dampener.</p>
             <table>
-                <thead><tr><th>Tier</th><th>Drawdown Range</th><th>VOO (1x)</th><th>SSO (2x)</th><th>SPYU (4x)</th><th>DJP</th><th>BILL</th><th>Eff. Leverage</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Tier</th>
+                        <th>Drawdown Range</th>
+                        <th>VOO (1x)</th>
+                        <th>SSO (2x)</th>
+                        <th>SPYU (4x)</th>
+                        <th>DJP</th>
+                        <th>BILL</th>
+                        <th>Eff. Leverage</th>
+                    </tr>
+                </thead>
                 <tbody>
-                    <tr><td><strong>Safe (T0)</strong></td><td>0% to −5%</td><td>80%</td><td>0%</td><td>0%</td><td>10%</td><td>10%</td><td>~0.8x</td></tr>
-                    <tr><td><strong>T1</strong></td><td>−5% to −10%</td><td>60%</td><td>20%</td><td>0%</td><td>10%</td><td>10%</td><td>~1.0x</td></tr>
-                    <tr><td><strong>T2</strong></td><td>−10% to −20%</td><td>30%</td><td>25%</td><td>25%</td><td>10%</td><td>10%</td><td>~1.8x</td></tr>
-                    <tr><td><strong>T3</strong></td><td>−20% to −30%</td><td>10%</td><td>35%</td><td>35%</td><td>10%</td><td>10%</td><td>~2.2x</td></tr>
-                    <tr style="background-color: #1a2233;"><td><strong>T4</strong></td><td>&gt; −30%</td><td>0%</td><td>50%</td><td>50%</td><td>0%</td><td>0%</td><td><strong>3.0x</strong></td></tr>
+                    <tr>
+                        <td><strong>Safe (T0)</strong></td>
+                        <td>0% to −5%</td>
+                        <td>20%</td>
+                        <td>0%</td>
+                        <td>0%</td>
+                        <td>40%</td>
+                        <td>40%</td>
+                        <td><strong>0.2x</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>T1</strong></td>
+                        <td>−5% to −10%</td>
+                        <td>70%</td>
+                        <td>0%</td>
+                        <td>0%</td>
+                        <td>15%</td>
+                        <td>15%</td>
+                        <td><strong>0.7x</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>T2</strong></td>
+                        <td>−10% to −20%</td>
+                        <td>40%</td>
+                        <td>40%</td>
+                        <td>0%</td>
+                        <td>10%</td>
+                        <td>10%</td>
+                        <td><strong>1.2x</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>T3</strong></td>
+                        <td>−20% to −30%</td>
+                        <td>0%</td>
+                        <td>50%</td>
+                        <td>30%</td>
+                        <td>10%</td>
+                        <td>10%</td>
+                        <td><strong>2.2x</strong></td>
+                    </tr>
+                    <tr style="background-color: #1a2233;">
+                        <td><strong>T4</strong></td>
+                        <td>&gt; −30%</td>
+                        <td>0%</td>
+                        <td>0%</td>
+                        <td>80%</td>
+                        <td>10%</td>
+                        <td>10%</td>
+                        <td><strong>3.2x</strong></td>
+                    </tr>
                 </tbody>
             </table>
 
             <h4 style="color: #ff9900; margin-top: 25px;">Pure Equity Variants (No Safety Net)</h4>
             <p>100% equity allocation at all times. Higher returns during bull markets, higher risk during crashes.</p>
             <table>
-                <thead><tr><th>Tier</th><th>Drawdown Range</th><th>VOO (1x)</th><th>SSO (2x)</th><th>SPYU (4x)</th><th>DJP</th><th>BILL</th><th>Eff. Leverage</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Tier</th>
+                        <th>Drawdown Range</th>
+                        <th>VOO (1x)</th>
+                        <th>SSO (2x)</th>
+                        <th>SPYU (4x)</th>
+                        <th>DJP</th>
+                        <th>BILL</th>
+                        <th>Eff. Leverage</th>
+                    </tr>
+                </thead>
                 <tbody>
-                    <tr><td><strong>Safe (T0)</strong></td><td>0% to −5%</td><td>100%</td><td>0%</td><td>0%</td><td>0%</td><td>0%</td><td>1.0x</td></tr>
-                    <tr><td><strong>T1</strong></td><td>−5% to −10%</td><td>75%</td><td>25%</td><td>0%</td><td>0%</td><td>0%</td><td>1.25x</td></tr>
-                    <tr><td><strong>T2</strong></td><td>−10% to −20%</td><td>38%</td><td>31%</td><td>31%</td><td>0%</td><td>0%</td><td>~1.9x</td></tr>
-                    <tr><td><strong>T3</strong></td><td>−20% to −30%</td><td>12%</td><td>44%</td><td>44%</td><td>0%</td><td>0%</td><td>~2.6x</td></tr>
-                    <tr style="background-color: #1a2233;"><td><strong>T4</strong></td><td>&gt; −30%</td><td>0%</td><td>50%</td><td>50%</td><td>0%</td><td>0%</td><td><strong>3.0x</strong></td></tr>
+                    <tr>
+                        <td><strong>Safe (T0)</strong></td>
+                        <td>0% to −5%</td>
+                        <td>100%</td>
+                        <td>0%</td>
+                        <td>0%</td>
+                        <td>0%</td>
+                        <td>0%</td>
+                        <td><strong>1.0x</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>T1</strong></td>
+                        <td>−5% to −10%</td>
+                        <td>50%</td>
+                        <td>50%</td>
+                        <td>0%</td>
+                        <td>0%</td>
+                        <td>0%</td>
+                        <td><strong>1.5x</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>T2</strong></td>
+                        <td>−10% to −20%</td>
+                        <td>0%</td>
+                        <td>100%</td>
+                        <td>0%</td>
+                        <td>0%</td>
+                        <td>0%</td>
+                        <td><strong>2.0x</strong></td>
+                    </tr>
+                    <tr>
+                        <td><strong>T3</strong></td>
+                        <td>−20% to −30%</td>
+                        <td>0%</td>
+                        <td>50%</td>
+                        <td>50%</td>
+                        <td>0%</td>
+                        <td>0%</td>
+                        <td><strong>3.0x</strong></td>
+                    </tr>
+                    <tr style="background-color: #1a2233;">
+                        <td><strong>T4</strong></td>
+                        <td>&gt; −30%</td>
+                        <td>0%</td>
+                        <td>0%</td>
+                        <td>100%</td>
+                        <td>0%</td>
+                        <td>0%</td>
+                        <td><strong>4.0x</strong></td>
+                    </tr>
                 </tbody>
             </table>
 
@@ -513,22 +812,30 @@
             <h3>3. Individual Strategy Descriptions</h3>
 
             <h4 style="border-left: 4px solid #3366cc; padding-left: 10px;">Standard Daily Safeties</h4>
-            <p>Our official "Ladder" model. Scales internal equity leverage from <strong>1.0x (T0)</strong> to <strong>4.0x (T4)</strong>. To keep risk under control, this variant reduces total leverage by 0.8x and shifts that capital into a Commodities/Treasury safety buffer.</p>
+            <p>Our official "Ladder" model. Scales internal equity leverage from <strong>1.0x (T0)</strong> to
+                <strong>4.0x (T4)</strong>. To keep risk under control, this variant reduces total leverage by 0.8x and
+                shifts that capital into a Commodities/Treasury safety buffer.</p>
 
             <h4 style="border-left: 4px solid #00bfff; padding-left: 10px;">Standard Daily Pure</h4>
-            <p>The "Growth Ladder" at full intensity. Maintains 100% equity exposure at all times, ramping leverage from 1x to 4x (using VOO/SSO/SPYU) as drawdowns deepen. Fast recovery, high volatility.</p>
+            <p>The "Growth Ladder" at full intensity. Maintains 100% equity exposure at all times, ramping leverage from
+                1x to 4x (using VOO/SSO/SPYU) as drawdowns deepen. Fast recovery, high volatility.</p>
 
             <h4 style="border-left: 4px solid #ff00ff; padding-left: 10px;">Standard Ratchet Safeties</h4>
-            <p>Uses the 1x-4x Ladder weights with a <strong>path-dependent lock-in logic</strong>. It refuses to de-leverage until a <strong>brand new All-Time High</strong> is reached. Includes the 0.8x leverage reduction safety net.</p>
+            <p>Uses the 1x-4x Ladder weights with a <strong>path-dependent lock-in logic</strong>. It refuses to
+                de-leverage until a <strong>brand new All-Time High</strong> is reached. Includes the 0.8x leverage
+                reduction safety net.</p>
 
             <h4 style="border-left: 4px solid #109618; padding-left: 10px;">Standard Ratchet Pure</h4>
-            <p>The "Growth Ladder" but with ratchet lock-in logic and 100% equities. Maximum aggression during recoveries as it locks in the 4x leverage tier until parity is restored.</p>
+            <p>The "Growth Ladder" but with ratchet lock-in logic and 100% equities. Maximum aggression during
+                recoveries as it locks in the 4x leverage tier until parity is restored.</p>
 
             <h4 style="border-left: 4px solid #990099; padding-left: 10px;">Aggressive Daily Safeties</h4>
-            <p>Uses much tighter drawdown bounds: 3%, 7%, 12%, 20%. Leverage kicks in <em>much earlier</em>. Includes the 20% safety net.</p>
+            <p>Uses much tighter drawdown bounds: 3%, 7%, 12%, 20%. Leverage kicks in <em>much earlier</em>. Includes
+                the 20% safety net.</p>
 
             <h4 style="border-left: 4px solid #d95f02; padding-left: 10px;">Aggressive Daily Pure</h4>
-            <p>Same tight bounds as Aggressive (3/7/12/20) but with 100% equity exposure. Maximum responsiveness to tiny dips.</p>
+            <p>Same tight bounds as Aggressive (3/7/12/20) but with 100% equity exposure. Maximum responsiveness to tiny
+                dips.</p>
 
             <h4 style="border-left: 4px solid #7570b3; padding-left: 10px;">Aggressive Ratchet Safeties</h4>
             <p>Combines Aggressive bounds with the Ratchet lock-in. Includes the 20% safety net.</p>
@@ -537,7 +844,8 @@
             <p>The most hyper-aggressive portfolio. Tightest bounds, Ratchet lock-in, and 100% equity exposure.</p>
 
             <h4 style="border-left: 4px solid #f2f2f2; padding-left: 10px;">Conservative Daily Safeties</h4>
-            <p>Uses very wide drawdown bounds: 10%, 20%, 35%, 50%. This "patient hunter" barely leverages up until a major crash. Includes the 20% safety net.</p>
+            <p>Uses very wide drawdown bounds: 10%, 20%, 35%, 50%. This "patient hunter" barely leverages up until a
+                major crash. Includes the 20% safety net.</p>
 
             <h4 style="border-left: 4px solid #66c2a5; padding-left: 10px;">Conservative Daily Pure</h4>
             <p>Same wide bounds as Conservative (10/20/35/50) but with 100% equity exposure. No safety net.</p>
@@ -546,7 +854,8 @@
             <p>Combines patient Conservative bounds with Ratchet lock-in. Includes the 20% safety net.</p>
 
             <h4 style="border-left: 4px solid #8da0cb; padding-left: 10px;">Conservative Ratchet Pure</h4>
-            <p>Uses Conservative bounds, Ratchet lock-in, and 100% equity exposure. Stays quiet during small dips but recovers massively.</p>
+            <p>Uses Conservative bounds, Ratchet lock-in, and 100% equity exposure. Stays quiet during small dips but
+                recovers massively.</p>
 
             <h4 style="border-left: 4px solid #ffcc00; padding-left: 10px;">Benchmark SPY (1x)</h4>
             <p>Buy-and-hold the S&amp;P 500 index. No leverage, no rebalancing. The baseline benchmark.</p>
@@ -558,83 +867,174 @@
             <p>Static 4x daily leverage. Included to demonstrate extreme volatility risk.</p>
 
             <h4 style="border-left: 4px solid #ff00ff; padding-left: 10px;">🏆 Special BEAST</h4>
-            <p>The result of a high-intensity global search. Maximizes raw wealth at **~20% CAGR** (beating the 2x Benchmark's 14.7%) by concentrating leverage in Tier 2 and Tier 4 regimes. This is the "honest" mathematical ceiling for this asset universe.</p>
+            <p>The result of a high-intensity global search. Maximizes raw wealth at **~20% CAGR** (beating the 2x
+                Benchmark's 14.7%) by concentrating leverage in Tier 2 and Tier 4 regimes. This is the "honest"
+                mathematical ceiling for this asset universe.</p>
 
             <h4 style="border-left: 4px solid #00f5ff; padding-left: 10px;">🎯 Special SCALPEL</h4>
-            <p>Optimized for ultra-smooth growth. Achieves an impressive **0.91 Sharpe Ratio** while maintaining steady 8-9% returns with minimal (-16%) drawdowns. Designed for maximum capital preservation.</p>
+            <p>Optimized for ultra-smooth growth. Achieves an impressive **0.91 Sharpe Ratio** while maintaining steady
+                8-9% returns with minimal (-16%) drawdowns. Designed for maximum capital preservation.</p>
 
             <h4 style="border-left: 4px solid #ffd700; padding-left: 10px;">🛡️ Special SHIELD</h4>
-            <p>The best of both worlds. Achieves a **14.7% CAGR** (matching the 2x Benchmark) but with only **-37% Max Drawdown** (vs the -85% of static 2x leverage). Uses Ratchet Logic for superior recovery.</p>
+            <p>The best of both worlds. Achieves a **14.7% CAGR** (matching the 2x Benchmark) but with only **-37% Max
+                Drawdown** (vs the -85% of static 2x leverage). Uses Ratchet Logic for superior recovery.</p>
 
             <h4 style="border-left: 4px solid #00cc99; padding-left: 10px;">Benchmark DJP (1x)</h4>
-            <p>Buy-and-hold the iPath Bloomberg Commodity Index. Included as a reference for the commodity component used in "Safeties" strategies.</p>
+            <p>Buy-and-hold the iPath Bloomberg Commodity Index. Included as a reference for the commodity component
+                used in "Safeties" strategies.</p>
 
             <!-- Section 4: Rebalancing -->
             <h3>4. Rebalancing Rules</h3>
             <table>
-                <thead><tr><th>Frequency</th><th>How It Works</th><th>Trade-Off</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Frequency</th>
+                        <th>How It Works</th>
+                        <th>Trade-Off</th>
+                    </tr>
+                </thead>
                 <tbody>
-                    <tr><td><strong>Daily</strong></td><td>Recalculates drawdown and shifts weights every business day.</td><td>Most responsive, but highest transaction cost in practice.</td></tr>
-                    <tr><td><strong>Monthly</strong></td><td>Samples the drawdown signal on the last trading day of each month. Locks that tier for the entire next month.</td><td>Lower costs, but can miss intra-month moves.</td></tr>
-                    <tr><td><strong>Ratchet</strong></td><td>Locks in the <em>highest</em> tier reached. Never de-leverages until a new ATH. SMA override still applies for safety.</td><td>Maximum recovery capture, but stays leveraged during false bounces.</td></tr>
+                    <tr>
+                        <td><strong>Daily</strong></td>
+                        <td>Recalculates drawdown and shifts weights every business day.</td>
+                        <td>Most responsive, but highest transaction cost in practice.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Monthly</strong></td>
+                        <td>Samples the drawdown signal on the last trading day of each month. Locks that tier for the
+                            entire next month.</td>
+                        <td>Lower costs, but can miss intra-month moves.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ratchet</strong></td>
+                        <td>Locks in the <em>highest</em> tier reached. Never de-leverages until a new ATH. SMA override
+                            still applies for safety.</td>
+                        <td>Maximum recovery capture, but stays leveraged during false bounces.</td>
+                    </tr>
                 </tbody>
             </table>
 
             <!-- Section 5: Risk Controls -->
             <h3>5. Risk Controls</h3>
             <h4 style="color: #ff4444;">Trend Filter (200-day SMA)</h4>
-            <p>If the S&amp;P 500 price closes <strong>below its 200-day Simple Moving Average</strong>, all strategies automatically revert to the <strong>Safe Tier (T0)</strong>. This overrides both the drawdown tiers <em>and</em> the ratchet lock-in. The 200-day SMA is the most widely used long-term trend indicator — being below it signals a structural bear market where leverage is dangerous.</p>
+            <p>If the S&amp;P 500 price closes <strong>below its 200-day Simple Moving Average</strong>, all strategies
+                automatically revert to the <strong>Safe Tier (T0)</strong>. This overrides both the drawdown tiers
+                <em>and</em> the ratchet lock-in. The 200-day SMA is the most widely used long-term trend indicator —
+                being below it signals a structural bear market where leverage is dangerous.</p>
             <h4 style="color: #ff4444;">Look-Ahead Bias Prevention</h4>
-            <p>All signals (drawdown level, SMA comparison) use the <strong>previous day's close</strong> via <code>shift(1)</code>. This ensures that every trade decision is made using only information that was available at the time — no "future peeking."</p>
+            <p>All signals (drawdown level, SMA comparison) use the <strong>previous day's close</strong> via
+                <code>shift(1)</code>. This ensures that every trade decision is made using only information that was
+                available at the time — no "future peeking."</p>
 
             <!-- Section 6: KPI Definitions -->
             <h3>6. Performance Indicators (KPIs) — What Each Column Means</h3>
             <table>
-                <thead><tr><th>Indicator</th><th>Formula</th><th>What It Tells You</th></tr></thead>
+                <thead>
+                    <tr>
+                        <th>Indicator</th>
+                        <th>Formula</th>
+                        <th>What It Tells You</th>
+                    </tr>
+                </thead>
                 <tbody>
-                    <tr><td><strong>Total %</strong></td><td>(Final Value ÷ Initial Value) − 1</td><td>The raw percentage growth of $1 invested on day 1. A value of 500% means $1 became $6.</td></tr>
-                    <tr><td><strong>CAGR</strong></td><td>Final<sup>(1/Years)</sup> − 1</td><td><strong>Compound Annual Growth Rate</strong>. The "smoothed" yearly return assuming gains are reinvested. This is the single most useful number for comparing strategies across different time periods.</td></tr>
-                    <tr><td><strong>Avg Ann Ret</strong></td><td>Mean(Daily Returns) × 252</td><td><strong>Average Annual Return</strong>. The arithmetic mean of daily returns, annualized. Usually higher than CAGR due to the effect of volatility drag. The gap between this and CAGR reveals how much compounding cost you.</td></tr>
-                    <tr><td><strong>Max DD</strong></td><td>Min((Value − Peak) ÷ Peak)</td><td><strong>Maximum Drawdown</strong>. The deepest single peak-to-trough decline. This is the worst-case pain you would have experienced. A value of −60% means your portfolio lost 60% from its highest point.</td></tr>
-                    <tr><td><strong>Sharpe</strong></td><td>(CAGR − 2%) ÷ Ann. Vol</td><td><strong>Sharpe Ratio</strong>. Risk-adjusted return. Measures how much excess return you earn per unit of risk. Values above <strong>0.5</strong> are decent; above <strong>1.0</strong> is excellent. We use 2% as the risk-free rate.</td></tr>
-                    <tr><td><strong>Ann. Vol</strong></td><td>Std(Daily Returns) × √252</td><td><strong>Annualized Volatility</strong>. How wildly the portfolio swings day-to-day, expressed as a yearly percentage. The S&amp;P 500 typically has ~19% vol. A 4x strategy can exceed 75%.</td></tr>
+                    <tr>
+                        <td><strong>Total %</strong></td>
+                        <td>(Final Value ÷ Initial Value) − 1</td>
+                        <td>The raw percentage growth of $1 invested on day 1. A value of 500% means $1 became $6.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CAGR</strong></td>
+                        <td>Final<sup>(1/Years)</sup> − 1</td>
+                        <td><strong>Compound Annual Growth Rate</strong>. The "smoothed" yearly return assuming gains
+                            are reinvested. This is the single most useful number for comparing strategies across
+                            different time periods.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Avg Ann Ret</strong></td>
+                        <td>Mean(Daily Returns) × 252</td>
+                        <td><strong>Average Annual Return</strong>. The arithmetic mean of daily returns, annualized.
+                            Usually higher than CAGR due to the effect of volatility drag. The gap between this and CAGR
+                            reveals how much compounding cost you.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Max DD</strong></td>
+                        <td>Min((Value − Peak) ÷ Peak)</td>
+                        <td><strong>Maximum Drawdown</strong>. The deepest single peak-to-trough decline. This is the
+                            worst-case pain you would have experienced. A value of −60% means your portfolio lost 60%
+                            from its highest point.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Sharpe</strong></td>
+                        <td>(CAGR − 2%) ÷ Ann. Vol</td>
+                        <td><strong>Sharpe Ratio</strong>. Risk-adjusted return. Measures how much excess return you
+                            earn per unit of risk. Values above <strong>0.5</strong> are decent; above
+                            <strong>1.0</strong> is excellent. We use 2% as the risk-free rate.</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Ann. Vol</strong></td>
+                        <td>Std(Daily Returns) × √252</td>
+                        <td><strong>Annualized Volatility</strong>. How wildly the portfolio swings day-to-day,
+                            expressed as a yearly percentage. The S&amp;P 500 typically has ~19% vol. A 4x strategy can
+                            exceed 75%.</td>
+                    </tr>
                 </tbody>
             </table>
 
             <!-- Section 7: How to Use -->
             <h3>7. How to Use This Dashboard</h3>
             <ol style="line-height: 2;">
-                <li><strong>Select a date range</strong> using the date pickers at the top. The charts and metrics will instantly recalculate for that window.</li>
-                <li><strong>Click any column header</strong> in the leaderboard table to sort by that metric (e.g., click "CAGR" to rank strategies by annualized return).</li>
-                <li><strong>Top chart (Linear %)</strong>: Shows cumulative return as a simple percentage. Best for comparing final outcomes.</li>
-                <li><strong>Bottom chart (Log Scale)</strong>: Shows growth on a logarithmic scale. Best for comparing relative performance across time — a straight line means consistent compounding.</li>
+                <li><strong>Select a date range</strong> using the date pickers at the top. The charts and metrics will
+                    instantly recalculate for that window.</li>
+                <li><strong>Click any column header</strong> in the leaderboard table to sort by that metric (e.g.,
+                    click "CAGR" to rank strategies by annualized return).</li>
+                <li><strong>Top chart (Linear %)</strong>: Shows cumulative return as a simple percentage. Best for
+                    comparing final outcomes.</li>
+                <li><strong>Bottom chart (Log Scale)</strong>: Shows growth on a logarithmic scale. Best for comparing
+                    relative performance across time — a straight line means consistent compounding.</li>
                 <li><strong>Hover over lines</strong> to see exact values at any point in time.</li>
                 <li><strong>Use the Reset button</strong> to return to the full historical view.</li>
             </ol>
             <!-- Section 8: Advanced Analytics Guide -->
             <h3>8. Advanced Analytics Guide</h3>
-            <p>The dashboard now includes a professional-grade risk analytics suite below the main performance table:</p>
+            <p>The dashboard now includes a professional-grade risk analytics suite below the main performance table:
+            </p>
             <ul>
-                <li><strong>Historical Drawdown (Underwater)</strong>: This waterfall chart shows how far each strategy fell from its previous peak. It visualizes the "psychological pain" of staying invested. 0% means the strategy was at an All-Time High.</li>
-                <li><strong>Rolling 1-Year Volatility</strong>: Instead of a single number, this plot shows how risk levels changed over time. Leveraged strategies show massive spikes in volatility during market turbulence, while the S&amp;P 500 stays relatively flat.</li>
-                <li><strong>Calendar Year Returns</strong>: A year-by-year comparison. This is the ultimate "report card" for identifying which strategies dominated specific market regimes (e.g., the 2008 crash vs. the 2020 recovery).</li>
+                <li><strong>Historical Drawdown (Underwater)</strong>: This waterfall chart shows how far each strategy
+                    fell from its previous peak. It visualizes the "psychological pain" of staying invested. 0% means
+                    the strategy was at an All-Time High.</li>
+                <li><strong>Rolling 1-Year Volatility</strong>: Instead of a single number, this plot shows how risk
+                    levels changed over time. Leveraged strategies show massive spikes in volatility during market
+                    turbulence, while the S&amp;P 500 stays relatively flat.</li>
+                <li><strong>Calendar Year Returns</strong>: A year-by-year comparison. This is the ultimate "report
+                    card" for identifying which strategies dominated specific market regimes (e.g., the 2008 crash vs.
+                    the 2020 recovery).</li>
             </ul>
             <!-- Section 5: Inflation & Real Returns -->
-            <p>During high-inflation periods (like 2021–2022), you will notice the Real Performance chart dipping or flattening even if nominal prices are steady. This chart is the ultimate judge of whether a strategy is truly building wealth or just keeping pace with rising prices.</p>
+            <p>During high-inflation periods (like 2021–2022), you will notice the Real Performance chart dipping or
+                flattening even if nominal prices are steady. This chart is the ultimate judge of whether a strategy is
+                truly building wealth or just keeping pace with rising prices.</p>
 
             <!-- Section 9: Laboratory Guide -->
             <h3>9. Custom Strategy Laboratory Guide</h3>
-            <p>The Laboratory allows you to break away from precomputed models and test your own parameters in real-time. Unlike the main variants which are calculated on the server, the Lab runs a **high-performance simulation engine directly in your browser** using raw ticker data.</p>
+            <p>The Laboratory allows you to break away from precomputed models and test your own parameters in
+                real-time. Unlike the main variants which are calculated on the server, the Lab runs a
+                **high-performance simulation engine directly in your browser** using raw ticker data.</p>
             <ul>
-                <li><strong>Dynamic Bounds</strong>: Set the specific drawdown levels that trigger leverage tiers. Narrower bounds (e.g., 2% / 5%) create a hyper-responsive strategy.</li>
-                <li><strong>Interactive Allocation Table</strong>: Click "Configure Allocations" to define exactly how much of each asset (VOO, SSO, SPYU, DJP, BILL) is held at each tier. The system automatically normalizes your weights to 100%.</li>
-                <li><strong>Logic Toggles</strong>: Test the impact of path-dependency (Ratchet) or trend-following (SMA200) on your specific configuration.</li>
-                <li><strong>Persistence</strong>: Your laboratory "recipe" is saved to your browser's <code>localStorage</code>, so your data persists even after closing the tab.</li>
+                <li><strong>Dynamic Bounds</strong>: Set the specific drawdown levels that trigger leverage tiers.
+                    Narrower bounds (e.g., 2% / 5%) create a hyper-responsive strategy.</li>
+                <li><strong>Interactive Allocation Table</strong>: Click "Configure Allocations" to define exactly how
+                    much of each asset (VOO, SSO, SPYU, DJP, BILL) is held at each tier. The system automatically
+                    normalizes your weights to 100%.</li>
+                <li><strong>Logic Toggles</strong>: Test the impact of path-dependency (Ratchet) or trend-following
+                    (SMA200) on your specific configuration.</li>
+                <li><strong>Persistence</strong>: Your laboratory "recipe" is saved to your browser's
+                    <code>localStorage</code>, so your data persists even after closing the tab.</li>
             </ul>
         </div>
-        </div>
+    </div>
     </div>
 
     <script src="dashboard.js"></script>
 </body>
+
 </html>

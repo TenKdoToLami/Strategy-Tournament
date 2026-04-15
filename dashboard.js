@@ -538,7 +538,7 @@ function renderAdvancedCharts(linearTraces, logTraces, drawdownTraces, volTraces
     const levLayout = JSON.parse(JSON.stringify(commonLayout));
     levLayout.yaxis.title = 'Effective Multiplier';
     levLayout.yaxis.tickformat = '.1f';
-    levLayout.yaxis.range = [0.5, 4.5]; // Fixed range for better comparison
+    levLayout.yaxis.range = [0, 4.5]; // Lowered from 0.5 to show defensive regimes
     Plotly.newPlot('chart-leverage', leverageTraces, levLayout, {responsive: true});
 
     // 7. Real Performance

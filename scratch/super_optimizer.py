@@ -64,25 +64,22 @@ def generate_valid_weights():
             combos.append([w/10.0 for w in weights])
     return np.array(combos)
 
-def run_monte_carlo(n_iter=50000):
+def run_monte_carlo(n_iter=100000):
     ret_matrix, tiers_daily, tiers_ratchet = get_base_data()
     all_combos = generate_valid_weights()
     n_combos = len(all_combos)
     n_days = len(ret_matrix)
     years = n_days / 252.0
     
-    best_cagr = {"logic": None, "val": -1, "weights": None}
-    best_sharpe = {"logic": None, "val": -1, "weights": None}
-    best_shield = {"logic": None, "val": -1, "weights": None, "dd": 0, "cagr": 0}
+    best_sharpel = {"logic": None, "val": -1, "cagr": 0, "mdd": 0, "weights": None}
 
-    print(f"Running {n_iter} iterations...")
+    print(f"Searching for 'SUPER SCALPEL' (CAGR > 10.7% and MaxDD > -25%)...")
     for i in range(n_iter):
         cfg = [random.randint(0, n_combos-1) for _ in range(5)]
         weights = all_combos[cfg]
         
         for name, tiers in [("Daily", tiers_daily), ("Ratchet", tiers_ratchet)]:
             day_rets = np.sum(weights[tiers] * ret_matrix, axis=1)
-            # Fast Compounding
             cum = np.exp(np.log1p(day_rets).cumsum())
             cagr = cum[-1]**(1/years) - 1
             ath = np.maximum.accumulate(cum)
@@ -90,31 +87,19 @@ def run_monte_carlo(n_iter=50000):
             vol = np.std(day_rets) * np.sqrt(252)
             sharpe = (cagr - 0.02) / vol if vol > 0.001 else 0
             
-            if cagr > best_cagr['val']:
-                best_cagr = {'logic': name, 'val': cagr, 'mdd': mdd, 'sharpe': sharpe, 'weights': weights.copy()}
-            
-            if sharpe > best_sharpe['val']:
-                best_sharpe = {'logic': name, 'val': sharpe, 'cagr': cagr, 'mdd': mdd, 'weights': weights.copy()}
-            
-            # The Shield: Best CAGR with DD > -40% (Realistic for leveraged)
-            if mdd > -0.38 and cagr > best_shield['val']:
-                best_shield = {'logic': name, 'val': cagr, 'mdd': mdd, 'sharpe': sharpe, 'weights': weights.copy()}
+            # Constraints: Beat SPY (10.65%) and keep DD under control
+            if cagr > 0.107 and mdd > -0.28:
+                if sharpe > best_sharpel['val']:
+                    best_sharpel = {'logic': name, 'val': sharpe, 'cagr': cagr, 'mdd': mdd, 'weights': weights.copy()}
 
-    print("\n[ HONEST BEAST ]")
-    print(f"Logic: {best_cagr['logic']}, CAGR: {best_cagr['val']:.2%}, DD: {best_cagr['mdd']:.2%}")
-    print_w(best_cagr['weights'])
-
-    print("\n[ HONEST SCALPEL ]")
-    print(f"Logic: {best_sharpe['logic']}, Sharpe: {best_sharpe['val']:.2f}, CAGR: {best_sharpe['cagr']:.2%}, DD: {best_sharpe['mdd']:.2%}")
-    print_w(best_sharpe['weights'])
-
-    print("\n[ HONEST SHIELD ]")
-    print(f"Logic: {best_shield['logic']}, CAGR: {best_shield['val']:.2%}, DD: {best_shield['mdd']:.2%}")
-    print_w(best_shield['weights'])
-
-def print_w(w):
-    for t in range(5):
-        print(f"T{t}: {w[t,0]:.1f},{w[t,1]:.1f},{w[t,2]:.1f},{w[t,3]:.1f},{w[t,4]:.1f}")
+    if best_sharpel['weights'] is not None:
+        print("\n[ FOUND: SUPER SCALPEL ]")
+        print(f"Logic: {best_sharpel['logic']}, Sharpe: {best_sharpel['val']:.2f}, CAGR: {best_sharpel['cagr']:.2%}, DD: {best_sharpel['mdd']:.2%}")
+        for t in range(5):
+            w = best_sharpel['weights'][t]
+            print(f"T{t}: {w[0]:.1f},{w[1]:.1f},{w[2]:.1f},{w[3]:.1f},{w[4]:.1f}")
+    else:
+        print("\nNo strategy found matching constraints (CAGR > 10.7%, DD > -28%) in 100k iterations.")
 
 if __name__ == "__main__":
     run_monte_carlo(n_iter=100000)

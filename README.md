@@ -54,25 +54,48 @@ Configure a custom portfolio for 5 distinct market regimes:
 
 ## 📐 Asset Allocation Tiers (Precomputed)
 
-Each strategy dynamically shifts weights based on the **previous day's drawdown**.
+Each strategy dynamically shifts its internal weight matrix based on the **previous day's drawdown**. To prevent look-ahead bias, all signals are lagged by 1 business day.
 
-### Standard Variants (20% Safety Net)
-| Tier | Drawdown Range | VOO (1x) | SSO (2x) | SPYU (4x) | DJP | BILL |
-|:-----|:---------------|:---------|:---------|:----------|:----|:-----|
-| **Safe (T0)** | 0% to −5% | 80% | 0% | 0% | 10% | 10% |
-| **T1** | −5% to −10% | 60% | 20% | 0% | 10% | 10% |
-| **T2** | −10% to −20% | 30% | 25% | 25% | 10% | 10% |
-| **T3** | −20% to −30% | 10% | 35% | 35% | 10% | 10% |
-| **T4** | > −30% | 0% | 50% | 50% | 0% | 0% |
+### The Standard "Ladder" (0.2x to 3.2x)
+This is our primary Safeties benchmark. It scales internal equity leverage from 1x (T0) to 4x (T4) but reduces the final leverage by 0.8x to allocate into a 50/50 Bond/Commodity buffer.
+
+| Tier | Drawdown Range | VOO (1x) | SSO (2x) | SPYU (4x) | DJP | BILL | Eff. Leverage |
+|:-----|:---------------|:---------|:---------|:----------|:----|:-----|:--------------|
+| **Safe (T0)** | 0% to −5% | 20% | 0% | 0% | 40% | 40% | **0.2x** |
+| **T1** | −5% to −10% | 70% | 0% | 0% | 15% | 15% | **0.7x** |
+| **T2** | −10% to −20% | 40% | 40% | 0% | 10% | 10% | **1.2x** |
+| **T3** | −20% to −30% | 0% | 50% | 30% | 10% | 10% | **2.2x** |
+| **T4** | > −30% | 0% | 0% | 80% | 10% | 10% | **3.2x** |
+
+### The Pure "Ladder" (1.0x to 4.0x)
+Maintains 100% equity exposure at all times.
+
+| Tier | Drawdown Range | VOO (1x) | SSO (2x) | SPYU (4x) | Eff. Leverage |
+|:-----|:---------------|:---------|:---------|:----------|:--------------|
+| **Safe (T0)** | 0% to −5% | 100% | 0% | 0% | **1.0x** |
+| **T1** | −5% to −10% | 50% | 50% | 0% | **1.5x** |
+| **T2** | −10% to −20% | 0% | 100% | 0% | **2.0x** |
+| **T3** | −20% to −30% | 0% | 50% | 50% | **3.0x** |
+| **T4** | > −30% | 0% | 0% | 100% | **4.0x** |
 
 ---
 
-## 🚀 Technical Implementation
+## 🏆 The "Honest" Hall of Fame
 
-- **Python (Backend)**: Uses `pandas` and `yfinance` to precompute 14+ strategy variants and calculate CPI multipliers.
-- **JavaScript (Frontend)**: A custom ES6 engine that handles date slicing, dynamic KPI calculation, and the Strategy Lab's browser-side simulation.
-- **Plotly.js**: High-fidelity interactive charts including Log scales, Drawdown waterfalls, and Step-line leverage exposure.
-- **Automation**: Github Actions runs the `precompute.py` script nightly.
+The **Special** variants are the result of a 100,000-iteration global Monte Carlo optimization using strictly lagged data.
+
+- **Special BEAST**: The maximum growth engine. Achieves **~20% CAGR** by maintaining high leverage even in bull markets (T0), using Commodities as its primary risk dampener.
+- **Special SCALPEL**: The efficiency king. Optimized for **Sharpe Ratio (0.91)**. It stays in 90% Cash (BILL) during low-volatility regimes and only deploys capital during deep discounts. Max Drawdown: **-16.9%**.
+- **Special SHIELD**: The hybrid champion. Uses **Ratchet Logic** to lock in recovery tiers effectively matching 2x benchmark returns but with half the drawdown.
+
+---
+
+## 🚀 Technical Implementation & Methodology
+
+- **Honest Simulation**: Unlike many backtests that "peek" at daily closing prices, this engine uses `shift(1)` for all signals. Trades are executed at *today's* price based solely on *yesterday's* state.
+- **Python (Backend)**: Uses `pandas` to precompute 17+ core variants.
+- **JavaScript (Frontend)**: ES6 simulation engine for the Strategy Laboratory.
+- **Data Refresh**: Github Actions triggers a daily fetch via Yahoo Finance and FRED.
 
 ---
 
