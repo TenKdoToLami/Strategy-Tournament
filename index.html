@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Advanced Strategy Tournament</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Roboto+Mono&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -90,14 +90,6 @@
 
         tr:last-child td { border-bottom: none; }
         tr:hover { background-color: #1c222d; }
-
-        #chart-container {
-            height: 1000px;
-            background-color: var(--card-bg);
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            padding: 20px;
-        }
 
         .footer-guide {
             margin-top: 50px;
@@ -214,7 +206,7 @@
 
             <!-- Section 1: Overview -->
             <h3>1. Overview &amp; Data Source</h3>
-            <p>This dashboard compares <strong>9 dynamic drawdown-based leveraging strategies</strong> against the S&amp;P 500. All simulations begin on <strong>July 1, 2002</strong> — chosen to capture the post-dot-com recovery, the 2008 financial crisis, the 2020 COVID crash, and the 2022 bear market. Data is refreshed automatically every night via GitHub Actions.</p>
+            <p>This tool compares <strong>17 strategy variants</strong> — differing in leverage bounds, rebalancing frequency, and asset composition — against the S&amp;P 500. The core idea: <strong>buy more leverage when the market is deeply discounted, de-leverage when near all-time highs</strong>. All simulations begin on <strong>July 1, 2002</strong> — chosen to capture the post-dot-com recovery, the 2008 financial crisis, the 2020 COVID crash, and the 2022 bear market. Data is refreshed automatically every night via GitHub Actions.</p>
             <p>All returns are <strong>Total Return</strong> (dividends and interest reinvested). The data is sourced from Yahoo Finance using the following proxies:</p>
             <table>
                 <thead><tr><th>Asset</th><th>Ticker Proxy</th><th>Role</th></tr></thead>
@@ -278,6 +270,15 @@
 
             <h4 style="color: #990099;">Aggressive (0/3/7/12/20)</h4>
             <p>Uses much tighter drawdown bounds: 3%, 7%, 12%, 20%. This means leverage kicks in <em>much earlier</em> during small dips. Good in volatile sideways markets but can over-leverage during prolonged declines. Includes the 20% safety net.</p>
+
+            <h4 style="color: #d95f02;">Aggressive Pure Equity</h4>
+            <p>Same tight bounds as Aggressive (3/7/12/20) but with 100% equity exposure. Maximum responsiveness to tiny dips.</p>
+
+            <h4 style="color: #7570b3;">Aggressive Ratchet</h4>
+            <p>Combines Aggressive bounds with the Ratchet lock-in. It aggressively buys every dip and refuses to sell until the next ATH. Includes the 20% safety net.</p>
+
+            <h4 style="color: #e7298a;">Aggressive Ratchet Pure</h4>
+            <p>The most hyper-aggressive portfolio in the tournament. Tightest bounds, Ratchet lock-in, and 100% equity exposure. Designed for maximum gain in grind-up markets, but extremely risky in volatile downturns.</p>
 
             <h4 style="color: #f2f2f2;">Conservative (0/10/20/35/50)</h4>
             <p>Uses very wide drawdown bounds: 10%, 20%, 35%, 50%. This "patient hunter" barely leverages up until a major crash occurs. Lower overall returns but excellent crash survival. Includes the 20% safety net.</p>
