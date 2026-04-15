@@ -49,13 +49,14 @@ function update() {
     const slicedDates = globalData.dates.slice(startIndex, endIndex + 1);
     const years = (new Date(end) - new Date(start)) / (1000 * 60 * 60 * 24 * 365.25);
     
-    const growthTraces = [];
+    const linearTraces = [];
+    const logTraces = [];
     const drawdownTraces = [];
     const volTraces = [];
     const yearlyTraces = [];
     const metricsArr = [];
 
-    const colors = ['#ff9900', '#00ffcc', '#dc3912', '#3366cc', '#ff00ff', '#109618', '#00bfff', '#990099', '#f2f2f2', '#8da0cb', '#66c2a5', '#fc8d62', '#e78ac3', '#a6d854'];
+    const colors = ['#ff9900', '#00ffcc', '#dc3912', '#3366cc', '#ff00ff', '#109618', '#00bfff', '#990099', '#f2f2f2', '#8da0cb', '#66c2a5', '#fc8d62', '#e78ac3', '#a6d854', '#ffd92f', '#e5c494', '#b3b3b3'];
     let colorIdx = 0;
 
     for (const [name, returns] of Object.entries(globalData.variants)) {
@@ -71,11 +72,8 @@ function update() {
         const ddSeries = [0.0];
         let sumReturn = 0;
         
-        // Rolling Vol Calculation (252 day window)
         const rollingVolSeries = [];
         const volWindow = 252;
-        
-        // Yearly Returns Storage
         const yearlyMap = {};
 
         for (let i = 0; i < slice.length; i++) {
@@ -92,7 +90,6 @@ function update() {
             ddSeries.push(dd);
             sumReturn += ret;
 
-            // Rolling Vol (Simple Std Dev)
             if (i >= volWindow) {
                 const windowReturns = slice.slice(i - volWindow, i);
                 const mean = windowReturns.reduce((a, b) => a + b, 0) / volWindow;
@@ -102,7 +99,6 @@ function update() {
                 rollingVolSeries.push(null);
             }
 
-            // Yearly aggregation
             if (!yearlyMap[year]) yearlyMap[year] = 1.0;
             yearlyMap[year] *= (1 + ret);
         }
@@ -117,51 +113,43 @@ function update() {
         const sharpe = (vol > 0.001) ? (cagr - 0.02) / vol : 0;
 
         metricsArr.push({
-            "Strategy": name,
-            "Total %": finalVal - 1,
-            "CAGR": cagr,
-            "Avg Ann Ret": avgAnnRet,
-            "Max DD": maxDD,
-            "Sharpe": sharpe,
-            "Ann. Vol": vol
+            "Strategy": name, "Total %": finalVal - 1, "CAGR": cagr, "Avg Ann Ret": avgAnnRet,
+            "Max DD": maxDD, "Sharpe": sharpe, "Ann. Vol": vol
         });
 
-        // 2. Add Traces
-        // Growth (Linear + Log)
-        growthTraces.push({
+        // 2. Add Traces (Unified Legend Group)
+        linearTraces.push({
             x: slicedDates, y: cumSeries.map(v => v - 1), name: name, legendgroup: name,
-            type: 'scatter', mode: 'lines', line: {color: color, width: width}, xaxis: 'x', yaxis: 'y1'
-        });
-        growthTraces.push({
-            x: slicedDates, y: cumSeries.map(v => Math.max(1e-6, v)), name: name, legendgroup: name,
-            type: 'scatter', mode: 'lines', line: {color: color, width: width}, xaxis: 'x', yaxis: 'y2', showlegend: false
+            type: 'scatter', mode: 'lines', line: {color: color, width: width}
         });
 
-        // Drawdown (Underwater)
+        logTraces.push({
+            x: slicedDates, y: cumSeries.map(v => Math.max(1e-6, v)), name: name, legendgroup: name,
+            type: 'scatter', mode: 'lines', line: {color: color, width: width}, showlegend: true
+        });
+
         drawdownTraces.push({
             x: slicedDates, y: ddSeries, name: name, legendgroup: name,
-            type: 'scatter', mode: 'lines', line: {color: color, width: 1.5}, fill: 'tonexty', showlegend: false
+            type: 'scatter', mode: 'lines', line: {color: color, width: 1.5}, fill: 'tonexty', showlegend: true
         });
 
-        // Rolling Volatility
         volTraces.push({
             x: slicedDates, y: rollingVolSeries, name: name, legendgroup: name,
-            type: 'scatter', mode: 'lines', line: {color: color, width: 1.5}, showlegend: false
+            type: 'scatter', mode: 'lines', line: {color: color, width: 1.5}, showlegend: true
         });
 
-        // Yearly Returns (Bar Chart)
         const yearLabels = Object.keys(yearlyMap).sort();
         const yearVals = yearLabels.map(y => yearlyMap[y] - 1);
         yearlyTraces.push({
             x: yearLabels, y: yearVals, name: name, legendgroup: name,
-            type: 'bar', marker: {color: color}, showlegend: false
+            type: 'bar', marker: {color: color}, showlegend: true
         });
 
         colorIdx++;
     }
 
     renderTable(metricsArr);
-    renderAdvancedCharts(growthTraces, drawdownTraces, volTraces, yearlyTraces);
+    renderAdvancedCharts(linearTraces, logTraces, drawdownTraces, volTraces, yearlyTraces);
 }
 
 // Sorting state
@@ -226,36 +214,42 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function renderAdvancedCharts(growthTraces, drawdownTraces, volTraces, yearlyTraces) {
+function renderAdvancedCharts(linearTraces, logTraces, drawdownTraces, volTraces, yearlyTraces) {
     const commonLayout = {
         template: 'plotly_dark',
         paper_bgcolor: 'rgba(0,0,0,0)',
         plot_bgcolor: 'rgba(0,0,0,0)',
-        margin: {l: 50, r: 20, t: 10, b: 40},
+        margin: {l: 50, r: 20, t: 80, b: 20}, // More top margin for legends
         hovermode: 'x unified',
         xaxis: { gridcolor: '#2c313c' },
-        yaxis: { gridcolor: '#2c313c', tickformat: '.1%' }
+        yaxis: { gridcolor: '#2c313c', tickformat: '.1%' },
+        legend: { orientation: 'h', y: 1.25, x: 0, font: { size: 10 } }
     };
 
-    // 1. Main Growth
-    const growthLayout = JSON.parse(JSON.stringify(commonLayout));
-    growthLayout.legend = { orientation: 'h', y: 1.1, x: 0 };
-    growthLayout.yaxis1 = { domain: [0.45, 1], title: 'Return (%)', tickformat: '.0%', gridcolor: '#2c313c' };
-    growthLayout.yaxis2 = { domain: [0, 0.38], type: 'log', title: 'Growth (Log)', gridcolor: '#2c313c' };
-    growthLayout.xaxis.anchor = 'y2';
-    Plotly.newPlot('chart-growth', growthTraces, growthLayout, {responsive: true});
+    // 1. Linear Performance
+    const linearLayout = JSON.parse(JSON.stringify(commonLayout));
+    linearLayout.yaxis.title = 'Return (%)';
+    linearLayout.yaxis.tickformat = '.0%';
+    Plotly.newPlot('chart-linear', linearTraces, linearLayout, {responsive: true});
 
-    // 2. Drawdown
+    // 2. Log Performance
+    const logLayout = JSON.parse(JSON.stringify(commonLayout));
+    logLayout.yaxis.title = 'Growth (Log Scale)';
+    logLayout.yaxis.type = 'log';
+    logLayout.yaxis.tickformat = '.1f';
+    Plotly.newPlot('chart-log', logTraces, logLayout, {responsive: true});
+
+    // 3. Drawdown
     const ddLayout = JSON.parse(JSON.stringify(commonLayout));
     ddLayout.yaxis.title = 'Drawdown (%)';
     Plotly.newPlot('chart-drawdown', drawdownTraces, ddLayout, {responsive: true});
 
-    // 3. Volatility
+    // 4. Volatility
     const volLayout = JSON.parse(JSON.stringify(commonLayout));
     volLayout.yaxis.title = '1-Year Vol (%)';
     Plotly.newPlot('chart-volatility', volTraces, volLayout, {responsive: true});
 
-    // 4. Yearly
+    // 5. Yearly
     const yearlyLayout = JSON.parse(JSON.stringify(commonLayout));
     yearlyLayout.yaxis.title = 'Yearly Return (%)';
     yearlyLayout.barmode = 'group';
