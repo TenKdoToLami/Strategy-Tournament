@@ -126,36 +126,53 @@ def get_precomputed_data():
         w_djp = daily_tiers.map(lambda x: map_weight(x, 'DJP'))
         w_bill = daily_tiers.map(lambda x: map_weight(x, 'BILL'))
         
+        # Calculate effective leverage multiplier: VOO=1x, SSO=2x, SPYU=4x
+        eff_lev = (w_voo * 1 + w_sso * 2 + w_spyu * 4)
+        
         strat_return = (w_voo * r_spy + w_sso * r_sso + w_spyu * r_spyu + w_djp * r_djp + w_bill * r_bill)
-        return strat_return.loc[SIM_START:]
+        return strat_return.loc[SIM_START:], eff_lev.loc[SIM_START:]
 
     print("Simulating variants...")
-    variants = {
-        'Benchmark SPY (1x)': r_spy.loc[SIM_START:],
-        'Benchmark SSO (2x)': r_sso.loc[SIM_START:],
-        'Benchmark SPYU (4x)': r_spyu.loc[SIM_START:],
-        
-        'Standard Daily Safeties': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', True),
-        'Standard Daily Pure': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', False),
-        'Standard Ratchet Safeties': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', True, is_ratchet=True),
-        'Standard Ratchet Pure': simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', False, is_ratchet=True),
-        
-        'Aggressive Daily Safeties': simulate_strategy([0.03, 0.07, 0.12, 0.20], 'Daily', True),
-        'Aggressive Daily Pure': simulate_strategy([0.03, 0.07, 0.12, 0.20], 'Daily', False),
-        'Aggressive Ratchet Safeties': simulate_strategy([0.03, 0.07, 0.12, 0.20], 'Daily', True, is_ratchet=True),
-        'Aggressive Ratchet Pure': simulate_strategy([0.03, 0.07, 0.12, 0.20], 'Daily', False, is_ratchet=True),
-        
-        'Conservative Daily Safeties': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', True),
-        'Conservative Daily Pure': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', False),
-        'Conservative Ratchet Safeties': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', True, is_ratchet=True),
-        'Conservative Ratchet Pure': simulate_strategy([0.10, 0.20, 0.35, 0.50], 'Daily', False, is_ratchet=True),
-    }
+    variants = {}
+    leverage = {}
+    
+    # Benchmarks
+    variants['Benchmark SPY (1x)'] = r_spy.loc[SIM_START:]
+    leverage['Benchmark SPY (1x)'] = pd.Series(1.0, index=variants['Benchmark SPY (1x)'].index)
+    
+    variants['Benchmark SSO (2x)'] = r_sso.loc[SIM_START:]
+    leverage['Benchmark SSO (2x)'] = pd.Series(2.0, index=variants['Benchmark SSO (2x)'].index)
+    
+    variants['Benchmark SPYU (4x)'] = r_spyu.loc[SIM_START:]
+    leverage['Benchmark SPYU (4x)'] = pd.Series(4.0, index=variants['Benchmark SPYU (4x)'].index)
+    
+    # Strategies helper
+    def add_strat(name, bounds, freq, safeties, ratchet=False):
+        r, l = simulate_strategy(bounds, freq, safeties, is_ratchet=ratchet)
+        variants[name] = r
+        leverage[name] = l
+
+    add_strat('Standard Daily Safeties', [0.05, 0.10, 0.20, 0.30], 'Daily', True)
+    add_strat('Standard Daily Pure', [0.05, 0.10, 0.20, 0.30], 'Daily', False)
+    add_strat('Standard Ratchet Safeties', [0.05, 0.10, 0.20, 0.30], 'Daily', True, True)
+    add_strat('Standard Ratchet Pure', [0.05, 0.10, 0.20, 0.30], 'Daily', False, True)
+    
+    add_strat('Aggressive Daily Safeties', [0.03, 0.07, 0.12, 0.20], 'Daily', True)
+    add_strat('Aggressive Daily Pure', [0.03, 0.07, 0.12, 0.20], 'Daily', False)
+    add_strat('Aggressive Ratchet Safeties', [0.03, 0.07, 0.12, 0.20], 'Daily', True, True)
+    add_strat('Aggressive Ratchet Pure', [0.03, 0.07, 0.12, 0.20], 'Daily', False, True)
+    
+    add_strat('Conservative Daily Safeties', [0.10, 0.20, 0.35, 0.50], 'Daily', True)
+    add_strat('Conservative Daily Pure', [0.10, 0.20, 0.35, 0.50], 'Daily', False)
+    add_strat('Conservative Ratchet Safeties', [0.10, 0.20, 0.35, 0.50], 'Daily', True, True)
+    add_strat('Conservative Ratchet Pure', [0.10, 0.20, 0.35, 0.50], 'Daily', False, True)
 
     # Convert to JSON structure
     dates = variants['Benchmark SPY (1x)'].index.strftime('%Y-%m-%d').tolist()
     data_out = {
         'dates': dates,
-        'variants': {name: values.tolist() for name, values in variants.items()}
+        'variants': {name: v.tolist() for name, v in variants.items()},
+        'leverage': {name: l.tolist() for name, l in leverage.items()}
     }
     
     with open('data.json', 'w') as f:

@@ -97,6 +97,7 @@ function update() {
     const drawdownTraces = [];
     const volTraces = [];
     const yearlyTraces = [];
+    const leverageTraces = [];
     const metricsArr = [];
 
     for (const [name, returns] of Object.entries(globalData.variants)) {
@@ -114,6 +115,7 @@ function update() {
         }
 
         const slice = returns.slice(startIndex, endIndex + 1);
+        const levSlice = globalData.leverage[name].slice(startIndex, endIndex + 1);
         const color = strategyColorMap[name];
         const width = (name.includes('Ratchet') || name.includes('Standard')) ? 3 : 1.5;
 
@@ -191,17 +193,21 @@ function update() {
             type: 'scatter', mode: 'lines', line: {color: color, width: 1.5}, showlegend: true
         });
 
+        leverageTraces.push({
+            x: slicedDates, y: levSlice, name: name, legendgroup: name,
+            type: 'scatter', mode: 'lines', line: {color: color, width: 2, shape: 'hv'}, showlegend: true
+        });
+
         const yearLabels = Object.keys(yearlyMap).sort();
         const yearVals = yearLabels.map(y => yearlyMap[y] - 1);
         yearlyTraces.push({
             x: yearLabels, y: yearVals, name: name, legendgroup: name,
             type: 'bar', marker: {color: color}, showlegend: true
         });
-
     }
 
     renderTable(metricsArr);
-    renderAdvancedCharts(linearTraces, logTraces, drawdownTraces, volTraces, yearlyTraces);
+    renderAdvancedCharts(linearTraces, logTraces, drawdownTraces, volTraces, yearlyTraces, leverageTraces);
 }
 
 // Sorting state
@@ -266,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-function renderAdvancedCharts(linearTraces, logTraces, drawdownTraces, volTraces, yearlyTraces) {
+function renderAdvancedCharts(linearTraces, logTraces, drawdownTraces, volTraces, yearlyTraces, leverageTraces) {
     const commonLayout = {
         template: 'plotly_dark',
         paper_bgcolor: 'rgba(0,0,0,0)',
@@ -307,6 +313,13 @@ function renderAdvancedCharts(linearTraces, logTraces, drawdownTraces, volTraces
     yearlyLayout.barmode = 'group';
     yearlyLayout.xaxis.tickangle = -45;
     Plotly.newPlot('chart-yearly', yearlyTraces, yearlyLayout, {responsive: true});
+
+    // 6. Leverage Progression
+    const levLayout = JSON.parse(JSON.stringify(commonLayout));
+    levLayout.yaxis.title = 'Effective Multiplier';
+    levLayout.yaxis.tickformat = '.1f';
+    levLayout.yaxis.range = [0.5, 4.5]; // Fixed range for better comparison
+    Plotly.newPlot('chart-leverage', leverageTraces, levLayout, {responsive: true});
 }
 
 init();
