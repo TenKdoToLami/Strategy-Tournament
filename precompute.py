@@ -146,6 +146,9 @@ def get_precomputed_data():
     variants['Benchmark SPYU (4x)'] = r_spyu.loc[SIM_START:]
     leverage['Benchmark SPYU (4x)'] = pd.Series(4.0, index=variants['Benchmark SPYU (4x)'].index)
     
+    variants['Benchmark DJP (1x)'] = r_djp.loc[SIM_START:]
+    leverage['Benchmark DJP (1x)'] = pd.Series(1.0, index=variants['Benchmark DJP (1x)'].index)
+    
     # Strategies helper
     def add_strat(name, bounds, freq, safeties, ratchet=False):
         r, l = simulate_strategy(bounds, freq, safeties, is_ratchet=ratchet)
