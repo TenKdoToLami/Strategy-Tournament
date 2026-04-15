@@ -155,19 +155,126 @@
         <div id="chart-container"></div>
 
         <div class="footer-guide">
-            <h2>Technical Strategy Specifications</h2>
-            <h3>1. The Ratchet Logic</h3>
-            <p>The "Ratchet" strategies lock in leverage during rebounds. If a crash hits -20% (Tier 3), it stays at Tier 3 leverage even if the market bounces. It only resets to Tier 0 once a <b>new All-Time High</b> is reached.</p>
-            
-            <h3>2. Asset Matrix (Tier 4 Weights)</h3>
-            <p><strong>Tier 4 (> -30% Drawdown)</strong>: 50% SSO (2x) / 50% SPYU (4x) = 3.0x Effective Leverage.</p>
-            
-            <h3>3. Calculation Methodology</h3>
-            <ul>
-                <li><strong>Leveraged Return</strong>: <code>(Leverage * SPX) - ((Leverage - 1) * RiskFreeRate)</code></li>
-                <li><strong>Volatility</strong>: Annualized daily standard deviation (Daily Std * sqrt(252)).</li>
-                <li><strong>Sharpe</strong>: (CAGR - 2%) / Annualized Volatility.</li>
-            </ul>
+            <h2>📘 Technical Strategy Specifications</h2>
+
+            <!-- Section 1: Overview -->
+            <h3>1. Overview &amp; Data Source</h3>
+            <p>This dashboard compares <strong>9 dynamic drawdown-based leveraging strategies</strong> against the S&amp;P 500. All simulations begin on <strong>July 1, 2002</strong> — chosen to capture the post-dot-com recovery, the 2008 financial crisis, the 2020 COVID crash, and the 2022 bear market. Data is refreshed automatically every night via GitHub Actions.</p>
+            <p>All returns are <strong>Total Return</strong> (dividends and interest reinvested). The data is sourced from Yahoo Finance using the following proxies:</p>
+            <table>
+                <thead><tr><th>Asset</th><th>Ticker Proxy</th><th>Role</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>VOO</strong> (S&amp;P 500)</td><td>SPY</td><td>1x Core Equity</td></tr>
+                    <tr><td><strong>SSO</strong> (2x S&amp;P 500)</td><td><em>Simulated</em></td><td>2x Leveraged Equity</td></tr>
+                    <tr><td><strong>SPYU</strong> (4x S&amp;P 500)</td><td><em>Simulated</em></td><td>4x Leveraged Equity</td></tr>
+                    <tr><td><strong>BILL</strong> (Treasury Bonds)</td><td>VFISX</td><td>Cash-equivalent safe haven</td></tr>
+                    <tr><td><strong>DJP</strong> (Commodities)</td><td>PCRIX</td><td>Inflation hedge</td></tr>
+                </tbody>
+            </table>
+            <p style="margin-top:10px; color: #8892b0;"><em>Leveraged returns are simulated as: <code>Return = (Leverage × SPY) − ((Leverage − 1) × VFISX)</code>. This models the real-world borrowing cost of maintaining a leveraged position.</em></p>
+
+            <!-- Section 2: Tier Matrices -->
+            <h3>2. Asset Allocation Tier Matrices</h3>
+            <p>Each strategy dynamically shifts its portfolio weights based on the <strong>previous day's drawdown</strong> (distance from All-Time High). This prevents look-ahead bias — you only act on yesterday's information.</p>
+
+            <h4 style="color: #00bfff; margin-top: 25px;">Standard Variants (20% Safety Net)</h4>
+            <p>These hold 10% Bonds + 10% Commodities in Tiers 0–3 as a volatility dampener.</p>
+            <table>
+                <thead><tr><th>Tier</th><th>Drawdown Range</th><th>VOO (1x)</th><th>SSO (2x)</th><th>SPYU (4x)</th><th>DJP</th><th>BILL</th><th>Eff. Leverage</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Safe (T0)</strong></td><td>0% to −5%</td><td>80%</td><td>0%</td><td>0%</td><td>10%</td><td>10%</td><td>~0.8x</td></tr>
+                    <tr><td><strong>T1</strong></td><td>−5% to −10%</td><td>60%</td><td>20%</td><td>0%</td><td>10%</td><td>10%</td><td>~1.0x</td></tr>
+                    <tr><td><strong>T2</strong></td><td>−10% to −20%</td><td>30%</td><td>25%</td><td>25%</td><td>10%</td><td>10%</td><td>~1.8x</td></tr>
+                    <tr><td><strong>T3</strong></td><td>−20% to −30%</td><td>10%</td><td>35%</td><td>35%</td><td>10%</td><td>10%</td><td>~2.2x</td></tr>
+                    <tr style="background-color: #1a2233;"><td><strong>T4</strong></td><td>&gt; −30%</td><td>0%</td><td>50%</td><td>50%</td><td>0%</td><td>0%</td><td><strong>3.0x</strong></td></tr>
+                </tbody>
+            </table>
+
+            <h4 style="color: #ff9900; margin-top: 25px;">Pure Equity Variants (No Safety Net)</h4>
+            <p>100% equity allocation at all times. Higher returns during bull markets, higher risk during crashes.</p>
+            <table>
+                <thead><tr><th>Tier</th><th>Drawdown Range</th><th>VOO (1x)</th><th>SSO (2x)</th><th>SPYU (4x)</th><th>DJP</th><th>BILL</th><th>Eff. Leverage</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Safe (T0)</strong></td><td>0% to −5%</td><td>100%</td><td>0%</td><td>0%</td><td>0%</td><td>0%</td><td>1.0x</td></tr>
+                    <tr><td><strong>T1</strong></td><td>−5% to −10%</td><td>75%</td><td>25%</td><td>0%</td><td>0%</td><td>0%</td><td>1.25x</td></tr>
+                    <tr><td><strong>T2</strong></td><td>−10% to −20%</td><td>38%</td><td>31%</td><td>31%</td><td>0%</td><td>0%</td><td>~1.9x</td></tr>
+                    <tr><td><strong>T3</strong></td><td>−20% to −30%</td><td>12%</td><td>44%</td><td>44%</td><td>0%</td><td>0%</td><td>~2.6x</td></tr>
+                    <tr style="background-color: #1a2233;"><td><strong>T4</strong></td><td>&gt; −30%</td><td>0%</td><td>50%</td><td>50%</td><td>0%</td><td>0%</td><td><strong>3.0x</strong></td></tr>
+                </tbody>
+            </table>
+
+            <!-- Section 3: Strategy Descriptions -->
+            <h3>3. Individual Strategy Descriptions</h3>
+
+            <h4 style="color: #3366cc;">Standard (0/5/10/20/30)</h4>
+            <p>The baseline dynamic strategy. Uses the standard tier matrix above with drawdown bounds at 5%, 10%, 20%, and 30%. Rebalances <strong>daily</strong>. Includes the 20% safety net (Bonds + Commodities). This is the "balanced workhorse" — designed to capture crash recoveries while limiting downside via diversification.</p>
+
+            <h4 style="color: #ff00ff;">Ratchet Standard</h4>
+            <p>Same tier matrix as Standard, but with <strong>path-dependent lock-in logic</strong>. Once the market crashes and the strategy enters a higher tier (e.g., Tier 3 at −20%), it <em>refuses to de-leverage</em> even if the market bounces to −5%. It only resets to Tier 0 when a <strong>brand new All-Time High (0% drawdown)</strong> is reached. This captures the full recovery rally without prematurely reducing exposure.</p>
+
+            <h4 style="color: #109618;">Ratchet Pure Equity</h4>
+            <p>Same ratchet lock-in logic, but with 100% equities (no bonds/commodities). Maximum aggression during recoveries. Highest potential return but also the most volatile.</p>
+
+            <h4 style="color: #00bfff;">Pure Equities (No Bonds)</h4>
+            <p>Standard de-leverage logic (no ratchet), but with no safety net. 100% allocated to equities at all times. Compare this to "Standard" to see the impact of the 20% bond/commodity buffer.</p>
+
+            <h4 style="color: #990099;">Aggressive (0/3/7/12/20)</h4>
+            <p>Uses much tighter drawdown bounds: 3%, 7%, 12%, 20%. This means leverage kicks in <em>much earlier</em> during small dips. Good in volatile sideways markets but can over-leverage during prolonged declines. Includes the 20% safety net.</p>
+
+            <h4 style="color: #f2f2f2;">Conservative (0/10/20/35/50)</h4>
+            <p>Uses very wide drawdown bounds: 10%, 20%, 35%, 50%. This "patient hunter" barely leverages up until a major crash occurs. Lower overall returns but excellent crash survival. Includes the 20% safety net.</p>
+
+            <h4 style="color: #ff9900;">S&amp;P 500 (1x Benchmark)</h4>
+            <p>Buy-and-hold the S&amp;P 500 index. No leverage, no rebalancing. This is the baseline that every strategy must beat to justify its complexity.</p>
+
+            <h4 style="color: #00ffcc;">SSO (2x Benchmark)</h4>
+            <p>Simulated static 2x daily leverage on the S&amp;P 500, including borrowing costs. Demonstrates the effect of constant leverage and daily compounding drag during volatile periods.</p>
+
+            <h4 style="color: #dc3912;">SPYU (4x Benchmark)</h4>
+            <p>Simulated static 4x daily leverage. Extremely volatile. In strong bull markets it massively outperforms, but in crashes it can lose 90%+. Included to show why <em>dynamic</em> leverage management matters.</p>
+
+            <!-- Section 4: Rebalancing -->
+            <h3>4. Rebalancing Rules</h3>
+            <table>
+                <thead><tr><th>Frequency</th><th>How It Works</th><th>Trade-Off</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Daily</strong></td><td>Recalculates drawdown and shifts weights every business day.</td><td>Most responsive, but highest transaction cost in practice.</td></tr>
+                    <tr><td><strong>Monthly</strong></td><td>Samples the drawdown signal on the last trading day of each month. Locks that tier for the entire next month.</td><td>Lower costs, but can miss intra-month moves.</td></tr>
+                    <tr><td><strong>Ratchet</strong></td><td>Locks in the <em>highest</em> tier reached. Never de-leverages until a new ATH. SMA override still applies for safety.</td><td>Maximum recovery capture, but stays leveraged during false bounces.</td></tr>
+                </tbody>
+            </table>
+
+            <!-- Section 5: Risk Controls -->
+            <h3>5. Risk Controls</h3>
+            <h4 style="color: #ff4444;">Trend Filter (200-day SMA)</h4>
+            <p>If the S&amp;P 500 price closes <strong>below its 200-day Simple Moving Average</strong>, all strategies automatically revert to the <strong>Safe Tier (T0)</strong>. This overrides both the drawdown tiers <em>and</em> the ratchet lock-in. The 200-day SMA is the most widely used long-term trend indicator — being below it signals a structural bear market where leverage is dangerous.</p>
+            <h4 style="color: #ff4444;">Look-Ahead Bias Prevention</h4>
+            <p>All signals (drawdown level, SMA comparison) use the <strong>previous day's close</strong> via <code>shift(1)</code>. This ensures that every trade decision is made using only information that was available at the time — no "future peeking."</p>
+
+            <!-- Section 6: KPI Definitions -->
+            <h3>6. Performance Indicators (KPIs) — What Each Column Means</h3>
+            <table>
+                <thead><tr><th>Indicator</th><th>Formula</th><th>What It Tells You</th></tr></thead>
+                <tbody>
+                    <tr><td><strong>Total %</strong></td><td>(Final Value ÷ Initial Value) − 1</td><td>The raw percentage growth of $1 invested on day 1. A value of 500% means $1 became $6.</td></tr>
+                    <tr><td><strong>CAGR</strong></td><td>Final<sup>(1/Years)</sup> − 1</td><td><strong>Compound Annual Growth Rate</strong>. The "smoothed" yearly return assuming gains are reinvested. This is the single most useful number for comparing strategies across different time periods.</td></tr>
+                    <tr><td><strong>Avg Ann Ret</strong></td><td>Mean(Daily Returns) × 252</td><td><strong>Average Annual Return</strong>. The arithmetic mean of daily returns, annualized. Usually higher than CAGR due to the effect of volatility drag. The gap between this and CAGR reveals how much compounding cost you.</td></tr>
+                    <tr><td><strong>Max DD</strong></td><td>Min((Value − Peak) ÷ Peak)</td><td><strong>Maximum Drawdown</strong>. The deepest single peak-to-trough decline. This is the worst-case pain you would have experienced. A value of −60% means your portfolio lost 60% from its highest point.</td></tr>
+                    <tr><td><strong>Sharpe</strong></td><td>(CAGR − 2%) ÷ Ann. Vol</td><td><strong>Sharpe Ratio</strong>. Risk-adjusted return. Measures how much excess return you earn per unit of risk. Values above <strong>0.5</strong> are decent; above <strong>1.0</strong> is excellent. We use 2% as the risk-free rate.</td></tr>
+                    <tr><td><strong>Ann. Vol</strong></td><td>Std(Daily Returns) × √252</td><td><strong>Annualized Volatility</strong>. How wildly the portfolio swings day-to-day, expressed as a yearly percentage. The S&amp;P 500 typically has ~19% vol. A 4x strategy can exceed 75%.</td></tr>
+                </tbody>
+            </table>
+
+            <!-- Section 7: How to Use -->
+            <h3>7. How to Use This Dashboard</h3>
+            <ol style="line-height: 2;">
+                <li><strong>Select a date range</strong> using the date pickers at the top. The charts and metrics will instantly recalculate for that window.</li>
+                <li><strong>Click any column header</strong> in the leaderboard table to sort by that metric (e.g., click "CAGR" to rank strategies by annualized return).</li>
+                <li><strong>Top chart (Linear %)</strong>: Shows cumulative return as a simple percentage. Best for comparing final outcomes.</li>
+                <li><strong>Bottom chart (Log Scale)</strong>: Shows growth on a logarithmic scale. Best for comparing relative performance across time — a straight line means consistent compounding.</li>
+                <li><strong>Hover over lines</strong> to see exact values at any point in time.</li>
+                <li><strong>Use the Reset button</strong> to return to the full historical view.</li>
+            </ol>
         </div>
     </div>
 
