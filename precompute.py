@@ -11,7 +11,7 @@ TICKERS = {
     'DJP': 'PCRIX'
 }
 SIM_START = '2002-07-01'
-PRIME_START = '2000-01-01'
+PRIME_START = '2002-07-01'
 
 def fetch_single(ticker, start, retries=3):
     """Download a single ticker with retries to handle yfinance lock errors on CI."""
