@@ -83,8 +83,10 @@ def get_precomputed_data():
         days = (raw_df.index - raw_df.index[0]).days
         inflation_levels = pd.Series(np.exp(days * np.log(1.025) / 365.25), index=raw_df.index)
 
-    def simulate_strategy(bounds, rebalance_freq='Daily', include_safeties=True, use_trend_filter=True, is_ratchet=False):
-        if include_safeties:
+    def simulate_strategy(bounds, rebalance_freq='Daily', include_safeties=True, use_trend_filter=True, is_ratchet=False, custom_weights=None):
+        if custom_weights is not None:
+            weights = custom_weights
+        elif include_safeties:
             weights = [
                 {'VOO': 0.80, 'SSO': 0.00, 'SPYU': 0.00, 'DJP': 0.10, 'BILL': 0.10}, 
                 {'VOO': 0.60, 'SSO': 0.20, 'SPYU': 0.00, 'DJP': 0.10, 'BILL': 0.10},
@@ -186,6 +188,36 @@ def get_precomputed_data():
     add_strat('Conservative Daily Pure', [0.10, 0.20, 0.35, 0.50], 'Daily', False)
     add_strat('Conservative Ratchet Safeties', [0.10, 0.20, 0.35, 0.50], 'Daily', True, True)
     add_strat('Conservative Ratchet Pure', [0.10, 0.20, 0.35, 0.50], 'Daily', False, True)
+
+    # Hall of Fame Special Variants (Optimized)
+    def add_special(name, weights, ratchet):
+        r, l = simulate_strategy([0.05, 0.10, 0.20, 0.30], 'Daily', False, is_ratchet=ratchet, custom_weights=weights)
+        variants[name] = r
+        leverage[name] = l
+
+    add_special('Special BEAST', [
+        {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.7, 'BILL': 0.3},
+        {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.9, 'DJP': 0.0, 'BILL': 0.1},
+        {'VOO': 0.7, 'SSO': 0.0, 'SPYU': 0.1, 'DJP': 0.0, 'BILL': 0.2},
+        {'VOO': 0.1, 'SSO': 0.1, 'SPYU': 0.7, 'DJP': 0.1, 'BILL': 0.0},
+        {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.5, 'DJP': 0.5, 'BILL': 0.0}
+    ], False)
+
+    add_special('Special SCALPEL', [
+        {'VOO': 0.0, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.9},
+        {'VOO': 0.1, 'SSO': 0.0, 'SPYU': 0.7, 'DJP': 0.2, 'BILL': 0.0},
+        {'VOO': 0.6, 'SSO': 0.3, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.0},
+        {'VOO': 0.4, 'SSO': 0.4, 'SPYU': 0.1, 'DJP': 0.1, 'BILL': 0.0},
+        {'VOO': 0.7, 'SSO': 0.0, 'SPYU': 0.2, 'DJP': 0.1, 'BILL': 0.0}
+    ], True)
+
+    add_special('Special SHIELD', [
+        {'VOO': 0.1, 'SSO': 0.0, 'SPYU': 0.0, 'DJP': 0.1, 'BILL': 0.8},
+        {'VOO': 0.2, 'SSO': 0.2, 'SPYU': 0.5, 'DJP': 0.0, 'BILL': 0.1},
+        {'VOO': 0.3, 'SSO': 0.1, 'SPYU': 0.1, 'DJP': 0.4, 'BILL': 0.1},
+        {'VOO': 0.1, 'SSO': 0.6, 'SPYU': 0.0, 'DJP': 0.2, 'BILL': 0.1},
+        {'VOO': 0.1, 'SSO': 0.4, 'SPYU': 0.1, 'DJP': 0.0, 'BILL': 0.4}
+    ], True)
 
     # Convert to JSON structure
     dates = variants['Benchmark SPY (1x)'].index.strftime('%Y-%m-%d').tolist()

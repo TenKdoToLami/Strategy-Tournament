@@ -1,6 +1,6 @@
 // Filter State
 const activeFilters = {
-    level: ['Benchmark', 'Standard', 'Aggressive', 'Conservative'],
+    level: ['Benchmark', 'Special', 'Standard', 'Aggressive', 'Conservative'],
     logic: ['Daily', 'Ratchet'],
     mix: ['Safeties', 'Pure']
 };
@@ -20,7 +20,10 @@ const benchmarkColors = {
     'Benchmark SSO (2x)': '#ff4d4d',      // Red-Orange
     'Benchmark SPYU (4x)': '#cc0000',      // Deep Red
     'Benchmark DJP (1x)': '#00cc99',       // Teal
-    'Inflation (CPI)': '#8892b0'           // Gray
+    'Inflation (CPI)': '#8892b0',          // Gray
+    'Special BEAST': '#ff00ff',            // Neon Magenta
+    'Special SCALPEL': '#00f5ff',          // Electric Cyan
+    'Special SHIELD': '#ffd700'            // Sun Gold
 };
 
 function getAdaptiveColor(index, total) {
@@ -167,6 +170,9 @@ function parseStrategy(name) {
     if (name.startsWith('Benchmark')) {
         return { level: 'Benchmark', logic: 'Daily', mix: 'Safeties' };
     }
+    if (name.startsWith('Special')) {
+        return { level: 'Special', logic: 'Daily', mix: 'Safeties' };
+    }
     const parts = name.split(' ');
     // Format: "Level Logic Mix" e.g. "Standard Ratchet Pure"
     return {
@@ -309,8 +315,8 @@ function update() {
             meta = { level: 'Lab', logic: 'Custom', mix: 'User' };
         } else {
             meta = parseStrategy(name);
-            if (meta.level === 'Benchmark') {
-                if (!activeFilters.level.includes('Benchmark')) continue;
+            if (meta.level === 'Benchmark' || meta.level === 'Special') {
+                if (!activeFilters.level.includes(meta.level)) continue;
                 color = benchmarkColors[name];
             } else {
                 if (!activeFilters.level.includes(meta.level)) continue;
