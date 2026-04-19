@@ -503,22 +503,83 @@ function resetLabResults() {
 }
 
 // ── Simulator ───────────────────────────────────────────────────────
+// ── Simulator ───────────────────────────────────────────────────────
 function updateSimulator() {
     const dd = parseFloat(document.getElementById('drawdown-slider').value);
     document.getElementById('drawdown-value').textContent = `-${dd}%`;
-    const b1 = parseFloat(document.getElementById('lab-b1').value);
-    const b2 = parseFloat(document.getElementById('lab-b2').value);
-    const b3 = parseFloat(document.getElementById('lab-b3').value);
-    const b4 = parseFloat(document.getElementById('lab-b4').value);
+    const simPicker = document.getElementById('sim-strategy-picker');
+    const selectedName = simPicker.value || Object.keys(STRATEGY_MAP)[0];
+    const entry = STRATEGY_MAP[selectedName] || { 
+        bounds: [0.05, 0.1, 0.2, 0.3], 
+        weights: [[100,0,0,0,0],[50,50,0,0,0],[0,100,0,0,0],[0,50,50,0,0],[0,0,100,0,0]], 
+        params: { logic: 'Daily' } 
+    };
+    const b = entry.bounds;
+    const isRatchet = (entry.params && entry.params.logic === 'Ratchet') || entry.logic === 'Ratchet';
+    
     let dailyTier = 0;
-    if (dd >= b4) dailyTier = 4; else if (dd >= b3) dailyTier = 3; else if (dd >= b2) dailyTier = 2; else if (dd >= b1) dailyTier = 1;
-    if (dd === 0) simMaxTierReached = 0; else if (dailyTier > simMaxTierReached) simMaxTierReached = dailyTier;
+    if (dd >= b[3]*100) dailyTier = 4; 
+    else if (dd >= b[2]*100) dailyTier = 3; 
+    else if (dd >= b[1]*100) dailyTier = 2; 
+    else if (dd >= b[0]*100) dailyTier = 1;
+    
+    if (dd === 0) simMaxTierReached = 0; 
+    else if (dailyTier > simMaxTierReached) simMaxTierReached = dailyTier;
+
+    const effectiveTier = isRatchet ? simMaxTierReached : dailyTier;
+
     document.getElementById('sim-daily-state').textContent = `Tier ${dailyTier}`;
     document.getElementById('sim-ratchet-state').textContent = `Tier ${simMaxTierReached}`;
-    document.querySelectorAll('.flow-node').forEach(n => n.classList.remove('active'));
-    document.querySelectorAll('.flow-path').forEach(p => p.classList.remove('active'));
-    document.getElementById(`node-${dailyTier}`).classList.add('active');
-    for (let i = 0; i < dailyTier; i++) document.getElementById(`path-${i}-${i + 1}`).classList.add('active');
+
+    // Update Daily Tower Highlights (Always Spot/Daily logic)
+    document.querySelectorAll('#flow-svg-daily .flow-node').forEach(n => {
+        n.classList.remove('active-market', 'active-execution');
+        const id = parseInt(n.id.replace('node-daily-', ''));
+        if (id === dailyTier) n.classList.add('active-market');
+    });
+    document.querySelectorAll('#flow-svg-daily .flow-path').forEach(p => p.classList.remove('active'));
+    for (let i = 0; i < dailyTier; i++) {
+        const p = document.getElementById(`path-daily-${i}-${i + 1}`);
+        if (p) p.classList.add('active');
+    }
+
+    // Update Ratchet Tower Highlights (Always Ratchet/Max logic)
+    document.querySelectorAll('#flow-svg-ratchet .flow-node').forEach(n => {
+        n.classList.remove('active-market', 'active-execution');
+        const id = parseInt(n.id.replace('node-ratchet-', ''));
+        if (id === simMaxTierReached) n.classList.add('active-execution');
+    });
+    document.querySelectorAll('#flow-svg-ratchet .flow-path').forEach(p => p.classList.remove('active'));
+    for (let i = 0; i < simMaxTierReached; i++) {
+        const p = document.getElementById(`path-ratchet-${i}-${i + 1}`);
+        if (p) p.classList.add('active');
+    }
+
+    // Render Execution Matrix
+    const matrixContainer = document.getElementById('sim-allocation-matrix');
+    if (matrixContainer) {
+        let tableHtml = `<table class="excel-table" style="width:100%"><thead><tr><th>Tier</th><th>VOO</th><th>SSO</th><th>SPYU</th><th>DJP</th><th>BILL</th><th>Total</th><th>Lev</th></tr></thead><tbody>`;
+        entry.weights.forEach((w, i) => {
+            const factor = w.reduce((s, v) => s + v, 0) < 2.0 ? 100 : 1;
+            const lev = (w[0] * 1 + w[1] * 2 + w[2] * 4 + w[3] * 1) / (factor === 1 ? 100 : 1);
+            const sum = w.reduce((s, v) => s + v, 0) * (factor);
+            const isEff = (i === effectiveTier);
+            const isDaily = (i === dailyTier && !isEff);
+            
+            tableHtml += `<tr class="${isEff ? 'active-execution' : ''} ${isDaily ? 'active-market' : ''}">
+                <td class="tier-label">T${i}</td>
+                <td><input type="text" readonly value="${(w[0] * factor).toFixed(0)}%"></td>
+                <td><input type="text" readonly value="${(w[1] * factor).toFixed(0)}%"></td>
+                <td><input type="text" readonly value="${(w[2] * factor).toFixed(0)}%"></td>
+                <td><input type="text" readonly value="${(w[3] * factor).toFixed(0)}%"></td>
+                <td><input type="text" readonly value="${(w[4] * factor).toFixed(0)}%"></td>
+                <td class="sum-cell" style="background:transparent; color:${Math.abs(sum-100) < 0.1 ? 'var(--green)' : 'var(--red)'}">${sum.toFixed(0)}%</td>
+                <td style="font-weight:700; color:var(--text-primary)">${lev.toFixed(2)}x</td>
+            </tr>`;
+        });
+        tableHtml += '</tbody></table>';
+        matrixContainer.innerHTML = tableHtml;
+    }
 }
 
 // ── Tab Switching ───────────────────────────────────────────────────
@@ -549,16 +610,21 @@ async function init() {
         const picker = document.getElementById('explorer-picker');
         const comparePicker = document.getElementById('explorer-compare-picker');
         const labCompare = document.getElementById('lab-compare-picker');
+        const simPicker = document.getElementById('sim-strategy-picker');
 
         Object.keys(globalData.variants).sort().forEach(name => {
             const opt = document.createElement('option'); opt.value = opt.textContent = name; picker.appendChild(opt);
             const opt2 = document.createElement('option'); opt2.value = opt2.textContent = name; comparePicker.appendChild(opt2);
             const opt3 = document.createElement('option'); opt3.value = opt3.textContent = name; labCompare.appendChild(opt3);
+            if (simPicker) {
+                const opt4 = document.createElement('option'); opt4.value = opt4.textContent = name; simPicker.appendChild(opt4);
+            }
         });
 
         picker.onchange = updateExplorer;
         comparePicker.onchange = updateExplorer;
         labCompare.onchange = updateLabResults;
+        if (simPicker) simPicker.onchange = updateSimulator;
 
         startInput.onchange = update;
         endInput.onchange = update;

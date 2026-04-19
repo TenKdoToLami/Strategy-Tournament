@@ -342,64 +342,104 @@
             <!-- TAB: Simulator -->
             <div id="tab-simulator" class="tab-content">
                 <section class="sim-container">
-                    <div class="sim-controls">
+                    <div class="sim-sidebar">
                         <div class="sim-slider-box">
                             <h3 class="chart-title">Drawdown Simulator</h3>
                             <p class="chart-subtitle">Adjust current market drawdown to see logic transitions.</p>
-                            <input type="range" id="drawdown-slider" min="0" max="60" value="0" step="1">
-                            <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.8rem; font-weight: 700;">
+                            
+                            <div class="sim-strategy-select">
+                                <label class="tier-label">Strategy Template</label>
+                                <select id="sim-strategy-picker" class="btn-ghost" style="width:100%; text-align:left;">
+                                    <!-- Populated by JS -->
+                                </select>
+                            </div>
+
+                            <input type="range" id="drawdown-slider" min="0" max="100" value="0" step="1" style="width:100%; margin: 16px 0;">
+                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700;">
                                 <span>0% (ATH)</span>
-                                <span id="drawdown-value">0%</span>
-                                <span>-60%</span>
+                                <span id="drawdown-value" style="color:var(--accent)">-0%</span>
+                                <span>-100%</span>
                             </div>
                         </div>
 
-                        <div class="card">
-                            <h4 class="tier-label" style="color:var(--accent)">Active Decision</h4>
-                            <div style="font-size: 0.9rem; margin-bottom: 12px; line-height: 1.4;">
-                                <strong>Daily Logic:</strong> <span id="sim-daily-state">Tier 0</span><br>
-                                <span style="color:var(--text-muted)">Changes daily based on spot DD.</span>
+                        <div class="card decision-engine">
+                            <h4 class="tier-label" style="color:var(--accent)">Decision Engine</h4>
+                            <div class="decision-row">
+                                <div class="decision-item">
+                                    <div class="label">Daily Logic</div>
+                                    <div class="value" id="sim-daily-state">Tier 0</div>
+                                </div>
+                                <div class="decision-item">
+                                    <div class="label">Ratchet Logic</div>
+                                    <div class="value highlight" id="sim-ratchet-state">Tier 0</div>
+                                </div>
                             </div>
-                            <div style="font-size: 0.9rem; line-height: 1.4;">
-                                <strong>Ratchet Logic:</strong> <span id="sim-ratchet-state">Tier 0</span><br>
-                                <span style="color:var(--text-muted)">Locks highest tier until new ATH.</span>
-                            </div>
+                            <p style="font-size: 0.75rem; color:var(--text-muted); margin-top: 12px; line-height: 1.4;">
+                                <strong>Execution:</strong> Highlights describe the active portfolio state currently deployed.
+                            </p>
                         </div>
                     </div>
 
-                    <div class="flowchart-container">
-                        <svg id="flow-svg" viewBox="0 0 500 500">
-                            <!-- States (Circles) -->
-                            <path class="flow-path" d="M 250,50 L 250,130" id="path-0-1"></path>
-                            <path class="flow-path" d="M 250,130 L 250,210" id="path-1-2"></path>
-                            <path class="flow-path" d="M 250,210 L 250,290" id="path-2-3"></path>
-                            <path class="flow-path" d="M 250,290 L 250,370" id="path-3-4"></path>
-                            
-                            <!-- State Nodes -->
-                            <circle class="flow-node active" cx="250" cy="50" r="25" id="node-0"></circle>
-                            <text class="flow-text" x="250" y="54" text-anchor="middle">T0</text>
-                            <text class="flow-text" x="285" y="54" style="font-size: 0.7rem; fill:var(--text-muted)">0% - 5%</text>
-                            
-                            <circle class="flow-node" cx="250" cy="130" r="25" id="node-1"></circle>
-                            <text class="flow-text" x="250" y="134" text-anchor="middle">T1</text>
-                            <text class="flow-text" x="285" y="134" style="font-size: 0.7rem; fill:var(--text-muted)">5% - 10%</text>
+                    <div class="sim-main-stage">
+                        <div class="sim-stage-header">
+                            <!-- DAILY LOGIC TOWER -->
+                            <div class="flowchart-container">
+                                <div class="flow-tower-label" style="color:var(--text-muted)">Daily Logic</div>
+                                <svg class="flow-tower-svg" viewBox="200 20 100 400" id="flow-svg-daily">
+                                    <path class="flow-path" d="M 250,50 L 250,130" id="path-daily-0-1"></path>
+                                    <path class="flow-path" d="M 250,130 L 250,210" id="path-daily-1-2"></path>
+                                    <path class="flow-path" d="M 250,210 L 250,290" id="path-daily-2-3"></path>
+                                    <path class="flow-path" d="M 250,290 L 250,370" id="path-daily-3-4"></path>
+                                    
+                                    <circle class="flow-node" cx="250" cy="50" r="22" id="node-daily-0"></circle>
+                                    <text class="flow-text" x="250" y="54" text-anchor="middle" style="font-size:12px; font-weight:bold;">T0</text>
+                                    
+                                    <circle class="flow-node" cx="250" cy="130" r="22" id="node-daily-1"></circle>
+                                    <text class="flow-text" x="250" y="134" text-anchor="middle" style="font-size:12px; font-weight:bold;">T1</text>
 
-                            <circle class="flow-node" cx="250" cy="210" r="25" id="node-2"></circle>
-                            <text class="flow-text" x="250" y="214" text-anchor="middle">T2</text>
-                            <text class="flow-text" x="285" y="214" style="font-size: 0.7rem; fill:var(--text-muted)">10% - 20%</text>
+                                    <circle class="flow-node" cx="250" cy="210" r="22" id="node-daily-2"></circle>
+                                    <text class="flow-text" x="250" y="214" text-anchor="middle" style="font-size:12px; font-weight:bold;">T2</text>
 
-                            <circle class="flow-node" cx="250" cy="290" r="25" id="node-3"></circle>
-                            <text class="flow-text" x="250" y="294" text-anchor="middle">T3</text>
-                            <text class="flow-text" x="285" y="294" style="font-size: 0.7rem; fill:var(--text-muted)">20% - 30%</text>
+                                    <circle class="flow-node" cx="250" cy="290" r="22" id="node-daily-3"></circle>
+                                    <text class="flow-text" x="250" y="294" text-anchor="middle" style="font-size:12px; font-weight:bold;">T3</text>
 
-                            <circle class="flow-node" cx="250" cy="370" r="25" id="node-4"></circle>
-                            <text class="flow-text" x="250" y="374" text-anchor="middle">T4</text>
-                            <text class="flow-text" x="285" y="374" style="font-size: 0.7rem; fill:var(--text-muted)">> 30%</text>
-                            
-                            <!-- Reverse Paths -->
-                            <path class="flow-path" d="M 230,130 Q 180,90 230,50" style="stroke-dasharray: 4;"></path>
-                            <text class="flow-text" x="160" y="94" style="font-size: 0.6rem;">Recovery (Daily only)</text>
-                        </svg>
+                                    <circle class="flow-node" cx="250" cy="370" r="22" id="node-daily-4"></circle>
+                                    <text class="flow-text" x="250" y="374" text-anchor="middle" style="font-size:12px; font-weight:bold;">T4</text>
+                                </svg>
+                            </div>
+
+                            <!-- RATCHET LOGIC TOWER -->
+                            <div class="flowchart-container">
+                                <div class="flow-tower-label" style="color:var(--accent)">Ratchet Logic</div>
+                                <svg class="flow-tower-svg" viewBox="200 20 100 400" id="flow-svg-ratchet">
+                                    <path class="flow-path" d="M 250,50 L 250,130" id="path-ratchet-0-1"></path>
+                                    <path class="flow-path" d="M 250,130 L 250,210" id="path-ratchet-1-2"></path>
+                                    <path class="flow-path" d="M 250,210 L 250,290" id="path-ratchet-2-3"></path>
+                                    <path class="flow-path" d="M 250,290 L 250,370" id="path-ratchet-3-4"></path>
+                                    
+                                    <circle class="flow-node" cx="250" cy="50" r="22" id="node-ratchet-0"></circle>
+                                    <text class="flow-text" x="250" y="54" text-anchor="middle" style="font-size:12px; font-weight:bold;">T0</text>
+                                    
+                                    <circle class="flow-node" cx="250" cy="130" r="22" id="node-ratchet-1"></circle>
+                                    <text class="flow-text" x="250" y="134" text-anchor="middle" style="font-size:12px; font-weight:bold;">T1</text>
+
+                                    <circle class="flow-node" cx="250" cy="210" r="22" id="node-ratchet-2"></circle>
+                                    <text class="flow-text" x="250" y="214" text-anchor="middle" style="font-size:12px; font-weight:bold;">T2</text>
+
+                                    <circle class="flow-node" cx="250" cy="290" r="22" id="node-ratchet-3"></circle>
+                                    <text class="flow-text" x="250" y="294" text-anchor="middle" style="font-size:12px; font-weight:bold;">T3</text>
+
+                                    <circle class="flow-node" cx="250" cy="370" r="22" id="node-ratchet-4"></circle>
+                                    <text class="flow-text" x="250" y="374" text-anchor="middle" style="font-size:12px; font-weight:bold;">T4</text>
+                                </svg>
+                            </div>
+
+                            <div class="card matrix-card">
+                                <div id="sim-allocation-matrix" style="height: 100%;">
+                                    <!-- High-fidelity Table injected here -->
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </section>
             </div>
