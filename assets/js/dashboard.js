@@ -5,6 +5,82 @@
 
 'use strict';
 
+// ── Tooltip Engine ──────────────────────────────────────────────────
+function initTooltipEngine(chartIds) {
+    const tooltip = document.getElementById('chart-tooltip');
+    
+    chartIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || el.dataset.tooltipInitialized) return;
+        el.dataset.tooltipInitialized = 'true';
+
+        el.on('plotly_hover', data => {
+            const pt = data.points[0];
+            const date = pt.x;
+            const xIdx = pt.pointIndex;
+            
+            // Extract data directly from the chart's visible traces
+            const items = el.data
+                .filter(trace => trace.name && trace.hoverinfo !== 'skip')
+                .map(trace => {
+                    let val = trace.y[xIdx];
+                    // Handle log scale or return percentages
+                    let displayVal = "";
+                    const layout = el.layout || {};
+                    const isPct = (layout.yaxis && layout.yaxis.tickformat === '.0%') || (layout.yaxis && layout.yaxis.tickformat === '.1%');
+                    
+                    if (val === null || val === undefined) return null;
+                    
+                    if (isPct) displayVal = (val * 100).toFixed(1) + '%';
+                    else if (layout.yaxis && layout.yaxis.type === 'log') displayVal = val.toFixed(2);
+                    else displayVal = val.toFixed(2) + (id.includes('leverage') ? 'x' : '');
+
+                    return { 
+                        name: trace.name, 
+                        val: val, 
+                        displayVal: displayVal,
+                        color: (trace.line ? trace.line.color : (trace.marker ? trace.marker.color : '#fff'))
+                    };
+                })
+                .filter(x => x !== null);
+
+            // Sort DESC by value for better readability
+            items.sort((a, b) => b.val - a.val);
+
+            // Render
+            let html = `<div class="tooltip-date">${date}</div>`;
+            items.forEach(item => {
+                html += `
+                    <div class="tooltip-item">
+                        <div class="tooltip-name-group">
+                            <div class="tooltip-dot" style="background:${item.color}"></div>
+                            <span>${item.name}</span>
+                        </div>
+                        <span class="tooltip-value">${item.displayVal}</span>
+                    </div>
+                `;
+            });
+
+            tooltip.innerHTML = html;
+            tooltip.style.display = 'block';
+            
+            // Positioning
+            const margin = 20;
+            let x = data.event.clientX + margin;
+            let y = data.event.clientY - 20;
+            if (x + 220 > window.innerWidth) x = data.event.clientX - 240;
+            if (y + tooltip.offsetHeight > window.innerHeight) y = window.innerHeight - tooltip.offsetHeight - 10;
+            
+            tooltip.style.left = x + 'px';
+            tooltip.style.top = y + 'px';
+        });
+
+        el.on('plotly_unhover', () => {
+            tooltip.style.display = 'none';
+        });
+    });
+}
+
 // ── State ──────────────────────────────────────────────────────────
 const activeFilters = {
     level: ['Benchmark', 'Special', 'Standard', 'Aggressive', 'Conservative'],
@@ -24,6 +100,17 @@ let globalData = null;
 let currentSortKey = 'CAGR';
 let currentSortAsc = false;
 let currentTab = 'dashboard';
+window.hiddenStrategies = new Set();
+
+function toggleVisibility(name, event) {
+    if (event) event.stopPropagation();
+    if (window.hiddenStrategies.has(name)) {
+        window.hiddenStrategies.delete(name);
+    } else {
+        window.hiddenStrategies.add(name);
+    }
+    update();
+}
 
 // ── Color System ───────────────────────────────────────────────────
 const BENCHMARK_COLORS = {
@@ -177,7 +264,7 @@ function update() {
             sumReturn += ret;
         }
 
-        const cagr = Math.pow(Math.max(1e-8, cum), 1 / years) - 1;
+        const cagr = Math.pow(Math.max(1e-8, cum), 1 / (years || 1)) - 1;
         const vol = Math.sqrt(slice.reduce((a, b) => a + (b - sumReturn/slice.length)**2, 0) / slice.length * 252);
         const sharpe = vol > 0.001 ? (cagr - 0.02) / vol : 0;
 
@@ -190,64 +277,77 @@ function update() {
             yearlyMap[year] *= (1 + slice[i]);
         }
 
-        metricsArr.push({ Strategy: name, 'Total %': cum - 1, CAGR: cagr, 'Avg Ann Ret': (sumReturn/slice.length)*252, 'Max DD': maxDD, Sharpe: sharpe, 'Ann. Vol': vol, color, cumSeries, ddSeries });
+        metricsArr.push({ 
+            Strategy: name, 'Total %': cum - 1, CAGR: cagr, 'Avg Ann Ret': (sumReturn/slice.length)*252, 
+            'Max DD': maxDD, Sharpe: sharpe, 'Ann. Vol': vol, color, cumSeries, ddSeries 
+        });
         
-        if (currentTab === 'dashboard') {
+        if (currentTab === 'dashboard' && !window.hiddenStrategies.has(name)) {
             const width = (isCustom || name.includes('Ratchet') || name.includes('Standard')) ? 2 : 1;
             const chartReturns = cumSeries.slice(1);
             const chartDD = ddSeries.slice(1);
 
-            traces.linear.push({ x: slicedDates, y: chartReturns.map(v => v - 1), name, line: { color, width }, type: 'scatter', mode: 'lines', legendgroup: name });
-            traces.log.push({ x: slicedDates, y: chartReturns.map(v => Math.max(1e-6, v)), name, line: { color, width }, type: 'scatter', mode: 'lines', legendgroup: name });
-            traces.drawdown.push({ x: slicedDates, y: chartDD, name, line: { color, width: 1 }, fill: 'tonexty', type: 'scatter', mode: 'lines', legendgroup: name });
+            traces.linear.push({ x: slicedDates, y: chartReturns.map(v => v - 1), name, line: { color, width }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
+            traces.log.push({ x: slicedDates, y: chartReturns.map(v => Math.max(1e-6, v)), name, line: { color, width }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
+            traces.drawdown.push({ x: slicedDates, y: chartDD, name, line: { color, width: 1 }, fill: 'tonexty', type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
             
             // Volatility
             const rollVol = [];
             for (let i = 0; i < slice.length; i++) {
                 if (i >= 252) {
                     const win = slice.slice(i-252, i);
-                    const m = win.reduce((a,b)=>a+b,0)/252;
-                    rollVol.push(Math.sqrt(win.reduce((a,b)=>a+(b-m)**2,0)/252*252));
+                    const avg = win.reduce((a,b)=>a+b,0)/252;
+                    rollVol.push(Math.sqrt(win.reduce((a,b)=>a+(b-avg)**2,0)/252*252));
                 } else rollVol.push(null);
             }
-            traces.vol.push({ x: slicedDates, y: rollVol, name, line: { color, width: 1 }, type: 'scatter', mode: 'lines', legendgroup: name });
+            traces.vol.push({ x: slicedDates, y: rollVol, name, line: { color, width: 1 }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
 
             // Leverage
             const levSlice = isCustom ? window.customStrategyResult.leverage.slice(startIndex, endIndex + 1) : globalData.leverage[name].slice(startIndex, endIndex + 1);
-            traces.leverage.push({ x: slicedDates, y: levSlice, name, line: { color, width: 2, shape: 'hv' }, type: 'scatter', mode: 'lines', legendgroup: name });
+            traces.leverage.push({ x: slicedDates, y: levSlice, name, line: { color, width: 2, shape: 'hv' }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
 
             // Real
             const normalizedInflation = globalData.inflation.slice(startIndex, endIndex+1).map((v,i,a) => v/a[0]);
-            traces.real.push({ x: slicedDates, y: chartReturns.map((v,i) => v / normalizedInflation[i]), name, line: { color, width }, type: 'scatter', mode: 'lines', legendgroup: name });
+            traces.real.push({ x: slicedDates, y: chartReturns.map((v,i) => v / normalizedInflation[i]), name, line: { color, width }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
 
             // Yearly
             const yearLabels = Object.keys(yearlyMap).sort();
-            traces.yearly.push({ x: yearLabels, y: yearLabels.map(y => yearlyMap[y] - 1), name, type: 'bar', marker: { color }, legendgroup: name });
+            traces.yearly.push({ x: yearLabels, y: yearLabels.map(y => yearlyMap[y] - 1), name, type: 'bar', marker: { color }, legendgroup: name, hoverinfo: 'none' });
         }
     }
 
     renderTable(metricsArr);
     if (currentTab === 'dashboard') {
         const linLay = cloneLayout(); linLay.yaxis.title = 'Return (%)'; linLay.yaxis.tickformat = '.0%';
+        linLay.hovermode = 'x'; 
+        linLay.xaxis.showspikes = true; linLay.xaxis.spikemode = 'across'; linLay.xaxis.spikecolor = '#fff'; linLay.xaxis.spikethickness = 1;
         Plotly.react('chart-linear', traces.linear, linLay, PLOTLY_CONFIG);
 
         const logLayout = cloneLayout(); logLayout.yaxis.type = 'log'; logLayout.yaxis.title = 'Index (Log)';
+        logLayout.hovermode = 'x'; logLayout.xaxis.showspikes = true; logLayout.xaxis.spikemode = 'across'; logLayout.xaxis.spikecolor = '#fff'; logLayout.xaxis.spikethickness = 1;
         Plotly.react('chart-log', traces.log, logLayout, PLOTLY_CONFIG);
 
         const ddLayout = cloneLayout(); ddLayout.yaxis.title = 'Drawdown (%)';
+        ddLayout.hovermode = 'x'; ddLayout.xaxis.showspikes = true; ddLayout.xaxis.spikemode = 'across'; ddLayout.xaxis.spikecolor = '#fff'; ddLayout.xaxis.spikethickness = 1;
         Plotly.react('chart-drawdown', traces.drawdown, ddLayout, PLOTLY_CONFIG);
 
         const volLay = cloneLayout(); volLay.yaxis.title = '1-Year Vol (%)';
+        volLay.hovermode = 'x'; volLay.xaxis.showspikes = true; volLay.xaxis.spikemode = 'across'; volLay.xaxis.spikecolor = '#fff'; volLay.xaxis.spikethickness = 1;
         Plotly.react('chart-volatility', traces.vol, volLay, PLOTLY_CONFIG);
 
         const levLay = cloneLayout(); levLay.yaxis.title = 'Leverage'; levLay.yaxis.range = [0, 4.5];
+        levLay.hovermode = 'x'; levLay.xaxis.showspikes = true; levLay.xaxis.spikemode = 'across'; levLay.xaxis.spikecolor = '#fff'; levLay.xaxis.spikethickness = 1;
         Plotly.react('chart-leverage', traces.leverage, levLay, PLOTLY_CONFIG);
 
         const realLay = cloneLayout(); realLay.yaxis.title = 'Real Growth (Inflation Adjusted)'; realLay.yaxis.type = 'log';
+        realLay.hovermode = 'x'; realLay.xaxis.showspikes = true; realLay.xaxis.spikemode = 'across'; realLay.xaxis.spikecolor = '#fff'; realLay.xaxis.spikethickness = 1;
         Plotly.react('chart-real', traces.real, realLay, PLOTLY_CONFIG);
 
         const yearLay = cloneLayout(); yearLay.yaxis.title = 'Yearly Return (%)'; yearLay.barmode = 'group';
         Plotly.react('chart-yearly', traces.yearly, yearLay, PLOTLY_CONFIG);
+
+        // Initialize tooltip engine for these charts
+        initTooltipEngine(['chart-linear', 'chart-log', 'chart-drawdown', 'chart-volatility', 'chart-leverage', 'chart-real']);
     }
 
     window.allMetrics = metricsArr; // Cache for explorer
@@ -263,7 +363,9 @@ function renderTable(metrics) {
         return currentSortAsc ? (aVal > bVal ? 1 : -1) : (aVal < bVal ? 1 : -1);
     });
     metrics.forEach(m => {
+        const isHidden = window.hiddenStrategies.has(m.Strategy);
         const tr = document.createElement('tr');
+        if (isHidden) tr.className = 'row-hidden';
         tr.style.cursor = 'pointer';
         tr.onclick = () => { selectStrategyForExplorer(m.Strategy); switchTab('explorer'); };
         tr.innerHTML = `
@@ -274,6 +376,11 @@ function renderTable(metrics) {
             <td style="color:var(--red)">${(m['Max DD'] * 100).toFixed(1)}%</td>
             <td>${m.Sharpe.toFixed(2)}</td>
             <td>${(m['Ann. Vol'] * 100).toFixed(1)}%</td>
+            <td style="text-align:center">
+                <button class="btn-visibility ${isHidden ? 'hidden' : ''}" onclick="toggleVisibility('${m.Strategy}', event)">
+                    ${isHidden ? '🚫' : '👁️'}
+                </button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
@@ -401,12 +508,27 @@ function updateExplorer() {
         ...cloneLayout(), 
         margin: { l: 60, r: 20, t: 30, b: 80 }, 
         autosize: true, 
-        hoverlabel: { bgcolor: '#1a1d23', font: { color: '#ffffff', size: 12 }, bordercolor: 'var(--accent)' }
+        hoverlabel: { bgcolor: '#1a1d23', font: { color: '#ffffff', size: 12 }, bordercolor: 'var(--accent)' },
+        xaxis: { 
+            showspikes: true, 
+            spikemode: 'across', 
+            spikecolor: '#fff', 
+            spikethickness: 1 
+        }
     };
     const traces = (yPrimary, yCompare, namePrimary, nameCompare, pColor, isBar = false) => {
-        const arr = [{ x: syncedDates, y: yPrimary, name: namePrimary, line: { color: pColor, width: 3 }, type: isBar ? 'bar' : 'scatter' }];
+        const arr = [{ 
+            x: syncedDates, y: yPrimary, name: namePrimary, 
+            line: { color: pColor, width: 3 }, type: isBar ? 'bar' : 'scatter',
+            hoverinfo: 'none' // Disable native
+        }];
         if (yCompare) {
-            arr.push({ x: syncedDates, y: yCompare, name: nameCompare, line: { color: 'rgba(255,255,255,0.3)', width: 1.5, dash: 'dash' }, marker: { color: 'rgba(255,255,255,0.2)' }, type: isBar ? 'bar' : 'scatter', opacity: 0.7 });
+            arr.push({ 
+                x: syncedDates, y: yCompare, name: nameCompare, 
+                line: { color: 'rgba(255,255,255,0.3)', width: 1.5, dash: 'dash' }, 
+                marker: { color: 'rgba(255,255,255,0.2)' }, type: isBar ? 'bar' : 'scatter', 
+                opacity: 0.7, hoverinfo: 'none' 
+            });
         }
         return arr;
     };
@@ -446,6 +568,12 @@ function updateExplorer() {
     const chartReal = chartReturns.map((v, i) => v / inflationNorm[i]);
     const cReal = cReturns ? cReturns.map((v, i) => v / inflationNorm[i]) : null;
     Plotly.react('chart-explorer-real', traces(chartReal, cReal, name, compareName, 'var(--green)'), { ...expBaseLayout, yaxis: { title: 'Real Growth (Log)', type: 'log' }, height: 450 }, PLOTLY_CONFIG);
+
+    // Initialize custom tooltip for all and hide native
+    initTooltipEngine([
+        'chart-explorer-linear', 'chart-explorer-log', 'chart-explorer-drawdown', 
+        'chart-explorer-vol', 'chart-explorer-leverage', 'chart-explorer-real'
+    ]);
 
     // 7. Yearly
     const getYearly = (stratName, sIdx) => {
