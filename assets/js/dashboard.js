@@ -19,12 +19,10 @@ function initTooltipEngine(chartIds) {
             const date = pt.x;
             const xIdx = pt.pointIndex;
             
-            // Extract data directly from the chart's visible traces
             const items = el.data
                 .filter(trace => trace.name && trace.hoverinfo !== 'skip')
                 .map(trace => {
                     let val = trace.y[xIdx];
-                    // Handle log scale or return percentages
                     let displayVal = "";
                     const layout = el.layout || {};
                     const isPct = (layout.yaxis && layout.yaxis.tickformat === '.0%') || (layout.yaxis && layout.yaxis.tickformat === '.1%');
@@ -44,10 +42,8 @@ function initTooltipEngine(chartIds) {
                 })
                 .filter(x => x !== null);
 
-            // Sort DESC by value for better readability
             items.sort((a, b) => b.val - a.val);
 
-            // Render
             let html = `<div class="tooltip-date">${date}</div>`;
             items.forEach(item => {
                 html += `
@@ -64,7 +60,6 @@ function initTooltipEngine(chartIds) {
             tooltip.innerHTML = html;
             tooltip.style.display = 'block';
             
-            // Positioning
             const margin = 20;
             let x = data.event.clientX + margin;
             let y = data.event.clientY - 20;
@@ -109,6 +104,7 @@ function toggleVisibility(name, event) {
     } else {
         window.hiddenStrategies.add(name);
     }
+    localStorage.setItem('quant_hidden_strategies', JSON.stringify(Array.from(window.hiddenStrategies)));
     update();
 }
 
@@ -268,7 +264,6 @@ function update() {
         const vol = Math.sqrt(slice.reduce((a, b) => a + (b - sumReturn/slice.length)**2, 0) / slice.length * 252);
         const sharpe = vol > 0.001 ? (cagr - 0.02) / vol : 0;
 
-        // Yearly Mapping for Bar Chart
         const yearlyMap = {};
         for (let i = 0; i < slice.length; i++) {
             const date = slicedDates[i];
@@ -291,7 +286,6 @@ function update() {
             traces.log.push({ x: slicedDates, y: chartReturns.map(v => Math.max(1e-6, v)), name, line: { color, width }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
             traces.drawdown.push({ x: slicedDates, y: chartDD, name, line: { color, width: 1 }, fill: 'tonexty', type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
             
-            // Volatility
             const rollVol = [];
             for (let i = 0; i < slice.length; i++) {
                 if (i >= 252) {
@@ -302,15 +296,12 @@ function update() {
             }
             traces.vol.push({ x: slicedDates, y: rollVol, name, line: { color, width: 1 }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
 
-            // Leverage
             const levSlice = isCustom ? window.customStrategyResult.leverage.slice(startIndex, endIndex + 1) : globalData.leverage[name].slice(startIndex, endIndex + 1);
             traces.leverage.push({ x: slicedDates, y: levSlice, name, line: { color, width: 2, shape: 'hv' }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
 
-            // Real
             const normalizedInflation = globalData.inflation.slice(startIndex, endIndex+1).map((v,i,a) => v/a[0]);
             traces.real.push({ x: slicedDates, y: chartReturns.map((v,i) => v / normalizedInflation[i]), name, line: { color, width }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
 
-            // Yearly
             const yearLabels = Object.keys(yearlyMap).sort();
             traces.yearly.push({ x: yearLabels, y: yearLabels.map(y => yearlyMap[y] - 1), name, type: 'bar', marker: { color }, legendgroup: name, hoverinfo: 'none' });
         }
@@ -318,39 +309,37 @@ function update() {
 
     renderTable(metricsArr);
     if (currentTab === 'dashboard') {
-        const linLay = cloneLayout(); linLay.yaxis.title = 'Return (%)'; linLay.yaxis.tickformat = '.0%';
-        linLay.hovermode = 'x'; 
-        linLay.xaxis.showspikes = true; linLay.xaxis.spikemode = 'across'; linLay.xaxis.spikecolor = '#fff'; linLay.xaxis.spikethickness = 1;
+        const baseLayout = { 
+            ...cloneLayout(), 
+            hovermode: 'x', 
+            xaxis: { showspikes: true, spikemode: 'across', spikecolor: '#fff', spikethickness: 1 }
+        };
+
+        const linLay = { ...baseLayout }; linLay.yaxis.title = 'Return (%)'; linLay.yaxis.tickformat = '.0%';
         Plotly.react('chart-linear', traces.linear, linLay, PLOTLY_CONFIG);
 
-        const logLayout = cloneLayout(); logLayout.yaxis.type = 'log'; logLayout.yaxis.title = 'Index (Log)';
-        logLayout.hovermode = 'x'; logLayout.xaxis.showspikes = true; logLayout.xaxis.spikemode = 'across'; logLayout.xaxis.spikecolor = '#fff'; logLayout.xaxis.spikethickness = 1;
-        Plotly.react('chart-log', traces.log, logLayout, PLOTLY_CONFIG);
+        const logLay = { ...baseLayout }; logLay.yaxis.type = 'log'; logLay.yaxis.title = 'Index (Log Scale)'; 
+        Plotly.react('chart-log', traces.log, logLay, PLOTLY_CONFIG);
 
-        const ddLayout = cloneLayout(); ddLayout.yaxis.title = 'Drawdown (%)';
-        ddLayout.hovermode = 'x'; ddLayout.xaxis.showspikes = true; ddLayout.xaxis.spikemode = 'across'; ddLayout.xaxis.spikecolor = '#fff'; ddLayout.xaxis.spikethickness = 1;
-        Plotly.react('chart-drawdown', traces.drawdown, ddLayout, PLOTLY_CONFIG);
+        const ddLay = { ...baseLayout }; ddLay.yaxis.title = 'Drawdown (%)';
+        Plotly.react('chart-drawdown', traces.drawdown, ddLay, PLOTLY_CONFIG);
 
-        const volLay = cloneLayout(); volLay.yaxis.title = '1-Year Vol (%)';
-        volLay.hovermode = 'x'; volLay.xaxis.showspikes = true; volLay.xaxis.spikemode = 'across'; volLay.xaxis.spikecolor = '#fff'; volLay.xaxis.spikethickness = 1;
+        const volLay = { ...baseLayout }; volLay.yaxis.title = '1-Year Vol (%)';
         Plotly.react('chart-volatility', traces.vol, volLay, PLOTLY_CONFIG);
 
-        const levLay = cloneLayout(); levLay.yaxis.title = 'Leverage'; levLay.yaxis.range = [0, 4.5];
-        levLay.hovermode = 'x'; levLay.xaxis.showspikes = true; levLay.xaxis.spikemode = 'across'; levLay.xaxis.spikecolor = '#fff'; levLay.xaxis.spikethickness = 1;
+        const levLay = { ...baseLayout }; levLay.yaxis.title = 'Leverage'; levLay.yaxis.range = [0, 4.5];
         Plotly.react('chart-leverage', traces.leverage, levLay, PLOTLY_CONFIG);
 
-        const realLay = cloneLayout(); realLay.yaxis.title = 'Real Growth (Inflation Adjusted)'; realLay.yaxis.type = 'log';
-        realLay.hovermode = 'x'; realLay.xaxis.showspikes = true; realLay.xaxis.spikemode = 'across'; realLay.xaxis.spikecolor = '#fff'; realLay.xaxis.spikethickness = 1;
+        const realLay = { ...baseLayout }; realLay.yaxis.title = 'Real Growth (Inflation Adj)'; realLay.yaxis.type = 'log';
         Plotly.react('chart-real', traces.real, realLay, PLOTLY_CONFIG);
 
         const yearLay = cloneLayout(); yearLay.yaxis.title = 'Yearly Return (%)'; yearLay.barmode = 'group';
         Plotly.react('chart-yearly', traces.yearly, yearLay, PLOTLY_CONFIG);
 
-        // Initialize tooltip engine for these charts
         initTooltipEngine(['chart-linear', 'chart-log', 'chart-drawdown', 'chart-volatility', 'chart-leverage', 'chart-real']);
     }
 
-    window.allMetrics = metricsArr; // Cache for explorer
+    window.allMetrics = metricsArr;
     updateExplorer();
 }
 
@@ -386,243 +375,128 @@ function renderTable(metrics) {
     });
 }
 
-// ── Explorer ────────────────────────────────────────────────────────
+// ── Explorer & Lab Analysis Suite ──────────────────────────────────
 function selectStrategyForExplorer(name) {
-    const picker = document.getElementById('explorer-picker');
-    picker.value = name;
+    document.getElementById('explorer-picker').value = name;
     updateExplorer();
 }
 
-function updateExplorer() {
-    const picker = document.getElementById('explorer-picker');
-    const comparePicker = document.getElementById('explorer-compare-picker');
-    const name = picker.value;
-    const compareName = comparePicker.value;
-    
+function renderAnalysisSuite(prefix, name, compareName) {
     if (!name || !window.allMetrics) return;
-
     const m = window.allMetrics.find(x => x.Strategy === name);
     if (!m) return;
 
-    document.getElementById('explorer-name').textContent = name;
-    
-    // Metadata Pills
-    const metaContainer = document.getElementById('explorer-meta-pills');
-    metaContainer.innerHTML = '';
-    const meta = parseStrategy(name);
-    
-    if (meta.logic === 'Ratchet' || name.includes('BEAST') || name.includes('SCALPEL')) {
-        metaContainer.innerHTML += '<span class="pill-badge active">Ratchet Logic</span>';
-    } else {
-        metaContainer.innerHTML += '<span class="pill-badge">Daily Reset</span>';
-    }
-    
-    if (name.includes('SCALPEL') || name.includes('SHIELD') || name.includes('BEAST')) {
-        metaContainer.innerHTML += '<span class="pill-badge trend">Trend Filter Active</span>';
-    }
-    if (meta.mix === 'Pure') {
-        metaContainer.innerHTML += '<span class="pill-badge">Pure Equity</span>';
+    const nameEl = document.getElementById(`${prefix}-name`);
+    if (nameEl) nameEl.textContent = name === '🧪 USER CUSTOM LAB' ? 'Custom Lab Prototype' : name;
+
+    const metaContainer = document.getElementById(`${prefix}-meta-pills`);
+    if (metaContainer) {
+        metaContainer.innerHTML = '';
+        const meta = parseStrategy(name);
+        const isRatchet = meta.logic === 'Ratchet' || (prefix === 'lab' && document.getElementById('lab-ratchet').checked);
+        const isTrend = meta.trend || (prefix === 'lab' && document.getElementById('lab-trend').checked);
+        metaContainer.innerHTML += `<span class="pill-badge ${isRatchet ? 'active' : ''}">${isRatchet ? 'Ratchet Logic' : 'Daily Reset'}</span>`;
+        if (isTrend || name.includes('BEAST') || name.includes('SCALPEL')) metaContainer.innerHTML += '<span class="pill-badge trend">Trend Filter Active</span>';
+        if (meta.mix === 'Pure') metaContainer.innerHTML += '<span class="pill-badge">Pure Equity</span>';
     }
 
-    // Allocation Matrix Visualizer
-    const matrixContainer = document.getElementById('allocation-matrix');
-    const weights = globalData.weights[name] || [[100,0,0,0,0],[50,50,0,0,0],[0,100,0,0,0],[0,50,50,0,0],[0,0,100,0,0]];
-    
-    // Bounds Lookup Fallback (Accurate System Standards)
-    const FALLBACK_BOUNDS = {
-        'Standard': [0.05, 0.10, 0.20, 0.30],
-        'Aggressive': [0.03, 0.07, 0.12, 0.20],
-        'Conservative': [0.10, 0.20, 0.35, 0.50],
-        'Special BEAST': [0.01, 0.05, 0.09, 0.53],
-        'Special SCALPEL': [0.01, 0.05, 0.30, 0.60],
-        'Special SHIELD': [0.05, 0.10, 0.39, 0.58],
-        'Special': [0.05, 0.10, 0.30, 0.50],
-        'Benchmark': [0, 0, 0, 0]
-    };
+    const matrixContainer = document.getElementById(`${prefix}-allocation-matrix`);
+    if (matrixContainer) {
+        let weights = globalData.weights[name] || [[100,0,0,0,0],[50,50,0,0,0],[0,100,0,0,0],[0,50,50,0,0],[0,0,100,0,0]];
+        if (prefix === 'lab') weights = labWeights.map(r => [r.VOO, r.SSO, r.SPYU, r.DJP, r.BILL]);
 
-    let b = [0,0,0,0];
-    if (name === '🧪 USER CUSTOM LAB') {
-        b = [parseFloat(document.getElementById('lab-b1').value), parseFloat(document.getElementById('lab-b2').value), parseFloat(document.getElementById('lab-b3').value), parseFloat(document.getElementById('lab-b4').value)].map(v => v/100);
-    } else {
-        const cat = name.split(' ')[0];
-        const boundsSrc = globalData.bounds || FALLBACK_BOUNDS;
-        // Priority: Specific Strategy Name -> Category -> Standard Default
-        b = boundsSrc[name] || boundsSrc[cat] || [0.05, 0.10, 0.20, 0.30];
+        const FALLBACK_BOUNDS = {
+            'Standard': [0.05, 0.10, 0.20, 0.30], 'Aggressive': [0.03, 0.07, 0.12, 0.20], 'Conservative': [0.10, 0.20, 0.35, 0.50],
+            'Special BEAST': [0.01, 0.05, 0.09, 0.53], 'Special SCALPEL': [0.01, 0.05, 0.30, 0.60], 'Special SHIELD': [0.05, 0.10, 0.39, 0.58],
+            'Special': [0.05, 0.10, 0.30, 0.50], 'Benchmark': [0, 0, 0, 0]
+        };
+        let b = [0,0,0,0];
+        if (prefix === 'lab' || name === '🧪 USER CUSTOM LAB') b = [parseFloat(document.getElementById('lab-b1').value), parseFloat(document.getElementById('lab-b2').value), parseFloat(document.getElementById('lab-b3').value), parseFloat(document.getElementById('lab-b4').value)].map(v => v/100);
+        else { const cat = name.split(' ')[0]; const src = globalData.bounds || FALLBACK_BOUNDS; b = src[name] || src[cat] || [0.05, 0.10, 0.20, 0.30]; }
+
+        let tableHtml = `<table class="weights-table-explorer"><thead><tr><th>Tier / Drawdown</th><th>VOO</th><th>SSO</th><th>SPYU</th><th>DJP</th><th>BILL</th><th>Lev</th></tr></thead><tbody>`;
+        weights.forEach((w, i) => {
+            const lev = (w[0]*1 + w[1]*2 + w[2]*4 + w[3]*1);
+            const factor = w.reduce((s, v) => s + v, 0) < 2.0 ? 100 : 1;
+            let rangeStr = (i === 0) ? `0 – ${(b[0]*100).toFixed(1)}%` : (i === 4) ? `> ${(b[3]*100).toFixed(1)}%` : `${(b[i-1]*100).toFixed(1)} – ${(b[i]*100).toFixed(1)}%`;
+            tableHtml += `<tr><td class="tier-highlight"><div style="font-size:0.75rem">T${i}</div><div style="font-size:0.6rem; opacity:0.7">${rangeStr}</div></td><td>${(w[0]*factor).toFixed(0)}%</td><td>${(w[1]*factor).toFixed(0)}%</td><td>${(w[2]*factor).toFixed(0)}%</td><td>${(w[3]*factor).toFixed(0)}%</td><td>${(w[4]*factor).toFixed(0)}%</td><td class="lev-high">${(factor===100?lev:lev/100).toFixed(2)}x</td></tr>`;
+        });
+        tableHtml += '</tbody></table>'; matrixContainer.innerHTML = tableHtml;
     }
 
-    let tableHtml = `
-        <table class="weights-table-explorer">
-            <thead>
-                <tr>
-                    <th>Tier / Drawdown</th>
-                    <th>VOO (1x)</th><th>SSO (2x)</th><th>SPYU (4x)</th><th>DJP (Mix)</th><th>BILL (Cash)</th>
-                    <th>Effective Leverage</th>
-                </tr>
-            </thead>
-            <tbody>
-    `;
-    weights.forEach((w, i) => {
-        const lev = (w[0]*1 + w[1]*2 + w[2]*4 + w[3]*1);
-        // Better Ratio Detection: Check if the sum is closer to 1.0 or 100.0
-        const weightSum = w.reduce((sum, val) => sum + val, 0);
-        const isRatio = weightSum < 2.0; 
-        const factor = isRatio ? 100 : 1;
-        const displayLev = isRatio ? lev : lev / 100;
-
-        let rangeStr = "";
-        if (i === 0) rangeStr = `0 – ${(b[0]*100).toFixed(1)}%`;
-        else if (i === 4) rangeStr = `> ${(b[3]*100).toFixed(1)}%`;
-        else rangeStr = `${(b[i-1]*100).toFixed(1)} – ${(b[i]*100).toFixed(1)}%`;
-
-        tableHtml += `
-            <tr>
-                <td class="tier-highlight">
-                    <div style="font-size:0.75rem">TIER ${i}</div>
-                    <div style="font-size:0.6rem; opacity:0.7; font-weight:400">${rangeStr}</div>
-                </td>
-                <td>${(w[0]*factor).toFixed(0)}%</td><td>${(w[1]*factor).toFixed(0)}%</td><td>${(w[2]*factor).toFixed(0)}%</td><td>${(w[3]*factor).toFixed(0)}%</td><td>${(w[4]*factor).toFixed(0)}%</td>
-                <td class="lev-high">${displayLev.toFixed(2)}x</td>
-            </tr>
-        `;
-    });
-    tableHtml += '</tbody></table>';
-    matrixContainer.innerHTML = tableHtml;
-
-    // --- Explorer Charts ---
     const chartReturns = m.cumSeries.slice(1);
-    const chartDD = m.ddSeries.slice(1);
-    const L = chartReturns.length;
-    const startIndex = globalData.dates.length - L;
+    const startIndex = globalData.dates.length - chartReturns.length;
     const syncedDates = globalData.dates.slice(startIndex);
-    const color = m.color;
-
-    // Helper: Comparison Data
     const cObj = compareName ? window.allMetrics.find(x => x.Strategy === compareName) : null;
-    const cReturns = cObj ? cObj.cumSeries.slice(cObj.cumSeries.length - L) : null;
-    const cDD = cObj ? cObj.ddSeries.slice(cObj.ddSeries.length - L) : null;
-
+    const cReturns = cObj ? cObj.cumSeries.slice(cObj.cumSeries.length - chartReturns.length) : null;
+    const cDD = cObj ? cObj.ddSeries.slice(cObj.ddSeries.length - chartReturns.length) : null;
     const levFull = (m.Strategy === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.leverage : globalData.leverage[m.Strategy]);
     const levSlice = levFull.slice(startIndex);
 
-    const expBaseLayout = { 
-        ...cloneLayout(), 
-        margin: { l: 60, r: 20, t: 30, b: 80 }, 
-        autosize: true, 
-        hoverlabel: { bgcolor: '#1a1d23', font: { color: '#ffffff', size: 12 }, bordercolor: 'var(--accent)' },
-        xaxis: { 
-            showspikes: true, 
-            spikemode: 'across', 
-            spikecolor: '#fff', 
-            spikethickness: 1 
-        }
-    };
-    const traces = (yPrimary, yCompare, namePrimary, nameCompare, pColor, isBar = false) => {
-        const arr = [{ 
-            x: syncedDates, y: yPrimary, name: namePrimary, 
-            line: { color: pColor, width: 3 }, type: isBar ? 'bar' : 'scatter',
-            hoverinfo: 'none' // Disable native
-        }];
-        if (yCompare) {
-            arr.push({ 
-                x: syncedDates, y: yCompare, name: nameCompare, 
-                line: { color: 'rgba(255,255,255,0.3)', width: 1.5, dash: 'dash' }, 
-                marker: { color: 'rgba(255,255,255,0.2)' }, type: isBar ? 'bar' : 'scatter', 
-                opacity: 0.7, hoverinfo: 'none' 
-            });
-        }
+    const expBaseLayout = { ...cloneLayout(), margin: { l: 60, r: 20, t: 30, b: 80 }, autosize: true, hoverlabel: { bgcolor: '#1a1d23', font: { color: '#ffffff', size: 12 }, bordercolor: 'var(--accent)' }, xaxis: { showspikes: true, spikemode: 'across', spikecolor: '#fff', spikethickness: 1 } };
+    const traces = (yP, yC, nP, nC, pColor, isBar = false) => {
+        const arr = [{ x: syncedDates, y: yP, name: nP, line: { color: pColor, width: 3 }, type: isBar ? 'bar' : 'scatter', hoverinfo: 'none' }];
+        if (yC) arr.push({ x: syncedDates, y: yC, name: nC, line: { color: 'rgba(255,255,255,0.5)', width: 2, dash: 'dot' }, marker: { color: 'rgba(255,255,255,0.3)' }, type: isBar ? 'bar' : 'scatter', opacity: 0.8, hoverinfo: 'none' });
         return arr;
     };
 
-    // 1. Linear
-    Plotly.react('chart-explorer-linear', traces(chartReturns.map(v => v - 1), cReturns ? cReturns.map(v => v - 1) : null, name, compareName, color), { ...expBaseLayout, yaxis: { title: 'Return (%)', tickformat: '.0%' }, height: 450 }, PLOTLY_CONFIG);
+    Plotly.react(`chart-${prefix}-linear`, traces(chartReturns.map(v => v - 1), cReturns ? cReturns.map(v => v - 1) : null, name, compareName, m.color), { ...expBaseLayout, yaxis: { title: 'Return (%)', tickformat: '.0%' }, height: 450 }, PLOTLY_CONFIG);
+    const logLay = { ...expBaseLayout, height: 450 }; logLay.yaxis.type = 'log'; logLay.yaxis.title = 'Index (Log Scale)'; 
+    Plotly.react(`chart-${prefix}-log`, traces(chartReturns, cReturns, name, compareName, m.color), logLay, PLOTLY_CONFIG);
+    Plotly.react(`chart-${prefix}-drawdown`, traces(m.ddSeries.slice(1), cDD, name, compareName, '#ff4d4d'), { ...expBaseLayout, yaxis: { title: 'Drawdown (%)', tickformat: '.1%' }, height: 400 }, PLOTLY_CONFIG);
 
-    // 2. Log
-    const logLay = { ...expBaseLayout, height: 450 };
-    logLay.yaxis.type = 'log'; logLay.yaxis.title = 'Index (Log Scale)'; logLay.yaxis.tickformat = ''; 
-    Plotly.react('chart-explorer-log', traces(chartReturns, cReturns, name, compareName, color), logLay, PLOTLY_CONFIG);
-
-    // 3. Drawdown
-    Plotly.react('chart-explorer-drawdown', traces(chartDD, cDD, name, compareName, '#ff4d4d'), { ...expBaseLayout, yaxis: { title: 'Drawdown (%)', tickformat: '.1%' }, height: 400 }, PLOTLY_CONFIG);
-
-    // 4. Volatility
-    const computeVol = (stratName, sIdx) => {
-        const full = (stratName === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.returns : globalData.variants[stratName]);
-        return syncedDates.map((_, i) => {
-            const absIdx = sIdx + i;
-            if (absIdx < 252) return null;
-            const win = full.slice(absIdx - 252, absIdx);
-            const avg = win.reduce((a, b) => a + b, 0) / 252;
-            return Math.sqrt(win.reduce((a, b) => a + (b - avg) ** 2, 0) / 252 * 252);
-        });
+    const computeVol = (sName, sI) => {
+        const full = (sName === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.returns : globalData.variants[sName]);
+        return syncedDates.map((_, i) => { const absIdx = sI + i; if (absIdx < 252) return null; const win = full.slice(absIdx - 252, absIdx); const avg = win.reduce((a, b) => a + b, 0) / 252; return Math.sqrt(win.reduce((a, b) => a + (b - avg) ** 2, 0) / 252 * 252); });
     };
-    const pVol = computeVol(name, startIndex);
-    const cVol = compareName ? computeVol(compareName, globalData.dates.length - L) : null;
-    Plotly.react('chart-explorer-vol', traces(pVol, cVol, name, compareName, 'var(--orange)'), { ...expBaseLayout, yaxis: { title: '1-Year Vol (%)', tickformat: '.0%' }, height: 400 }, PLOTLY_CONFIG);
-
-    // 5. Leverage
-    const cLev = cObj ? (compareName === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.leverage : globalData.leverage[compareName]).slice(globalData.dates.length - L) : null;
-    Plotly.react('chart-explorer-leverage', traces(levSlice, cLev, name, compareName, 'var(--blue)'), { ...expBaseLayout, yaxis: { title: 'Leverage', range: [0, 4.5] }, height: 400 }, PLOTLY_CONFIG);
-
-    // 6. Real
+    const pVol = computeVol(name, startIndex); const cVol = compareName ? computeVol(compareName, globalData.dates.length - chartReturns.length) : null;
+    Plotly.react(`chart-${prefix}-vol`, traces(pVol, cVol, name, compareName, 'var(--orange)'), { ...expBaseLayout, yaxis: { title: '1-Year Vol (%)', tickformat: '.0%' }, height: 400 }, PLOTLY_CONFIG);
+    const cLev = cObj ? (compareName === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.leverage : globalData.leverage[compareName]).slice(globalData.dates.length - chartReturns.length) : null;
+    Plotly.react(`chart-${prefix}-leverage`, traces(levSlice, cLev, name, compareName, 'var(--blue)'), { ...expBaseLayout, yaxis: { title: 'Leverage', range: [0, 4.5] }, height: 400 }, PLOTLY_CONFIG);
     const inflationNorm = globalData.inflation.slice(startIndex).map((v, i, a) => v / a[0]);
-    const chartReal = chartReturns.map((v, i) => v / inflationNorm[i]);
-    const cReal = cReturns ? cReturns.map((v, i) => v / inflationNorm[i]) : null;
-    Plotly.react('chart-explorer-real', traces(chartReal, cReal, name, compareName, 'var(--green)'), { ...expBaseLayout, yaxis: { title: 'Real Growth (Log)', type: 'log' }, height: 450 }, PLOTLY_CONFIG);
+    const chartReal = chartReturns.map((v, i) => v / inflationNorm[i]); const cReal = cReturns ? cReturns.map((v, i) => v / inflationNorm[i]) : null;
+    Plotly.react(`chart-${prefix}-real`, traces(chartReal, cReal, name, compareName, 'var(--green)'), { ...expBaseLayout, yaxis: { title: 'Real Growth (Log)', type: 'log' }, height: 450 }, PLOTLY_CONFIG);
+    initTooltipEngine([`chart-${prefix}-linear`, `chart-${prefix}-log`, `chart-${prefix}-drawdown`, `chart-${prefix}-vol`, `chart-${prefix}-leverage`, `chart-${prefix}-real`]);
 
-    // Initialize custom tooltip for all and hide native
-    initTooltipEngine([
-        'chart-explorer-linear', 'chart-explorer-log', 'chart-explorer-drawdown', 
-        'chart-explorer-vol', 'chart-explorer-leverage', 'chart-explorer-real'
-    ]);
+    const getYearly = (sName, sI) => { const full = (sName === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.returns : globalData.variants[sName]); const slice = full.slice(sI); const map = {}; slice.forEach((ret, i) => { if (i < syncedDates.length) { const y = syncedDates[i].substring(0, 4); map[y] = (map[y] || 1.0) * (1 + ret); } }); return map; };
+    const pY = getYearly(name, startIndex); const cY = compareName ? getYearly(compareName, globalData.dates.length - chartReturns.length) : null; const years = Object.keys(pY).sort();
+    const yTraces = [{ x: years, y: years.map(y => pY[y] - 1), name, type: 'bar', marker: { color: m.color }, hoverinfo: 'none' }];
+    if (cY) yTraces.push({ x: Object.keys(cY).sort(), y: Object.keys(cY).sort().map(y => cY[y] - 1), name: compareName, type: 'bar', marker: { color: 'rgba(255,255,255,0.2)' }, hoverinfo: 'none' });
+    Plotly.react(`chart-${prefix}-yearly`, yTraces, { ...expBaseLayout, barmode: 'group', yaxis: { title: 'Yearly Return (%)', tickformat: '.0%' }, height: 450 }, PLOTLY_CONFIG);
+}
 
-    // 7. Yearly
-    const getYearly = (stratName, sIdx) => {
-        const full = (stratName === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.returns : globalData.variants[stratName]);
-        const slice = full.slice(sIdx);
-        const map = {};
-        slice.forEach((ret, i) => { if (i < syncedDates.length) { const y = syncedDates[i].substring(0, 4); map[y] = (map[y] || 1.0) * (1 + ret); } });
-        return map;
-    };
-    const pYearly = getYearly(name, startIndex);
-    const cYearly = compareName ? getYearly(compareName, globalData.dates.length - L) : null;
-    const years = Object.keys(pYearly).sort();
-    
-    const yearlyTraces = [{ x: years, y: years.map(y => pYearly[y] - 1), name, type: 'bar', marker: { color } }];
-    if (cYearly) yearlyTraces.push({ x: Object.keys(cYearly).sort(), y: Object.keys(cYearly).sort().map(y => cYearly[y] - 1), name: compareName, type: 'bar', marker: { color: 'rgba(255,255,255,0.2)' } });
+function updateExplorer() {
+    renderAnalysisSuite('explorer', document.getElementById('explorer-picker').value, document.getElementById('explorer-compare-picker').value);
+}
 
-    Plotly.react('chart-explorer-yearly', yearlyTraces, { ...expBaseLayout, barmode: 'group', yaxis: { title: 'Yearly Return (%)', tickformat: '.0%' }, height: 450 }, PLOTLY_CONFIG);
+function updateLabResults() {
+    document.getElementById('lab-results').style.display = 'block';
+    renderAnalysisSuite('lab', '🧪 USER CUSTOM LAB', document.getElementById('lab-compare-picker').value);
+}
+
+function resetLabResults() {
+    document.getElementById('lab-results').style.display = 'none';
+    window.customStrategyResult = null;
+    update();
 }
 
 // ── Simulator ───────────────────────────────────────────────────────
 function updateSimulator() {
     const dd = parseFloat(document.getElementById('drawdown-slider').value);
     document.getElementById('drawdown-value').textContent = `-${dd}%`;
-
     const b1 = parseFloat(document.getElementById('lab-b1').value);
     const b2 = parseFloat(document.getElementById('lab-b2').value);
     const b3 = parseFloat(document.getElementById('lab-b3').value);
     const b4 = parseFloat(document.getElementById('lab-b4').value);
-
     let dailyTier = 0;
-    if (dd >= b4) dailyTier = 4;
-    else if (dd >= b3) dailyTier = 3;
-    else if (dd >= b2) dailyTier = 2;
-    else if (dd >= b1) dailyTier = 1;
-
-    if (dd === 0) simMaxTierReached = 0;
-    else if (dailyTier > simMaxTierReached) simMaxTierReached = dailyTier;
-
+    if (dd >= b4) dailyTier = 4; else if (dd >= b3) dailyTier = 3; else if (dd >= b2) dailyTier = 2; else if (dd >= b1) dailyTier = 1;
+    if (dd === 0) simMaxTierReached = 0; else if (dailyTier > simMaxTierReached) simMaxTierReached = dailyTier;
     document.getElementById('sim-daily-state').textContent = `Tier ${dailyTier}`;
     document.getElementById('sim-ratchet-state').textContent = `Tier ${simMaxTierReached}`;
-
-    // SVG Updates
     document.querySelectorAll('.flow-node').forEach(n => n.classList.remove('active'));
     document.querySelectorAll('.flow-path').forEach(p => p.classList.remove('active'));
-
     document.getElementById(`node-${dailyTier}`).classList.add('active');
-    for (let i = 0; i < dailyTier; i++) {
-        document.getElementById(`path-${i}-${i+1}`).classList.add('active');
-    }
+    for (let i = 0; i < dailyTier; i++) document.getElementById(`path-${i}-${i+1}`).classList.add('active');
 }
 
 // ── Tab Switching ───────────────────────────────────────────────────
@@ -636,11 +510,7 @@ function switchTab(tabId) {
     });
     update();
     if (tabId === 'simulator') updateSimulator();
-    
-    // Force Plotly Resize for the new tab's layout
-    setTimeout(() => {
-        window.dispatchEvent(new Event('resize'));
-    }, 100);
+    setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 100);
 }
 
 // ── Initialization ─────────────────────────────────────────────────
@@ -648,30 +518,26 @@ async function init() {
     try {
         const response = await fetch('data/data.json');
         globalData = await response.json();
-
-        // Init Inputs
         const dates = globalData.dates;
         const startInput = document.getElementById('start-date');
         const endInput = document.getElementById('end-date');
         startInput.min = startInput.value = dates[0];
         endInput.max = endInput.value = dates[dates.length - 1];
 
-        // Populate Explorer Pickers
         const picker = document.getElementById('explorer-picker');
         const comparePicker = document.getElementById('explorer-compare-picker');
+        const labCompare = document.getElementById('lab-compare-picker');
+        
         Object.keys(globalData.variants).sort().forEach(name => {
-            const opt = document.createElement('option');
-            opt.value = opt.textContent = name;
-            picker.appendChild(opt);
-            
-            const opt2 = document.createElement('option');
-            opt2.value = opt2.textContent = name;
-            comparePicker.appendChild(opt2);
+            const opt = document.createElement('option'); opt.value = opt.textContent = name; picker.appendChild(opt);
+            const opt2 = document.createElement('option'); opt2.value = opt2.textContent = name; comparePicker.appendChild(opt2);
+            const opt3 = document.createElement('option'); opt3.value = opt3.textContent = name; labCompare.appendChild(opt3);
         });
+
         picker.onchange = updateExplorer;
         comparePicker.onchange = updateExplorer;
+        labCompare.onchange = updateLabResults;
 
-        // Listeners
         startInput.onchange = update;
         endInput.onchange = update;
         document.getElementById('reset-btn').onclick = () => { startInput.value = dates[0]; endInput.value = dates[dates.length-1]; update(); };
@@ -685,22 +551,16 @@ async function init() {
 
         document.querySelectorAll('.nav-item').forEach(n => n.onclick = () => switchTab(n.dataset.tab));
 
-        // Simulator
         document.getElementById('drawdown-slider').oninput = updateSimulator;
-
-        // Lab
         renderWeightTable();
+
         document.getElementById('lab-run').onclick = () => {
             const bounds = [parseFloat(document.getElementById('lab-b1').value), parseFloat(document.getElementById('lab-b2').value), parseFloat(document.getElementById('lab-b3').value), parseFloat(document.getElementById('lab-b4').value)];
-            const ratchet = document.getElementById('lab-ratchet').checked;
-            const safeties = document.getElementById('lab-safeties').checked;
-            const trend = document.getElementById('lab-trend').checked;
-            window.customStrategyResult = simulateCustomStrategy(bounds, ratchet, safeties, trend);
-            switchTab('dashboard');
-            update();
+            window.customStrategyResult = simulateCustomStrategy(bounds, document.getElementById('lab-ratchet').checked, document.getElementById('lab-safeties').checked, document.getElementById('lab-trend').checked);
+            update(); 
+            updateLabResults(); 
         };
 
-        // Table Sort
         document.querySelectorAll('#metrics-table thead th').forEach(th => th.onclick = () => {
             const key = th.dataset.sort;
             if (key === currentSortKey) currentSortAsc = !currentSortAsc;
@@ -708,11 +568,12 @@ async function init() {
             update();
         });
 
-        // Final UI cleanup
+        const savedHidden = localStorage.getItem('quant_hidden_strategies');
+        if (savedHidden) window.hiddenStrategies = new Set(JSON.parse(savedHidden));
+
         const loader = document.getElementById('loader');
         loader.style.opacity = '0';
         setTimeout(() => loader.style.display = 'none', 300);
-
         update();
     } catch (e) {
         console.error('Quant Engine Error:', e);

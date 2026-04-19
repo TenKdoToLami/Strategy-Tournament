@@ -1059,3 +1059,32 @@ tr.row-hidden {
         text-align: center;
     }
 }
+
+/* --- Performance Table Visibility --- */
+.btn-visibility {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    color: var(--text-secondary);
+    padding: 6px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    line-height: 1;
+    font-size: 1rem;
+}
+
+.btn-visibility:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+.btn-visibility.hidden {
+    border-color: var(--red);
+    opacity: 0.6;
+}
+
+.row-hidden {
+    opacity: 0.4;
+    filter: grayscale(0.5);
+}

@@ -278,6 +278,64 @@
                         <button class="lab-btn" id="lab-run">Test Strategy</button>
                     </div>
                 </section>
+
+                <div id="lab-results" class="explorer-grid" style="display: none; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 40px; padding-top: 40px;">
+                    <div class="explorer-hero">
+                        <div>
+                            <div class="explorer-title" id="lab-name">Lab Result</div>
+                            <div id="lab-meta-pills" class="pill-group" style="margin-top: 8px;"></div>
+                        </div>
+                        <div class="explorer-actions" style="display: flex; gap: 12px;">
+                            <select id="lab-compare-picker" class="btn-ghost" style="max-width: 250px; border-color: rgba(255,255,255,0.1)">
+                                <option value="">Compare with...</option>
+                            </select>
+                            <button onclick="resetLabResults()" class="btn-ghost" style="border-color: rgba(255,100,100,0.2); color: var(--red)">
+                                Clear Results
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">Allocation Map</h3>
+                        <p class="chart-subtitle">Weights across optimized drawdown tiers</p>
+                        <div class="allocation-matrix" id="lab-allocation-matrix"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">Specific Performance</h3>
+                        <div id="chart-lab-linear" class="chart-div" style="height: 400px;"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">Growth (Logarithmic)</h3>
+                        <div id="chart-lab-log" class="chart-div" style="height: 400px;"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">Historical Drawdown</h3>
+                        <div id="chart-lab-drawdown" class="chart-div" style="height: 350px;"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">1-Year Rolling Volatility</h3>
+                        <div id="chart-lab-vol" class="chart-div" style="height: 350px;"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">Leverage Exposure</h3>
+                        <div id="chart-lab-leverage" class="chart-div" style="height: 350px;"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">Real Performance</h3>
+                        <div id="chart-lab-real" class="chart-div" style="height: 400px;"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">Yearly Returns</h3>
+                        <div id="chart-lab-yearly" class="chart-div" style="height: 400px;"></div>
+                    </div>
+                </div>
             </div>
 
             <!-- TAB: Simulator -->
