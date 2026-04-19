@@ -102,15 +102,16 @@ The **Special** variants are the result of a **500,000-iteration** global optimi
 ## 📂 Project Structure
 
 - `index.html`: Main dashboard entry point.
-- `style.css`: Dashboard styling.
-- `dashboard.js`: Frontend logic and "Strategy Laboratory" engine.
-- `data.json`: Precomputed market data and signals.
+- `assets/`:
+  - `css/style.css`: Dashboard styling.
+  - `js/dashboard.js`: Frontend logic and "Strategy Laboratory" engine.
+- `data/`:
+  - `data.json`: Precomputed market data and signals.
 - `scripts/`:
-  - `precompute.py`: Data pipeline script to refresh `data.json`.
+  - `precompute.py`: Data pipeline script to refresh `data/data.json`.
   - `optimization/`: Quantitative research and optimization tools.
 - `requirements.txt`: Python dependencies.
-
----
+- `.gitignore`, `.nojekyll`: Project configuration.
 
 ## 🛠️ Local Development
 

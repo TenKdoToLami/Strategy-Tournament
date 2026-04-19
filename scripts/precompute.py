@@ -253,11 +253,17 @@ def get_precomputed_data():
         }
     }
     
-    with open('data.json', 'w') as f:
+    # Save to data directory
+    output_dir = 'data'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    
+    output_path = os.path.join(output_dir, 'data.json')
+    with open(output_path, 'w') as f:
         json.dump(data_out, f)
     
-    size_kb = os.path.getsize('data.json') / 1024
-    print(f"Done! Exported to data.json ({size_kb:.0f} KB, {len(dates)} days)")
+    size_kb = os.path.getsize(output_path) / 1024
+    print(f"Done! Exported to {output_path} ({size_kb:.0f} KB, {len(dates)} days)")
 
 import os
 
