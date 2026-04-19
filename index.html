@@ -343,7 +343,7 @@
             <div id="tab-simulator" class="tab-content">
                 <section class="sim-container">
                     <div class="sim-sidebar">
-                        <div class="sim-slider-box">
+                        <div class="card" style="padding: 20px;">
                             <h3 class="chart-title">Drawdown Simulator</h3>
                             <p class="chart-subtitle">Adjust current market drawdown to see logic transitions.</p>
                             
@@ -354,11 +354,14 @@
                                 </select>
                             </div>
 
-                            <input type="range" id="drawdown-slider" min="0" max="100" value="0" step="1" style="width:100%; margin: 16px 0;">
-                            <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700;">
-                                <span>0% (ATH)</span>
-                                <span id="drawdown-value" style="color:var(--accent)">-0%</span>
-                                <span>-100%</span>
+                            <div class="sim-slider-box">
+                                <input type="range" id="drawdown-slider" min="0" max="100" value="0" step="1" style="width:100%; margin: 16px 0;">
+                                <div class="slider-marks-container" id="sim-slider-marks"></div>
+                                <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 700;">
+                                    <span>0% (ATH)</span>
+                                    <span id="drawdown-value" style="color:var(--accent)">-0%</span>
+                                    <span>-100%</span>
+                                </div>
                             </div>
                         </div>
 
@@ -382,6 +385,14 @@
 
                     <div class="sim-main-stage">
                         <div class="sim-stage-header">
+                            <!-- BOUNDARIES COLUMN -->
+                            <div class="flowchart-container">
+                                <div class="flow-tower-label" style="color:var(--text-muted)">Boundaries</div>
+                                <div id="sim-boundaries-list" class="boundary-list">
+                                    <!-- Dynamic Tier Ranges -->
+                                </div>
+                            </div>
+
                             <!-- DAILY LOGIC TOWER -->
                             <div class="flowchart-container">
                                 <div class="flow-tower-label" style="color:var(--text-muted)">Daily Logic</div>

@@ -531,6 +531,34 @@ function updateSimulator() {
     document.getElementById('sim-daily-state').textContent = `Tier ${dailyTier}`;
     document.getElementById('sim-ratchet-state').textContent = `Tier ${simMaxTierReached}`;
 
+    // Update Boundaries Column
+    const boundaryList = document.getElementById('sim-boundaries-list');
+    if (boundaryList) {
+        const ranges = [
+            { t: 'T0', r: `0% — ${(b[0]*100).toFixed(0)}%` },
+            { t: 'T1', r: `${(b[0]*100).toFixed(0)}% — ${(b[1]*100).toFixed(0)}%` },
+            { t: 'T2', r: `${(b[1]*100).toFixed(0)}% — ${(b[2]*100).toFixed(0)}%` },
+            { t: 'T3', r: `${(b[2]*100).toFixed(0)}% — ${(b[3]*100).toFixed(0)}%` },
+            { t: 'T4', r: `> ${(b[3]*100).toFixed(0)}%` }
+        ];
+        boundaryList.innerHTML = ranges.map((range, i) => `
+            <div class="boundary-item" style="color:${i === effectiveTier ? 'var(--accent)' : 'inherit'}">
+                <div class="boundary-tier">Tier ${i}</div>
+                <div class="boundary-range">${range.r}</div>
+            </div>
+        `).join('');
+    }
+
+    // Update Slider Marks
+    const marksContainer = document.getElementById('sim-slider-marks');
+    if (marksContainer) {
+        marksContainer.innerHTML = b.map((val, i) => {
+            const pos = val * 100;
+            const isActive = dd >= pos;
+            return `<div class="slider-mark ${isActive ? 'active' : ''}" style="left:${pos}%"></div>`;
+        }).join('');
+    }
+
     // Update Daily Tower Highlights (Always Spot/Daily logic)
     document.querySelectorAll('#flow-svg-daily .flow-node').forEach(n => {
         n.classList.remove('active-market', 'active-execution');
