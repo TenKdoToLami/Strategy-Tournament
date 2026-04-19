@@ -595,9 +595,6 @@ function updateSimulator() {
     };
     const b = entry.bounds;
     const isRatchet = (entry.params && entry.params.logic === 'Ratchet') || entry.logic === 'Ratchet';
-    const isTrendStrat = entry.params && entry.params.trend === 'Trend';
-    const trendSignal = document.getElementById('sim-trend-signal').value; // 'bull' or 'bear'
-    const isBearish = trendSignal === 'bear';
     
     let dailyTier = 0;
     if (dd >= b[3]) dailyTier = 4; 
@@ -610,57 +607,24 @@ function updateSimulator() {
 
     let effectiveTier = isRatchet ? simMaxTierReached : dailyTier;
 
-    // Trend De-escalation Override
-    let isDeescalated = false;
-    const smaMode = document.getElementById('sim-sma-mode').value;
-    if (isTrendStrat && isBearish) {
-        effectiveTier = 0;
-        isDeescalated = true;
-    }
-
     document.getElementById('sim-daily-state').textContent = `Tier ${dailyTier}`;
-    const forcedMsg = smaMode === 'Cash' ? '100% CASH' : 'Tier 0';
-    document.getElementById('sim-ratchet-state').textContent = isDeescalated ? `${forcedMsg} (Trend FORCED)` : `Tier ${simMaxTierReached}`;
+    document.getElementById('sim-ratchet-state').textContent = `Tier ${simMaxTierReached}`;
     
-    // Add Trend Status to Simulator
     const decisionEngine = document.querySelector('.decision-engine h4');
-    const simSMA = parseInt(document.getElementById('sim-sma').value) || 200;
-    
     if (decisionEngine) {
-        // Calculate dynamic signal for the current 'End Date'
-        const endDayIdx = globalData.dates.indexOf(document.getElementById('end-date').value);
-        let dynamicSignal = 'Unknown';
-        if (endDayIdx !== -1) {
-            const raw = globalData.raw_returns;
-            const n = endDayIdx + 1;
-            let spyPrice = 1.0;
-            const prices = new Float32Array(n);
-            for (let i = 0; i < n; i++) {
-                spyPrice *= (1 + raw.VOO[i]);
-                prices[i] = spyPrice;
-            }
-            const smaValues = calculateSMAVector(prices, simSMA);
-            dynamicSignal = prices[endDayIdx] >= smaValues[endDayIdx] ? '🟢 Bullish' : '🔴 Bearish';
-        }
-
-        const trendStatus = isTrendStrat ? ` ✅ Filter active (Period: ${simSMA})` : ' ❌ No Trend Filter';
         decisionEngine.innerHTML = `
             <div style="display:flex; justify-content:space-between; width:100%; align-items:center">
                 <span style="color:var(--accent)">Decision Engine</span>
                 <div style="font-size:0.6rem; text-align:right">
-                    <div style="color:var(--text-secondary)">Calculated Signal: ${dynamicSignal}</div>
-                    <div style="opacity:0.7">${trendStatus}</div>
+                    <div style="color:var(--text-secondary)">Pure State Logic</div>
+                    <div style="opacity:0.7">No Filter Overlays</div>
                 </div>
             </div>
         `;
     }
     
     const ratchetEl = document.getElementById('sim-ratchet-state');
-    if (isDeescalated) {
-        ratchetEl.classList.add('trend-warning');
-        ratchetEl.style.color = 'var(--red)';
-    } else {
-        ratchetEl.classList.remove('trend-warning');
+    if (ratchetEl) {
         ratchetEl.style.color = 'var(--accent)';
     }
 
@@ -700,15 +664,12 @@ function updateSimulator() {
         // Market Signal is what the drawdown alone says
         if (id === dailyTier) n.classList.add('active-market');
         
-        // Execution is where we ACTUALLY are (could be forced to 0)
-        // For Daily column, it's either dailyTier OR 0 if de-escalated
-        const execTier = isDeescalated ? 0 : dailyTier;
-        if (id === execTier) n.classList.add('active-execution');
+        // Execution is where we ACTUALLY are (In simulator, it's just the dailyTier)
+        if (id === dailyTier) n.classList.add('active-execution');
     });
     document.querySelectorAll('#flow-svg-daily .flow-path').forEach(p => p.classList.remove('active'));
     
-    // Path should only go up to execution tier
-    const dailyExecLimit = isDeescalated ? 0 : dailyTier;
+    const dailyExecLimit = dailyTier;
     for (let i = 0; i < dailyExecLimit; i++) {
         const p = document.getElementById(`path-daily-${i}-${i + 1}`);
         if (p) p.classList.add('active');
@@ -742,7 +703,6 @@ function updateSimulator() {
             const sum = w.reduce((s, v) => s + v, 0);
             const isEff = (i === effectiveTier);
             const isDaily = (i === dailyTier && !isEff);
-            
             tableHtml += `<tr class="${isEff ? 'active-execution' : ''} ${isDaily ? 'active-market' : ''}">
                 <td class="tier-label">T${i}</td>
                 <td><input type="text" readonly value="${w[0].toFixed(0)}%"></td>
@@ -817,8 +777,6 @@ async function init() {
         document.querySelectorAll('.nav-item').forEach(n => n.onclick = () => switchTab(n.dataset.tab));
 
         document.getElementById('drawdown-slider').oninput = updateSimulator;
-        document.getElementById('sim-trend-signal').onchange = updateSimulator;
-        document.getElementById('sim-sma-mode').onchange = updateSimulator;
         renderWeightTable();
 
         document.getElementById('lab-run').onclick = () => {
