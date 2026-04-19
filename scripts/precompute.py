@@ -155,25 +155,40 @@ def get_precomputed_data():
     print("Simulating variants...")
     variants = {}
     leverage = {}
+    weights_out = {}
     
     # Benchmarks
     variants['Benchmark SPY (1x)'] = r_spy.loc[SIM_START:]
     leverage['Benchmark SPY (1x)'] = pd.Series(1.0, index=variants['Benchmark SPY (1x)'].index)
+    weights_out['Benchmark SPY (1x)'] = [[100,0,0,0,0]] * 5
     
     variants['Benchmark SSO (2x)'] = r_sso.loc[SIM_START:]
     leverage['Benchmark SSO (2x)'] = pd.Series(2.0, index=variants['Benchmark SSO (2x)'].index)
+    weights_out['Benchmark SSO (2x)'] = [[0,100,0,0,0]] * 5
     
     variants['Benchmark SPYU (4x)'] = r_spyu.loc[SIM_START:]
     leverage['Benchmark SPYU (4x)'] = pd.Series(4.0, index=variants['Benchmark SPYU (4x)'].index)
+    weights_out['Benchmark SPYU (4x)'] = [[0,0,100,0,0]] * 5
     
     variants['Benchmark DJP (1x)'] = r_djp.loc[SIM_START:]
     leverage['Benchmark DJP (1x)'] = pd.Series(1.0, index=variants['Benchmark DJP (1x)'].index)
+    weights_out['Benchmark DJP (1x)'] = [[0,0,0,100,0]] * 5
     
     # Strategies helper
     def add_strat(name, bounds, freq, safeties, ratchet=False):
+        # We need the weights used internally
+        if safeties:
+            ws = [
+                [80, 0, 0, 10, 10], [40, 40, 0, 10, 10], [0, 80, 0, 10, 10], [0, 40, 40, 10, 10], [0, 0, 100, 0, 0]
+            ]
+        else:
+            ws = [
+                [100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]
+            ]
         r, l = simulate_strategy(bounds, freq, safeties, is_ratchet=ratchet)
         variants[name] = r
         leverage[name] = l
+        weights_out[name] = ws
 
     add_strat('Standard Daily Safeties', [0.05, 0.10, 0.20, 0.30], 'Daily', True)
     add_strat('Standard Daily Pure', [0.05, 0.10, 0.20, 0.30], 'Daily', False)
@@ -192,12 +207,16 @@ def get_precomputed_data():
 
     # Hall of Fame Special Variants (Optimized)
     def add_special(name, weights, bounds, ratchet):
+        # Convert dict weights to flat lists for JSON compatibility
+        ws_list = []
+        for w in weights:
+            ws_list.append([w['VOO'], w['SSO'], w['SPYU'], w['DJP'], w['BILL']])
         r, l = simulate_strategy(bounds, 'Daily', False, is_ratchet=ratchet, custom_weights=weights)
         variants[name] = r
         leverage[name] = l
+        weights_out[name] = ws_list
 
     # [ THE DEEP BEAST ]
-    # CAGR: 33.21%, DD: -72.92%, Sharpe: 0.70
     add_special('Special BEAST', [
         {'VOO': 0.38, 'SSO': 0.21, 'SPYU': 0.01, 'DJP': 0.40, 'BILL': 0.00},
         {'VOO': 0.00, 'SSO': 0.00, 'SPYU': 1.00, 'DJP': 0.00, 'BILL': 0.00},
@@ -207,7 +226,6 @@ def get_precomputed_data():
     ], [0.01, 0.05, 0.09, 0.53], False)
 
     # [ THE DEEP SCALPEL ]
-    # CAGR: 10.65%, DD: -13.68%, Sharpe: 0.88
     add_special('Special SCALPEL', [
         {'VOO': 0.13, 'SSO': 0.02, 'SPYU': 0.00, 'DJP': 0.07, 'BILL': 0.78},
         {'VOO': 0.59, 'SSO': 0.03, 'SPYU': 0.00, 'DJP': 0.32, 'BILL': 0.06},
@@ -217,7 +235,6 @@ def get_precomputed_data():
     ], [0.01, 0.05, 0.30, 0.60], False)
 
     # [ THE DEEP SHIELD ]
-    # CAGR: 8.02%, DD: -7.86%, Sharpe: 1.03
     add_special('Special SHIELD', [
         {'VOO': 0.01, 'SSO': 0.07, 'SPYU': 0.01, 'DJP': 0.00, 'BILL': 0.91},
         {'VOO': 0.04, 'SSO': 0.00, 'SPYU': 0.00, 'DJP': 0.80, 'BILL': 0.16},
@@ -229,7 +246,18 @@ def get_precomputed_data():
     # Convert to JSON structure
     dates = variants['Benchmark SPY (1x)'].index.strftime('%Y-%m-%d').tolist()
     
-    # 1. Export raw components for Browser-side "Strategy Lab"
+    # Export bounds for UI
+    bounds_out = {
+        'Standard': [0.05, 0.10, 0.20, 0.30],
+        'Aggressive': [0.03, 0.07, 0.12, 0.20],
+        'Conservative': [0.10, 0.20, 0.35, 0.50],
+        'Special BEAST': [0.01, 0.05, 0.09, 0.53],
+        'Special SCALPEL': [0.01, 0.05, 0.30, 0.60],
+        'Special SHIELD': [0.05, 0.10, 0.39, 0.58],
+        'Benchmark': [0, 0, 0, 0]
+    }
+
+    # 1. Export raw components
     # Signals are calculated here to avoid complex price reconstruction in JS
     raw_sub = returns_raw.loc[SIM_START:]
     # Calculate price signal using the actual absolute price (not normalized cumulative)
@@ -241,6 +269,8 @@ def get_precomputed_data():
         'inflation': inflation_levels.loc[SIM_START:].tolist(),
         'variants': {name: v.tolist() for name, v in variants.items()},
         'leverage': {name: l.tolist() for name, l in leverage.items()},
+        'weights': weights_out,
+        'bounds': bounds_out,
         'raw_returns': {
             'VOO': raw_sub[TICKERS['VOO']].tolist(),
             'SSO': (raw_sub[TICKERS['VOO']] * 2.0).tolist(),

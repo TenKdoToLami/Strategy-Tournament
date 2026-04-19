@@ -4,17 +4,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Dynamic drawdown-based leveraging strategy backtester with interactive charts and real-time browser-side simulation.">
-    <title>Strategy Tournament — Dynamic Backtesting Engine</title>
+    <meta name="description" content="Professional quant console for Strategy Tournament. Interactive backtesting and logic visualization.">
+    <title>Strategy Tournament — Quant Console</title>
 
-    <!-- Preconnect for performance -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Roboto+Mono:wght@400;500&display=swap" rel="stylesheet">
-
-    <!-- Plotly loaded with defer for faster first paint -->
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    
     <script defer src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
-
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 
@@ -22,317 +21,371 @@
     <!-- Loading Screen -->
     <div id="loader" class="loading">
         <div class="loading-spinner"></div>
-        <div class="loading-text">Loading market data…</div>
+        <div class="loading-text">Initializing Quant Engine…</div>
     </div>
 
-    <div class="container">
-        <!-- Header -->
-        <header class="site-header">
-            <h1>Strategy Tournament</h1>
-            <p class="subtitle">Dynamic Drawdown-Based Leveraging · Honest Backtests (2002–2024)</p>
-        </header>
-
-        <!-- Date Controls -->
-        <section class="card controls-bar" aria-label="Date range selection">
-            <label for="start-date">From</label>
-            <input type="date" id="start-date">
-            <label for="end-date">To</label>
-            <input type="date" id="end-date">
-            <button class="btn-ghost" id="reset-btn">Reset Dates</button>
-        </section>
-
-        <!-- Strategy Laboratory -->
-        <section class="lab-card" aria-label="Custom strategy laboratory">
-            <div class="lab-header">
-                <h2 class="lab-title">🧪 Strategy Laboratory</h2>
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <div class="sidebar-logo">STRAT TOURNAMENT</div>
+        </div>
+        <nav class="sidebar-nav">
+            <div class="nav-item active" data-tab="dashboard">
+                <i class="fas fa-chart-line"></i>
+                <span>Performance</span>
             </div>
-            <div class="lab-grid">
-                <div class="lab-input-group">
-                    <label for="lab-b1">Tier 1 Bound (%)</label>
-                    <input type="number" id="lab-b1" value="5" step="0.5">
-                </div>
-                <div class="lab-input-group">
-                    <label for="lab-b2">Tier 2 Bound (%)</label>
-                    <input type="number" id="lab-b2" value="10" step="0.5">
-                </div>
-                <div class="lab-input-group">
-                    <label for="lab-b3">Tier 3 Bound (%)</label>
-                    <input type="number" id="lab-b3" value="20" step="0.5">
-                </div>
-                <div class="lab-input-group">
-                    <label for="lab-b4">Tier 4 Bound (%)</label>
-                    <input type="number" id="lab-b4" value="30" step="0.5">
-                </div>
+            <div class="nav-item" data-tab="explorer">
+                <i class="fas fa-search-dollar"></i>
+                <span>Strategy Explorer</span>
             </div>
-            <div class="lab-controls">
-                <label class="lab-toggle">
-                    <input type="checkbox" id="lab-ratchet"> Ratchet Logic
-                </label>
-                <label class="lab-toggle">
-                    <input type="checkbox" id="lab-safeties" checked> Safeties (Bonds/Comm)
-                </label>
-                <label class="lab-toggle">
-                    <input type="checkbox" id="lab-trend" checked> Trend Filter (SMA200)
-                </label>
-                <div class="lab-spacer"></div>
-                <button class="lab-btn" id="lab-run">Run Simulation</button>
-                <button class="lab-btn lab-btn--config" id="lab-config-btn">Configure Allocations</button>
+            <div class="nav-item" data-tab="lab">
+                <i class="fas fa-flask"></i>
+                <span>Quant Lab</span>
             </div>
-        </section>
+            <div class="nav-item" data-tab="simulator">
+                <i class="fas fa-project-diagram"></i>
+                <span>Logic Simulator</span>
+            </div>
+            <div class="nav-item" data-tab="methodology">
+                <i class="fas fa-book-open"></i>
+                <span>Documentation</span>
+            </div>
+        </nav>
+    </aside>
 
-        <!-- Weight Configuration Modal -->
-        <div id="modal-weights" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 id="modal-title" class="modal-title">Adjust Tier Allocations</h2>
-                    <button class="close-modal" id="close-modal" aria-label="Close modal">&times;</button>
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Global Header Removed -->
+
+            <!-- Global Controls -->
+            <section class="card controls-bar" aria-label="Global range controls">
+                <div class="lab-input-group">
+                    <label>Start Date</label>
+                    <input type="date" id="start-date">
                 </div>
-                <p class="modal-desc">Assign weights (0–100) for each asset at each drawdown tier. Rows normalize automatically to 100%.</p>
-                <table class="weight-table">
-                    <thead>
-                        <tr>
-                            <th>Tier</th>
-                            <th>VOO (1x)</th>
-                            <th>SSO (2x)</th>
-                            <th>SPYU (4x)</th>
-                            <th>DJP</th>
-                            <th>BILL</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="weight-tbody"></tbody>
-                </table>
-                <div class="modal-actions">
-                    <button class="lab-btn lab-btn--cancel" id="modal-cancel">Cancel</button>
-                    <button class="lab-btn" id="modal-save">Save & Close</button>
+                <div class="lab-input-group">
+                    <label>End Date</label>
+                    <input type="date" id="end-date">
                 </div>
+                <button class="btn-ghost" id="reset-btn">Reset Period</button>
+            </section>
+
+            <!-- TAB: Dashboard -->
+            <div id="tab-dashboard" class="tab-content active">
+                <!-- Filters -->
+                <section class="card filter-toolbar" aria-label="Strategy filters">
+                    <div class="filter-group">
+                        <div class="filter-group-label">Risk Tier</div>
+                        <div class="filter-options" id="filter-level">
+                            <div class="pill active" data-value="Benchmark">Benchmarks</div>
+                            <div class="pill active" data-value="Special">Special</div>
+                            <div class="pill active" data-value="Standard">Standard</div>
+                            <div class="pill active" data-value="Aggressive">Aggressive</div>
+                            <div class="pill active" data-value="Conservative">Conservative</div>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <div class="filter-group-label">Logic</div>
+                        <div class="filter-options" id="filter-logic">
+                            <div class="pill active" data-value="Daily">Daily</div>
+                            <div class="pill active" data-value="Ratchet">Ratchet</div>
+                        </div>
+                    </div>
+                    <div class="filter-group">
+                        <div class="filter-group-label">Universe</div>
+                        <div class="filter-options" id="filter-mix">
+                            <div class="pill active" data-value="Safeties">Safeties</div>
+                            <div class="pill active" data-value="Pure">Pure</div>
+                        </div>
+                    </div>
+                </section>
+
+                <section id="metrics-container">
+                    <table id="metrics-table">
+                        <thead>
+                            <tr>
+                                <th data-sort="Strategy">Strategy Name</th>
+                                <th data-sort="Total %">Total %</th>
+                                <th data-sort="CAGR">CAGR</th>
+                                <th data-sort="Avg Ann Ret">Avg Ann</th>
+                                <th data-sort="Max DD">Max DD</th>
+                                <th data-sort="Sharpe">Sharpe</th>
+                                <th data-sort="Ann. Vol">Volatility</th>
+                            </tr>
+                        </thead>
+                        <tbody id="metrics-body"></tbody>
+                    </table>
+                </section>
+
+                <div class="card chart-box">
+                    <h2 class="chart-title">Cumulative Performance</h2>
+                    <div id="chart-linear" class="chart-div"></div>
+                </div>
+
+                <div class="card chart-box">
+                    <h2 class="chart-title">Growth of Strategy (Log)</h2>
+                    <div id="chart-log" class="chart-div"></div>
+                </div>
+
+                <div class="card chart-box">
+                    <h2 class="chart-title">Maximum Drawdown</h2>
+                    <div id="chart-drawdown" class="chart-div"></div>
+                </div>
+
+                <div class="card chart-box">
+                    <h2 class="chart-title">1-Year Rolling Volatility</h2>
+                    <div id="chart-volatility" class="chart-div"></div>
+                </div>
+
+                <div class="card chart-box">
+                    <h2 class="chart-title">Leverage Exposure</h2>
+                    <div id="chart-leverage" class="chart-div"></div>
+                </div>
+
+                <div class="card chart-box">
+                    <h2 class="chart-title">Real Performance (Inflation Adjusted)</h2>
+                    <div id="chart-real" class="chart-div"></div>
+                </div>
+
+                <div class="card chart-box">
+                    <h2 class="chart-title">Calendar Year Returns</h2>
+                    <div id="chart-yearly" class="chart-div"></div>
+                </div>
+            </div>
+
+            <!-- TAB: Strategy Explorer -->
+            <div id="tab-explorer" class="tab-content">
+                <section class="explorer-grid">
+                    <div class="explorer-hero">
+                        <div>
+                            <div class="explorer-title" id="explorer-name">Select Strategy</div>
+                            <div id="explorer-meta-pills" class="pill-group" style="margin-top: 8px;">
+                                <!-- Context pills like 'Ratchet ON' added here -->
+                            </div>
+                        </div>
+                        <div class="explorer-actions" style="display: flex; gap: 12px;">
+                            <select id="explorer-picker" class="btn-ghost" style="max-width: 250px;">
+                                <option value="">Primary Asset...</option>
+                            </select>
+                            <select id="explorer-compare-picker" class="btn-ghost" style="max-width: 250px; border-color: rgba(255,255,255,0.1)">
+                                <option value="">Compare with...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">Allocation Map</h3>
+                        <p class="chart-subtitle">Weights across drawdown tiers (T0-T4)</p>
+                        <div class="allocation-matrix" id="allocation-matrix">
+                            <!-- Injected by JS -->
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">Specific Performance</h3>
+                        <p class="chart-subtitle">Growth of strategy over time (Linear)</p>
+                        <div id="chart-explorer-linear" class="chart-div" style="height: 400px;"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">Growth (Logarithmic)</h3>
+                        <p class="chart-subtitle">Capital appreciation on log-scale</p>
+                        <div id="chart-explorer-log" class="chart-div" style="height: 400px;"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">Historical Drawdown</h3>
+                        <p class="chart-subtitle">Peak-to-trough decline</p>
+                        <div id="chart-explorer-drawdown" class="chart-div" style="height: 350px;"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">1-Year Rolling Volatility</h3>
+                        <p class="chart-subtitle">Annualized standard deviation of returns</p>
+                        <div id="chart-explorer-vol" class="chart-div" style="height: 350px;"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">Leverage Exposure</h3>
+                        <p class="chart-subtitle">Effective equity multiplier over time</p>
+                        <div id="chart-explorer-leverage" class="chart-div" style="height: 350px;"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">Real Performance</h3>
+                        <p class="chart-subtitle">Inflation-adjusted growth</p>
+                        <div id="chart-explorer-real" class="chart-div" style="height: 400px;"></div>
+                    </div>
+
+                    <div class="card">
+                        <h3 class="chart-title">Yearly Returns</h3>
+                        <p class="chart-subtitle">Calendar year performance</p>
+                        <div id="chart-explorer-yearly" class="chart-div" style="height: 400px;"></div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- TAB: Quant Lab -->
+            <div id="tab-lab" class="tab-content">
+                <section class="lab-card">
+                    <div class="lab-header">
+                        <h2 class="lab-title">🛠️ Prototype Strategy Builder</h2>
+                    </div>
+                    <div class="lab-grid">
+                        <div class="lab-input-group">
+                            <label>T1 Bound (%)</label>
+                            <input type="number" id="lab-b1" value="5">
+                        </div>
+                        <div class="lab-input-group">
+                            <label>T2 Bound (%)</label>
+                            <input type="number" id="lab-b2" value="10">
+                        </div>
+                        <div class="lab-input-group">
+                            <label>T3 Bound (%)</label>
+                            <input type="number" id="lab-b3" value="20">
+                        </div>
+                        <div class="lab-input-group">
+                            <label>T4 Bound (%)</label>
+                            <input type="number" id="lab-b4" value="30">
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="margin: 20px 0; background: var(--bg-elevated); padding: 20px;">
+                        <h3 class="chart-title" style="font-size: 0.9rem;">Weight Matrix</h3>
+                        <table class="weight-table">
+                            <thead>
+                                <tr>
+                                    <th>Tier</th>
+                                    <th>VOO (1x)</th>
+                                    <th>SSO (2x)</th>
+                                    <th>SPYU (4x)</th>
+                                    <th>DJP</th>
+                                    <th>BILL</th>
+                                    <th>Sum</th>
+                                </tr>
+                            </thead>
+                            <tbody id="weight-tbody"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="lab-controls">
+                        <label class="lab-toggle"><input type="checkbox" id="lab-ratchet"> Ratchet</label>
+                        <label class="lab-toggle"><input type="checkbox" id="lab-safeties" checked> Safeties</label>
+                        <label class="lab-toggle"><input type="checkbox" id="lab-trend" checked> Trend Filter</label>
+                        <div class="lab-spacer"></div>
+                        <button class="lab-btn" id="lab-run">Test Strategy</button>
+                    </div>
+                </section>
+            </div>
+
+            <!-- TAB: Simulator -->
+            <div id="tab-simulator" class="tab-content">
+                <section class="sim-container">
+                    <div class="sim-controls">
+                        <div class="sim-slider-box">
+                            <h3 class="chart-title">Drawdown Simulator</h3>
+                            <p class="chart-subtitle">Adjust current market drawdown to see logic transitions.</p>
+                            <input type="range" id="drawdown-slider" min="0" max="60" value="0" step="1">
+                            <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 0.8rem; font-weight: 700;">
+                                <span>0% (ATH)</span>
+                                <span id="drawdown-value">0%</span>
+                                <span>-60%</span>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <h4 class="tier-label" style="color:var(--accent)">Active Decision</h4>
+                            <div style="font-size: 0.9rem; margin-bottom: 12px; line-height: 1.4;">
+                                <strong>Daily Logic:</strong> <span id="sim-daily-state">Tier 0</span><br>
+                                <span style="color:var(--text-muted)">Changes daily based on spot DD.</span>
+                            </div>
+                            <div style="font-size: 0.9rem; line-height: 1.4;">
+                                <strong>Ratchet Logic:</strong> <span id="sim-ratchet-state">Tier 0</span><br>
+                                <span style="color:var(--text-muted)">Locks highest tier until new ATH.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flowchart-container">
+                        <svg id="flow-svg" viewBox="0 0 500 500">
+                            <!-- States (Circles) -->
+                            <path class="flow-path" d="M 250,50 L 250,130" id="path-0-1"></path>
+                            <path class="flow-path" d="M 250,130 L 250,210" id="path-1-2"></path>
+                            <path class="flow-path" d="M 250,210 L 250,290" id="path-2-3"></path>
+                            <path class="flow-path" d="M 250,290 L 250,370" id="path-3-4"></path>
+                            
+                            <!-- State Nodes -->
+                            <circle class="flow-node active" cx="250" cy="50" r="25" id="node-0"></circle>
+                            <text class="flow-text" x="250" y="54" text-anchor="middle">T0</text>
+                            <text class="flow-text" x="285" y="54" style="font-size: 0.7rem; fill:var(--text-muted)">0% - 5%</text>
+                            
+                            <circle class="flow-node" cx="250" cy="130" r="25" id="node-1"></circle>
+                            <text class="flow-text" x="250" y="134" text-anchor="middle">T1</text>
+                            <text class="flow-text" x="285" y="134" style="font-size: 0.7rem; fill:var(--text-muted)">5% - 10%</text>
+
+                            <circle class="flow-node" cx="250" cy="210" r="25" id="node-2"></circle>
+                            <text class="flow-text" x="250" y="214" text-anchor="middle">T2</text>
+                            <text class="flow-text" x="285" y="214" style="font-size: 0.7rem; fill:var(--text-muted)">10% - 20%</text>
+
+                            <circle class="flow-node" cx="250" cy="290" r="25" id="node-3"></circle>
+                            <text class="flow-text" x="250" y="294" text-anchor="middle">T3</text>
+                            <text class="flow-text" x="285" y="294" style="font-size: 0.7rem; fill:var(--text-muted)">20% - 30%</text>
+
+                            <circle class="flow-node" cx="250" cy="370" r="25" id="node-4"></circle>
+                            <text class="flow-text" x="250" y="374" text-anchor="middle">T4</text>
+                            <text class="flow-text" x="285" y="374" style="font-size: 0.7rem; fill:var(--text-muted)">> 30%</text>
+                            
+                            <!-- Reverse Paths -->
+                            <path class="flow-path" d="M 230,130 Q 180,90 230,50" style="stroke-dasharray: 4;"></path>
+                            <text class="flow-text" x="160" y="94" style="font-size: 0.6rem;">Recovery (Daily only)</text>
+                        </svg>
+                    </div>
+                </section>
+            </div>
+
+            <!-- TAB: Methodology -->
+            <div id="tab-methodology" class="tab-content">
+                <section class="card footer-guide" style="border:none; padding:0;">
+                    <h2>📘 Quantitative Framework</h2>
+                    <p>Understanding the underlying mechanics of dynamic leveraging.</p>
+                    
+                    <h3>1. Instruments Library</h3>
+                    <table>
+                        <thead>
+                            <tr><th>Ticker</th><th>Asset</th><th>Leverage</th><th>Role</th></tr>
+                        </thead>
+                        <tbody>
+                            <tr><td><strong>SPY</strong></td><td>S&P 500 ETF</td><td>1.0x</td><td>Equity Benchmark</td></tr>
+                            <tr><td><strong>SSO</strong></td><td>ProShares Ultra S&P500</td><td>2.0x</td><td>Leveraged Core</td></tr>
+                            <tr><td><strong>SPYU</strong></td><td>Direxion 4X S&P 500</td><td>4.0x</td><td>High-Alpha Engine</td></tr>
+                            <tr><td><strong>VFISX</strong></td><td>Short-Term Treasury</td><td>0.0x</td><td>Risk-Free / Safety</td></tr>
+                            <tr><td><strong>PCRIX</strong></td><td>Commodity Index</td><td>1.0x</td><td>Inflation Hedge</td></tr>
+                        </tbody>
+                    </table>
+
+                    <h3>2. Calculation Methods</h3>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="tier-box">
+                            <div class="tier-label">Compounded Return</div>
+                            <code>Final / Initial - 1</code>
+                        </div>
+                        <div class="tier-box">
+                            <div class="tier-label">Vol Drag Factor</div>
+                            <code>CAGR ≈ Mean - 0.5 * Var</code>
+                        </div>
+                    </div>
+
+                    <h3>3. State Machine Logic</h3>
+                    <p>The core engine follows a state machine where the current "Tier" (T0 through T4) dictates the portfolio mix. </p>
+                    <ul>
+                        <li><strong>Daily Transition</strong>: Moves between states freely based on current drawdown.</li>
+                        <li><strong>Ratchet Transition</strong>: Moves to higher tiers (deeper DD) but refuses to move back to lower tiers until a 0% drawdown (New All-Time High) is reached.</li>
+                    </ul>
+                </section>
             </div>
         </div>
-
-        <!-- Filters -->
-        <section class="card filter-toolbar" aria-label="Strategy filters">
-            <div class="filter-group">
-                <div class="filter-group-label">Risk Level</div>
-                <div class="filter-options" id="filter-level">
-                    <div class="pill active" data-value="Benchmark">Benchmarks</div>
-                    <div class="pill active" data-value="Special">Special</div>
-                    <div class="pill active" data-value="Standard">Standard</div>
-                    <div class="pill active" data-value="Aggressive">Aggressive</div>
-                    <div class="pill active" data-value="Conservative">Conservative</div>
-                </div>
-            </div>
-            <div class="filter-group">
-                <div class="filter-group-label">Logic</div>
-                <div class="filter-options" id="filter-logic">
-                    <div class="pill active" data-value="Daily">Daily</div>
-                    <div class="pill active" data-value="Ratchet">Ratchet</div>
-                </div>
-            </div>
-            <div class="filter-group">
-                <div class="filter-group-label">Asset Mix</div>
-                <div class="filter-options" id="filter-mix">
-                    <div class="pill active" data-value="Safeties">Safeties</div>
-                    <div class="pill active" data-value="Pure">Pure Equity</div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Metrics Table -->
-        <section id="metrics-container" aria-label="Strategy performance metrics">
-            <table id="metrics-table">
-                <thead>
-                    <tr>
-                        <th data-sort="Strategy">Strategy</th>
-                        <th data-sort="Total %">Total %</th>
-                        <th data-sort="CAGR">CAGR</th>
-                        <th data-sort="Avg Ann Ret">Avg Ann Ret</th>
-                        <th data-sort="Max DD">Max DD</th>
-                        <th data-sort="Sharpe">Sharpe</th>
-                        <th data-sort="Ann. Vol">Ann. Vol</th>
-                    </tr>
-                </thead>
-                <tbody id="metrics-body"></tbody>
-            </table>
-        </section>
-
-        <!-- Analytics Charts -->
-        <section id="analytics-suite" aria-label="Strategy analytics charts">
-            <div class="card chart-box">
-                <h2 class="chart-title">Cumulative Performance</h2>
-                <p class="chart-subtitle">Linear scale — best for comparing final outcomes.</p>
-                <div id="chart-linear" class="chart-div"></div>
-            </div>
-
-            <div class="card chart-box">
-                <h2 class="chart-title">Cumulative Performance (Log)</h2>
-                <p class="chart-subtitle">Logarithmic scale — a straight line means consistent compounding.</p>
-                <div id="chart-log" class="chart-div"></div>
-            </div>
-
-            <div class="card chart-box">
-                <h2 class="chart-title">Historical Drawdown</h2>
-                <p class="chart-subtitle">Depth of decline from peak. 0% = All-Time High.</p>
-                <div id="chart-drawdown" class="chart-div"></div>
-            </div>
-
-            <div class="card chart-box">
-                <h2 class="chart-title">Rolling 1-Year Volatility</h2>
-                <p class="chart-subtitle">Annualized standard deviation (252-day window).</p>
-                <div id="chart-volatility" class="chart-div"></div>
-            </div>
-
-            <div class="card chart-box">
-                <h2 class="chart-title">Calendar Year Returns</h2>
-                <p class="chart-subtitle">Year-by-year comparison across all strategies.</p>
-                <div id="chart-yearly" class="chart-div"></div>
-            </div>
-
-            <div class="card chart-box">
-                <h2 class="chart-title">Leverage Exposure</h2>
-                <p class="chart-subtitle">Daily effective multiplier (1.0x–4.0x). Step-line shows rebalancing events.</p>
-                <div id="chart-leverage" class="chart-div"></div>
-            </div>
-
-            <div class="card chart-box">
-                <h2 class="chart-title">Real Performance (Inflation-Adjusted)</h2>
-                <p class="chart-subtitle">Growth of $1.00 adjusted for CPI. Shows actual purchasing power over time.</p>
-                <div id="chart-real" class="chart-div"></div>
-            </div>
-        </section>
-
-        <!-- Technical Documentation -->
-        <section class="card footer-guide" aria-label="Technical documentation">
-            <h2>📘 Technical Strategy Specifications</h2>
-
-            <h3>1. Overview & Data Source</h3>
-            <p>This tool compares <strong>19 strategy variants</strong> — ranging from our optimized <strong>Hall of Fame</strong> (Beast, Scalpel, Shield) to the new <strong>1x–4x Ladder</strong> standard. The core thesis: <strong>Aggressively buy the dip using logarithmic leverage scaling, and protect capital using trend-filters and safety buffers</strong>. All simulations are <strong>"Honest" backtests</strong>—meaning they use strictly lagged data (Shift-1) to eliminate look-ahead bias and reflect achievable real-world performance. Simulations begin on <strong>July 1, 2002</strong>, capturing the 2008 GFC, the 2020 COVID crash, and the 2022 inflationary bear market.</p>
-            <p>All returns are <strong>Total Return</strong> (dividends and interest reinvested). The data is sourced from Yahoo Finance using the following proxies:</p>
-            <table>
-                <thead>
-                    <tr><th>Asset</th><th>Ticker Proxy</th><th>Role</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><strong>VOO</strong> (S&amp;P 500)</td><td>SPY</td><td>1x Core Equity</td></tr>
-                    <tr><td><strong>SSO</strong> (2x S&amp;P 500)</td><td><em>Simulated</em></td><td>2x Leveraged Equity</td></tr>
-                    <tr><td><strong>SPYU</strong> (4x S&amp;P 500)</td><td><em>Simulated</em></td><td>4x Leveraged Equity</td></tr>
-                    <tr><td><strong>BILL</strong> (Treasury Bonds)</td><td>VFISX</td><td>Cash-equivalent safe haven</td></tr>
-                    <tr><td><strong>DJP</strong> (Commodities)</td><td>PCRIX</td><td>Inflation hedge</td></tr>
-                    <tr><td><strong>CPI</strong> (Inflation)</td><td>FRED: CPIAUCSL</td><td>Consumer Price Index</td></tr>
-                </tbody>
-            </table>
-            <p style="color: var(--text-muted);"><em>Leveraged returns are simulated as: <code>Return = (Leverage × SPY) − ((Leverage − 1) × VFISX)</code>. Inflation data is fetched monthly from the St. Louis Fed and interpolated daily.</em></p>
-
-            <h3>2. Asset Allocation Tier Matrices</h3>
-            <p>Each strategy dynamically shifts its portfolio weights based on the <strong>previous day's drawdown</strong> (distance from All-Time High). This prevents look-ahead bias — you only act on yesterday's information.</p>
-
-            <h4 style="color: var(--blue); margin-top: 24px;">Standard Variants (20% Safety Net)</h4>
-            <p>These hold 10% Bonds + 10% Commodities in Tiers 0–3 as a volatility dampener.</p>
-            <table>
-                <thead>
-                    <tr><th>Tier</th><th>Drawdown</th><th>VOO</th><th>SSO</th><th>SPYU</th><th>DJP</th><th>BILL</th><th>Lev.</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><strong>T0</strong></td><td>0% to −5%</td><td>80%</td><td>0%</td><td>0%</td><td>10%</td><td>10%</td><td><strong>0.8x</strong></td></tr>
-                    <tr><td><strong>T1</strong></td><td>−5% to −10%</td><td>40%</td><td>40%</td><td>0%</td><td>10%</td><td>10%</td><td><strong>1.2x</strong></td></tr>
-                    <tr><td><strong>T2</strong></td><td>−10% to −20%</td><td>0%</td><td>80%</td><td>0%</td><td>10%</td><td>10%</td><td><strong>1.6x</strong></td></tr>
-                    <tr><td><strong>T3</strong></td><td>−20% to −30%</td><td>0%</td><td>40%</td><td>40%</td><td>10%</td><td>10%</td><td><strong>2.4x</strong></td></tr>
-                    <tr><td><strong>T4</strong></td><td>&gt; −30%</td><td>0%</td><td>0%</td><td>100%</td><td>0%</td><td>0%</td><td><strong>4.0x</strong></td></tr>
-                </tbody>
-            </table>
-
-            <h4 style="color: var(--gold); margin-top: 24px;">Pure Equity Variants (No Safety Net)</h4>
-            <p>100% equity allocation at all times. Higher returns during bull markets, higher risk during crashes.</p>
-            <table>
-                <thead>
-                    <tr><th>Tier</th><th>Drawdown</th><th>VOO</th><th>SSO</th><th>SPYU</th><th>Lev.</th></tr>
-                </thead>
-                <tbody>
-                    <tr><td><strong>T0</strong></td><td>0% to −5%</td><td>100%</td><td>0%</td><td>0%</td><td><strong>1.0x</strong></td></tr>
-                    <tr><td><strong>T1</strong></td><td>−5% to −10%</td><td>50%</td><td>50%</td><td>0%</td><td><strong>1.5x</strong></td></tr>
-                    <tr><td><strong>T2</strong></td><td>−10% to −20%</td><td>0%</td><td>100%</td><td>0%</td><td><strong>2.0x</strong></td></tr>
-                    <tr><td><strong>T3</strong></td><td>−20% to −30%</td><td>0%</td><td>50%</td><td>50%</td><td><strong>3.0x</strong></td></tr>
-                    <tr><td><strong>T4</strong></td><td>&gt; −30%</td><td>0%</td><td>0%</td><td>100%</td><td><strong>4.0x</strong></td></tr>
-                </tbody>
-            </table>
-
-            <h4 style="color: #ff5370; margin-top: 24px;">🏆 Hall of Fame — Optimized Matrices</h4>
-            <p>These matrices were discovered via massive parallelized optimization searches using non-linear scaling and heavy hedging at specific drawdown depths.</p>
-
-            <p><strong>Special BEAST</strong> — The Growth Ceiling (Daily Rebalancing)</p>
-            <table>
-                <thead><tr><th>Tier</th><th>Drawdown</th><th>VOO</th><th>SSO</th><th>SPYU</th><th>DJP</th><th>BILL</th><th>Lev.</th></tr></thead>
-                <tbody>
-                    <tr><td>T0</td><td>0%→−1%</td><td>38%</td><td>21%</td><td>1%</td><td>40%</td><td>0%</td><td><strong>0.84x</strong></td></tr>
-                    <tr><td>T1</td><td>−1%→−5%</td><td>0%</td><td>0%</td><td>100%</td><td>0%</td><td>0%</td><td><strong>4.00x</strong></td></tr>
-                    <tr><td>T2</td><td>−5%→−9%</td><td>0%</td><td>0%</td><td>0%</td><td>100%</td><td>0%</td><td><strong>1.00x</strong></td></tr>
-                    <tr><td>T3</td><td>−9%→−53%</td><td>0%</td><td>0%</td><td>100%</td><td>0%</td><td>0%</td><td><strong>4.00x</strong></td></tr>
-                    <tr><td>T4</td><td>&gt;−53%</td><td>13%</td><td>0%</td><td>9%</td><td>48%</td><td>30%</td><td><strong>0.49x</strong></td></tr>
-                </tbody>
-            </table>
-
-            <p><strong>Special SCALPEL</strong> — The Efficiency Scalpel (Daily Rebalancing)</p>
-            <table>
-                <thead><tr><th>Tier</th><th>Drawdown</th><th>VOO</th><th>SSO</th><th>SPYU</th><th>DJP</th><th>BILL</th><th>Lev.</th></tr></thead>
-                <tbody>
-                    <tr><td>T0</td><td>0%→−1%</td><td>13%</td><td>2%</td><td>0%</td><td>7%</td><td>78%</td><td><strong>0.17x</strong></td></tr>
-                    <tr><td>T1</td><td>−1%→−5%</td><td>59%</td><td>3%</td><td>0%</td><td>32%</td><td>6%</td><td><strong>0.65x</strong></td></tr>
-                    <tr><td>T2</td><td>−5%→−30%</td><td>6%</td><td>7%</td><td>0%</td><td>81%</td><td>6%</td><td><strong>0.20x</strong></td></tr>
-                    <tr><td>T3</td><td>−30%→−60%</td><td>25%</td><td>9%</td><td>22%</td><td>20%</td><td>24%</td><td><strong>1.31x</strong></td></tr>
-                    <tr><td>T4</td><td>&gt;−60%</td><td>87%</td><td>10%</td><td>0%</td><td>3%</td><td>0%</td><td><strong>1.07x</strong></td></tr>
-                </tbody>
-            </table>
-
-            <p><strong>Special SHIELD</strong> — The Risk Shield (Daily Rebalancing)</p>
-            <table>
-                <thead><tr><th>Tier</th><th>Drawdown</th><th>VOO</th><th>SSO</th><th>SPYU</th><th>DJP</th><th>BILL</th><th>Lev.</th></tr></thead>
-                <tbody>
-                    <tr><td>T0</td><td>0%→−5%</td><td>1%</td><td>7%</td><td>1%</td><td>0%</td><td>91%</td><td><strong>0.19x</strong></td></tr>
-                    <tr><td>T1</td><td>−5%→−10%</td><td>4%</td><td>0%</td><td>0%</td><td>80%</td><td>16%</td><td><strong>0.04x</strong></td></tr>
-                    <tr><td>T2</td><td>−10%→−39%</td><td>2%</td><td>22%</td><td>0%</td><td>1%</td><td>75%</td><td><strong>0.46x</strong></td></tr>
-                    <tr><td>T3</td><td>−39%→−58%</td><td>73%</td><td>0%</td><td>20%</td><td>5%</td><td>2%</td><td><strong>1.53x</strong></td></tr>
-                    <tr><td>T4</td><td>&gt;−58%</td><td>1%</td><td>34%</td><td>1%</td><td>63%</td><td>1%</td><td><strong>0.73x</strong></td></tr>
-                </tbody>
-            </table>
-
-            <h3>3. Rebalancing Rules</h3>
-            <table>
-                <thead><tr><th>Frequency</th><th>How It Works</th><th>Trade-Off</th></tr></thead>
-                <tbody>
-                    <tr><td><strong>Daily</strong></td><td>Recalculates drawdown and shifts weights every business day.</td><td>Most responsive, highest transaction cost.</td></tr>
-                    <tr><td><strong>Monthly</strong></td><td>Samples signal on the last trading day. Locks for the next month.</td><td>Lower costs, can miss intra-month moves.</td></tr>
-                    <tr><td><strong>Ratchet</strong></td><td>Locks the highest tier reached. Never de-leverages until a new ATH.</td><td>Max recovery capture, stays leveraged in false bounces.</td></tr>
-                </tbody>
-            </table>
-
-            <h3>4. Risk Controls</h3>
-            <h4 style="color: var(--red);">Trend Filter (200-day SMA)</h4>
-            <p>If the S&amp;P 500 closes <strong>below its 200-day SMA</strong>, all strategies revert to the <strong>Safe Tier (T0)</strong>. This overrides both drawdown tiers and ratchet lock-in.</p>
-            <h4 style="color: var(--red);">Look-Ahead Bias Prevention</h4>
-            <p>All signals use the <strong>previous day's close</strong> via <code>shift(1)</code>. Every trade decision uses only information available at the time.</p>
-
-            <h3>5. KPI Definitions</h3>
-            <table>
-                <thead><tr><th>Indicator</th><th>Formula</th><th>Meaning</th></tr></thead>
-                <tbody>
-                    <tr><td><strong>Total %</strong></td><td>(Final ÷ Initial) − 1</td><td>Raw percentage growth of $1 invested.</td></tr>
-                    <tr><td><strong>CAGR</strong></td><td>Final<sup>(1/Years)</sup> − 1</td><td>Compound Annual Growth Rate — smoothed yearly return.</td></tr>
-                    <tr><td><strong>Avg Ann Ret</strong></td><td>Mean(Daily) × 252</td><td>Arithmetic mean, annualized. Gap vs CAGR reveals volatility drag.</td></tr>
-                    <tr><td><strong>Max DD</strong></td><td>Min((Value − Peak) ÷ Peak)</td><td>Deepest peak-to-trough decline — worst-case pain.</td></tr>
-                    <tr><td><strong>Sharpe</strong></td><td>(CAGR − 2%) ÷ Vol</td><td>Risk-adjusted return. &gt;0.5 decent, &gt;1.0 excellent.</td></tr>
-                    <tr><td><strong>Ann. Vol</strong></td><td>Std(Daily) × √252</td><td>Annualized daily volatility — intensity of swings.</td></tr>
-                </tbody>
-            </table>
-
-            <h3>6. How to Use This Dashboard</h3>
-            <ol>
-                <li><strong>Select a date range</strong> using the date pickers. Charts and metrics recalculate instantly.</li>
-                <li><strong>Click column headers</strong> in the leaderboard to sort by any metric.</li>
-                <li><strong>Use filter pills</strong> to show/hide strategy categories.</li>
-                <li><strong>Hover over charts</strong> for exact values at any point in time.</li>
-                <li><strong>Use the Lab</strong> to design and test custom strategies in real-time.</li>
-            </ol>
-        </section>
-    </div>
+    </main>
 
     <script defer src="assets/js/dashboard.js"></script>
 </body>
