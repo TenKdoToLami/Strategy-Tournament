@@ -99,15 +99,28 @@ The **Special** variants are the result of a **500,000-iteration** global optimi
 
 ---
 
+## 📂 Project Structure
+
+- `index.html`: Main dashboard entry point.
+- `style.css`: Dashboard styling.
+- `dashboard.js`: Frontend logic and "Strategy Laboratory" engine.
+- `data.json`: Precomputed market data and signals.
+- `scripts/`:
+  - `precompute.py`: Data pipeline script to refresh `data.json`.
+  - `optimization/`: Quantitative research and optimization tools.
+- `requirements.txt`: Python dependencies.
+
+---
+
 ## 🛠️ Local Development
 
 ```bash
 # 1. Clone & Install
 git clone https://github.com/tenkdotolami/Strategy-Tournament.git
-pip install pandas yfinance numpy
+pip install -r requirements.txt
 
 # 2. Precompute Data
-python precompute.py
+python scripts/precompute.py
 
 # 3. View Dashboard (Local Server required for fetch)
 python -m http.server 8000
