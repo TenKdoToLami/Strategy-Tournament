@@ -8,7 +8,7 @@
 // ── Tooltip Engine ──────────────────────────────────────────────────
 function initTooltipEngine(chartIds) {
     const tooltip = document.getElementById('chart-tooltip');
-    
+
     chartIds.forEach(id => {
         const el = document.getElementById(id);
         if (!el || el.dataset.tooltipInitialized) return;
@@ -18,7 +18,7 @@ function initTooltipEngine(chartIds) {
             const pt = data.points[0];
             const date = pt.x;
             const xIdx = pt.pointIndex;
-            
+
             const items = el.data
                 .filter(trace => trace.name && trace.hoverinfo !== 'skip')
                 .map(trace => {
@@ -26,16 +26,16 @@ function initTooltipEngine(chartIds) {
                     let displayVal = "";
                     const layout = el.layout || {};
                     const isPct = (layout.yaxis && layout.yaxis.tickformat === '.0%') || (layout.yaxis && layout.yaxis.tickformat === '.1%');
-                    
+
                     if (val === null || val === undefined) return null;
-                    
+
                     if (isPct) displayVal = (val * 100).toFixed(1) + '%';
                     else if (layout.yaxis && layout.yaxis.type === 'log') displayVal = val.toFixed(2);
                     else displayVal = val.toFixed(2) + (id.includes('leverage') ? 'x' : '');
 
-                    return { 
-                        name: trace.name, 
-                        val: val, 
+                    return {
+                        name: trace.name,
+                        val: val,
                         displayVal: displayVal,
                         color: (trace.line ? trace.line.color : (trace.marker ? trace.marker.color : '#fff'))
                     };
@@ -59,13 +59,13 @@ function initTooltipEngine(chartIds) {
 
             tooltip.innerHTML = html;
             tooltip.style.display = 'block';
-            
+
             const margin = 20;
             let x = data.event.clientX + margin;
             let y = data.event.clientY - 20;
             if (x + 220 > window.innerWidth) x = data.event.clientX - 240;
             if (y + tooltip.offsetHeight > window.innerHeight) y = window.innerHeight - tooltip.offsetHeight - 10;
-            
+
             tooltip.style.left = x + 'px';
             tooltip.style.top = y + 'px';
         });
@@ -233,7 +233,7 @@ function update() {
     for (const [name, returns] of Object.entries(allVariants)) {
         const meta = parseStrategy(name);
         const isCustom = name === '🧪 USER CUSTOM LAB';
-        
+
         let color;
         if (isCustom) color = '#39ff14';
         else if (meta.level === 'Benchmark' || meta.level === 'Special') {
@@ -261,7 +261,7 @@ function update() {
         }
 
         const cagr = Math.pow(Math.max(1e-8, cum), 1 / (years || 1)) - 1;
-        const vol = Math.sqrt(slice.reduce((a, b) => a + (b - sumReturn/slice.length)**2, 0) / slice.length * 252);
+        const vol = Math.sqrt(slice.reduce((a, b) => a + (b - sumReturn / slice.length) ** 2, 0) / slice.length * 252);
         const sharpe = vol > 0.001 ? (cagr - 0.02) / vol : 0;
 
         const yearlyMap = {};
@@ -272,11 +272,11 @@ function update() {
             yearlyMap[year] *= (1 + slice[i]);
         }
 
-        metricsArr.push({ 
-            Strategy: name, 'Total %': cum - 1, CAGR: cagr, 'Avg Ann Ret': (sumReturn/slice.length)*252, 
-            'Max DD': maxDD, Sharpe: sharpe, 'Ann. Vol': vol, color, cumSeries, ddSeries 
+        metricsArr.push({
+            Strategy: name, 'Total %': cum - 1, CAGR: cagr, 'Avg Ann Ret': (sumReturn / slice.length) * 252,
+            'Max DD': maxDD, Sharpe: sharpe, 'Ann. Vol': vol, color, cumSeries, ddSeries
         });
-        
+
         if (currentTab === 'dashboard' && !window.hiddenStrategies.has(name)) {
             const width = (isCustom || name.includes('Ratchet') || name.includes('Standard')) ? 2 : 1;
             const chartReturns = cumSeries.slice(1);
@@ -285,13 +285,13 @@ function update() {
             traces.linear.push({ x: slicedDates, y: chartReturns.map(v => v - 1), name, line: { color, width }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
             traces.log.push({ x: slicedDates, y: chartReturns.map(v => Math.max(1e-6, v)), name, line: { color, width }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
             traces.drawdown.push({ x: slicedDates, y: chartDD, name, line: { color, width: 1 }, fill: 'tonexty', type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
-            
+
             const rollVol = [];
             for (let i = 0; i < slice.length; i++) {
                 if (i >= 252) {
-                    const win = slice.slice(i-252, i);
-                    const avg = win.reduce((a,b)=>a+b,0)/252;
-                    rollVol.push(Math.sqrt(win.reduce((a,b)=>a+(b-avg)**2,0)/252*252));
+                    const win = slice.slice(i - 252, i);
+                    const avg = win.reduce((a, b) => a + b, 0) / 252;
+                    rollVol.push(Math.sqrt(win.reduce((a, b) => a + (b - avg) ** 2, 0) / 252 * 252));
                 } else rollVol.push(null);
             }
             traces.vol.push({ x: slicedDates, y: rollVol, name, line: { color, width: 1 }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
@@ -299,8 +299,8 @@ function update() {
             const levSlice = isCustom ? window.customStrategyResult.leverage.slice(startIndex, endIndex + 1) : globalData.leverage[name].slice(startIndex, endIndex + 1);
             traces.leverage.push({ x: slicedDates, y: levSlice, name, line: { color, width: 2, shape: 'hv' }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
 
-            const normalizedInflation = globalData.inflation.slice(startIndex, endIndex+1).map((v,i,a) => v/a[0]);
-            traces.real.push({ x: slicedDates, y: chartReturns.map((v,i) => v / normalizedInflation[i]), name, line: { color, width }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
+            const normalizedInflation = globalData.inflation.slice(startIndex, endIndex + 1).map((v, i, a) => v / a[0]);
+            traces.real.push({ x: slicedDates, y: chartReturns.map((v, i) => v / normalizedInflation[i]), name, line: { color, width }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
 
             const yearLabels = Object.keys(yearlyMap).sort();
             traces.yearly.push({ x: yearLabels, y: yearLabels.map(y => yearlyMap[y] - 1), name, type: 'bar', marker: { color }, legendgroup: name, hoverinfo: 'none' });
@@ -309,16 +309,16 @@ function update() {
 
     renderTable(metricsArr);
     if (currentTab === 'dashboard') {
-        const baseLayout = { 
-            ...cloneLayout(), 
-            hovermode: 'x', 
+        const baseLayout = {
+            ...cloneLayout(),
+            hovermode: 'x',
             xaxis: { showspikes: true, spikemode: 'across', spikecolor: '#fff', spikethickness: 1 }
         };
 
         const linLay = { ...baseLayout }; linLay.yaxis.title = 'Return (%)'; linLay.yaxis.tickformat = '.0%';
         Plotly.react('chart-linear', traces.linear, linLay, PLOTLY_CONFIG);
 
-        const logLay = { ...baseLayout }; logLay.yaxis.type = 'log'; logLay.yaxis.title = 'Index (Log Scale)'; 
+        const logLay = { ...baseLayout }; logLay.yaxis.type = 'log'; logLay.yaxis.title = 'Index (Log Scale)';
         Plotly.react('chart-log', traces.log, logLay, PLOTLY_CONFIG);
 
         const ddLay = { ...baseLayout }; ddLay.yaxis.title = 'Drawdown (%)';
@@ -402,7 +402,7 @@ function renderAnalysisSuite(prefix, name, compareName) {
 
     const matrixContainer = document.getElementById(`${prefix}-allocation-matrix`);
     if (matrixContainer) {
-        let weights = globalData.weights[name] || [[100,0,0,0,0],[50,50,0,0,0],[0,100,0,0,0],[0,50,50,0,0],[0,0,100,0,0]];
+        let weights = globalData.weights[name] || [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]];
         if (prefix === 'lab') weights = labWeights.map(r => [r.VOO, r.SSO, r.SPYU, r.DJP, r.BILL]);
 
         const FALLBACK_BOUNDS = {
@@ -410,16 +410,16 @@ function renderAnalysisSuite(prefix, name, compareName) {
             'Special BEAST': [0.01, 0.05, 0.09, 0.53], 'Special SCALPEL': [0.01, 0.05, 0.30, 0.60], 'Special SHIELD': [0.05, 0.10, 0.39, 0.58],
             'Special': [0.05, 0.10, 0.30, 0.50], 'Benchmark': [0, 0, 0, 0]
         };
-        let b = [0,0,0,0];
-        if (prefix === 'lab' || name === '🧪 USER CUSTOM LAB') b = [parseFloat(document.getElementById('lab-b1').value), parseFloat(document.getElementById('lab-b2').value), parseFloat(document.getElementById('lab-b3').value), parseFloat(document.getElementById('lab-b4').value)].map(v => v/100);
+        let b = [0, 0, 0, 0];
+        if (prefix === 'lab' || name === '🧪 USER CUSTOM LAB') b = [parseFloat(document.getElementById('lab-b1').value), parseFloat(document.getElementById('lab-b2').value), parseFloat(document.getElementById('lab-b3').value), parseFloat(document.getElementById('lab-b4').value)].map(v => v / 100);
         else { const cat = name.split(' ')[0]; const src = globalData.bounds || FALLBACK_BOUNDS; b = src[name] || src[cat] || [0.05, 0.10, 0.20, 0.30]; }
 
         let tableHtml = `<table class="weights-table-explorer"><thead><tr><th>Tier / Drawdown</th><th>VOO</th><th>SSO</th><th>SPYU</th><th>DJP</th><th>BILL</th><th>Lev</th></tr></thead><tbody>`;
         weights.forEach((w, i) => {
-            const lev = (w[0]*1 + w[1]*2 + w[2]*4 + w[3]*1);
+            const lev = (w[0] * 1 + w[1] * 2 + w[2] * 4 + w[3] * 1);
             const factor = w.reduce((s, v) => s + v, 0) < 2.0 ? 100 : 1;
-            let rangeStr = (i === 0) ? `0 – ${(b[0]*100).toFixed(1)}%` : (i === 4) ? `> ${(b[3]*100).toFixed(1)}%` : `${(b[i-1]*100).toFixed(1)} – ${(b[i]*100).toFixed(1)}%`;
-            tableHtml += `<tr><td class="tier-highlight"><div style="font-size:0.75rem">T${i}</div><div style="font-size:0.6rem; opacity:0.7">${rangeStr}</div></td><td>${(w[0]*factor).toFixed(0)}%</td><td>${(w[1]*factor).toFixed(0)}%</td><td>${(w[2]*factor).toFixed(0)}%</td><td>${(w[3]*factor).toFixed(0)}%</td><td>${(w[4]*factor).toFixed(0)}%</td><td class="lev-high">${(factor===100?lev:lev/100).toFixed(2)}x</td></tr>`;
+            let rangeStr = (i === 0) ? `0 – ${(b[0] * 100).toFixed(1)}%` : (i === 4) ? `> ${(b[3] * 100).toFixed(1)}%` : `${(b[i - 1] * 100).toFixed(1)} – ${(b[i] * 100).toFixed(1)}%`;
+            tableHtml += `<tr><td class="tier-highlight"><div style="font-size:0.75rem">T${i}</div><div style="font-size:0.6rem; opacity:0.7">${rangeStr}</div></td><td>${(w[0] * factor).toFixed(0)}%</td><td>${(w[1] * factor).toFixed(0)}%</td><td>${(w[2] * factor).toFixed(0)}%</td><td>${(w[3] * factor).toFixed(0)}%</td><td>${(w[4] * factor).toFixed(0)}%</td><td class="lev-high">${(factor === 100 ? lev : lev / 100).toFixed(2)}x</td></tr>`;
         });
         tableHtml += '</tbody></table>'; matrixContainer.innerHTML = tableHtml;
     }
@@ -441,7 +441,7 @@ function renderAnalysisSuite(prefix, name, compareName) {
     };
 
     Plotly.react(`chart-${prefix}-linear`, traces(chartReturns.map(v => v - 1), cReturns ? cReturns.map(v => v - 1) : null, name, compareName, m.color), { ...expBaseLayout, yaxis: { title: 'Return (%)', tickformat: '.0%' }, height: 450 }, PLOTLY_CONFIG);
-    const logLay = { ...expBaseLayout, height: 450 }; logLay.yaxis.type = 'log'; logLay.yaxis.title = 'Index (Log Scale)'; 
+    const logLay = { ...expBaseLayout, height: 450 }; logLay.yaxis.type = 'log'; logLay.yaxis.title = 'Index (Log Scale)';
     Plotly.react(`chart-${prefix}-log`, traces(chartReturns, cReturns, name, compareName, m.color), logLay, PLOTLY_CONFIG);
     Plotly.react(`chart-${prefix}-drawdown`, traces(m.ddSeries.slice(1), cDD, name, compareName, '#ff4d4d'), { ...expBaseLayout, yaxis: { title: 'Drawdown (%)', tickformat: '.1%' }, height: 400 }, PLOTLY_CONFIG);
 
@@ -496,7 +496,7 @@ function updateSimulator() {
     document.querySelectorAll('.flow-node').forEach(n => n.classList.remove('active'));
     document.querySelectorAll('.flow-path').forEach(p => p.classList.remove('active'));
     document.getElementById(`node-${dailyTier}`).classList.add('active');
-    for (let i = 0; i < dailyTier; i++) document.getElementById(`path-${i}-${i+1}`).classList.add('active');
+    for (let i = 0; i < dailyTier; i++) document.getElementById(`path-${i}-${i + 1}`).classList.add('active');
 }
 
 // ── Tab Switching ───────────────────────────────────────────────────
@@ -527,7 +527,7 @@ async function init() {
         const picker = document.getElementById('explorer-picker');
         const comparePicker = document.getElementById('explorer-compare-picker');
         const labCompare = document.getElementById('lab-compare-picker');
-        
+
         Object.keys(globalData.variants).sort().forEach(name => {
             const opt = document.createElement('option'); opt.value = opt.textContent = name; picker.appendChild(opt);
             const opt2 = document.createElement('option'); opt2.value = opt2.textContent = name; comparePicker.appendChild(opt2);
@@ -540,8 +540,8 @@ async function init() {
 
         startInput.onchange = update;
         endInput.onchange = update;
-        document.getElementById('reset-btn').onclick = () => { startInput.value = dates[0]; endInput.value = dates[dates.length-1]; update(); };
-        
+        document.getElementById('reset-btn').onclick = () => { startInput.value = dates[0]; endInput.value = dates[dates.length - 1]; update(); };
+
         document.querySelectorAll('.pill').forEach(p => p.onclick = () => {
             const group = p.parentElement.id.replace('filter-', '');
             if (p.classList.toggle('active')) activeFilters[group].push(p.dataset.value);
@@ -557,8 +557,8 @@ async function init() {
         document.getElementById('lab-run').onclick = () => {
             const bounds = [parseFloat(document.getElementById('lab-b1').value), parseFloat(document.getElementById('lab-b2').value), parseFloat(document.getElementById('lab-b3').value), parseFloat(document.getElementById('lab-b4').value)];
             window.customStrategyResult = simulateCustomStrategy(bounds, document.getElementById('lab-ratchet').checked, document.getElementById('lab-safeties').checked, document.getElementById('lab-trend').checked);
-            update(); 
-            updateLabResults(); 
+            update();
+            updateLabResults();
         };
 
         document.querySelectorAll('#metrics-table thead th').forEach(th => th.onclick = () => {
@@ -585,19 +585,40 @@ function renderWeightTable() {
     tbody.innerHTML = '';
     labWeights.forEach((row, i) => {
         const tr = document.createElement('tr');
-        const sum = row.VOO + row.SSO + row.SPYU + row.DJP + row.BILL;
-        tr.innerHTML = `
-            <td style="font-size:0.7rem; font-weight:700">T${i}</td>
-            <td><input type="number" data-tier="${i}" data-asset="VOO" value="${row.VOO}" style="width:45px; background:transparent; border:1px solid var(--border); color:#fff; text-align:center;"></td>
-            <td><input type="number" data-tier="${i}" data-asset="SSO" value="${row.SSO}" style="width:45px; background:transparent; border:1px solid var(--border); color:#fff; text-align:center;"></td>
-            <td><input type="number" data-tier="${i}" data-asset="SPYU" value="${row.SPYU}" style="width:45px; background:transparent; border:1px solid var(--border); color:#fff; text-align:center;"></td>
-            <td><input type="number" data-tier="${i}" data-asset="DJP" value="${row.DJP}" style="width:45px; background:transparent; border:1px solid var(--border); color:#fff; text-align:center;"></td>
-            <td><input type="number" data-tier="${i}" data-asset="BILL" value="${row.BILL}" style="width:45px; background:transparent; border:1px solid var(--border); color:#fff; text-align:center;"></td>
-            <td style="color:${Math.abs(sum-100)<0.1 ? 'var(--green)' : 'var(--red)'}">${sum}%</td>
-        `;
-        tr.querySelectorAll('input').forEach(inp => inp.oninput = e => {
-            labWeights[e.target.dataset.tier][e.target.dataset.asset] = parseFloat(e.target.value) || 0;
-            renderWeightTable();
+        const assets = ['VOO', 'SSO', 'SPYU', 'DJP', 'BILL'];
+        let html = `<td class="tier-label">T${i}</td>`;
+        assets.forEach(asset => {
+            html += `<td><input type="number" data-tier="${i}" data-asset="${asset}" value="${row[asset]}" onfocus="this.select()"></td>`;
+        });
+        const sum = assets.reduce((s, a) => s + row[a], 0);
+        html += `<td class="sum-cell" id="weight-sum-${i}" style="color:${Math.abs(sum - 100) < 0.1 ? 'var(--green)' : 'var(--red)'}">${sum}%</td>`;
+        tr.innerHTML = html;
+
+        tr.querySelectorAll('input').forEach(inp => {
+            inp.oninput = e => {
+                const t = e.target.dataset.tier;
+                const a = e.target.dataset.asset;
+                labWeights[t][a] = parseFloat(e.target.value) || 0;
+                const newSum = assets.reduce((s, ass) => s + labWeights[t][ass], 0);
+                const sumEl = document.getElementById(`weight-sum-${t}`);
+                sumEl.textContent = `${newSum}%`;
+                sumEl.style.color = Math.abs(newSum - 100) < 0.1 ? 'var(--green)' : 'var(--red)';
+            };
+            inp.onkeydown = e => {
+                const t = parseInt(e.target.dataset.tier);
+                const aIdx = assets.indexOf(e.target.dataset.asset);
+                let nextT = t, nextA = aIdx;
+                if (e.key === 'ArrowUp') nextT--;
+                else if (e.key === 'ArrowDown' || e.key === 'Enter') nextT++;
+                else if (e.key === 'ArrowLeft') nextA--;
+                else if (e.key === 'ArrowRight') nextA++;
+                else return;
+
+                if (nextT >= 0 && nextT < labWeights.length && nextA >= 0 && nextA < assets.length) {
+                    e.preventDefault();
+                    document.querySelector(`input[data-tier="${nextT}"][data-asset="${assets[nextA]}"]`).focus();
+                }
+            };
         });
         tbody.appendChild(tr);
     });
