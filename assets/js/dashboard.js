@@ -284,7 +284,7 @@ function update() {
 
             traces.linear.push({ x: slicedDates, y: chartReturns.map(v => v - 1), name, line: { color, width }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
             traces.log.push({ x: slicedDates, y: chartReturns.map(v => Math.max(1e-6, v)), name, line: { color, width }, type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
-            traces.drawdown.push({ x: slicedDates, y: chartDD, name, line: { color, width: 1 }, fill: 'tonexty', type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
+            traces.drawdown.push({ x: slicedDates, y: chartDD, name, line: { color, width: 1.5 }, fill: 'tozeroy', type: 'scatter', mode: 'lines', legendgroup: name, hoverinfo: 'none' });
 
             const rollVol = [];
             for (let i = 0; i < slice.length; i++) {
@@ -315,25 +315,25 @@ function update() {
             xaxis: { showspikes: true, spikemode: 'across', spikecolor: '#fff', spikethickness: 1 }
         };
 
-        const linLay = { ...baseLayout }; linLay.yaxis.title = 'Return (%)'; linLay.yaxis.tickformat = '.0%';
+        const linLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, title: 'Return (%)', tickformat: '.0%' } };
         Plotly.react('chart-linear', traces.linear, linLay, PLOTLY_CONFIG);
 
-        const logLay = { ...baseLayout }; logLay.yaxis.type = 'log'; logLay.yaxis.title = 'Index (Log Scale)';
+        const logLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, type: 'log', title: 'Index (Log Scale)' } };
         Plotly.react('chart-log', traces.log, logLay, PLOTLY_CONFIG);
 
-        const ddLay = { ...baseLayout }; ddLay.yaxis.title = 'Drawdown (%)';
+        const ddLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, title: 'Drawdown (%)', tickformat: '.1%', range: [null, 0] } };
         Plotly.react('chart-drawdown', traces.drawdown, ddLay, PLOTLY_CONFIG);
 
-        const volLay = { ...baseLayout }; volLay.yaxis.title = '1-Year Vol (%)';
+        const volLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, title: '1-Year Vol (%)' } };
         Plotly.react('chart-volatility', traces.vol, volLay, PLOTLY_CONFIG);
 
-        const levLay = { ...baseLayout }; levLay.yaxis.title = 'Leverage'; levLay.yaxis.range = [0, 4.5];
+        const levLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, title: 'Leverage', range: [0, 4.5], tickformat: '.1f' } };
         Plotly.react('chart-leverage', traces.leverage, levLay, PLOTLY_CONFIG);
 
-        const realLay = { ...baseLayout }; realLay.yaxis.title = 'Real Growth (Inflation Adj)'; realLay.yaxis.type = 'log';
+        const realLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, title: 'Real Growth (Inflation Adj)', type: 'log' } };
         Plotly.react('chart-real', traces.real, realLay, PLOTLY_CONFIG);
 
-        const yearLay = cloneLayout(); yearLay.yaxis.title = 'Yearly Return (%)'; yearLay.barmode = 'group';
+        const yearLay = { ...cloneLayout(), yaxis: { ...PLOTLY_LAYOUT.yaxis, title: 'Yearly Return (%)', tickformat: '.0%' }, barmode: 'group' };
         Plotly.react('chart-yearly', traces.yearly, yearLay, PLOTLY_CONFIG);
 
         initTooltipEngine(['chart-linear', 'chart-log', 'chart-drawdown', 'chart-volatility', 'chart-leverage', 'chart-real']);
