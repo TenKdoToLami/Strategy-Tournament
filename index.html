@@ -475,43 +475,221 @@
 
             <!-- TAB: Methodology -->
             <div id="tab-methodology" class="tab-content">
-                <section class="card footer-guide" style="border:none; padding:0;">
-                    <h2>📘 Quantitative Framework</h2>
-                    <p>Understanding the underlying mechanics of dynamic leveraging.</p>
-                    
-                    <h3>1. Instruments Library</h3>
-                    <table>
-                        <thead>
-                            <tr><th>Ticker</th><th>Asset</th><th>Leverage</th><th>Role</th></tr>
-                        </thead>
-                        <tbody>
-                            <tr><td><strong>SPY</strong></td><td>S&P 500 ETF</td><td>1.0x</td><td>Equity Benchmark</td></tr>
-                            <tr><td><strong>SSO</strong></td><td>ProShares Ultra S&P500</td><td>2.0x</td><td>Leveraged Core</td></tr>
-                            <tr><td><strong>SPYU</strong></td><td>Direxion 4X S&P 500</td><td>4.0x</td><td>High-Alpha Engine</td></tr>
-                            <tr><td><strong>VFISX</strong></td><td>Short-Term Treasury</td><td>0.0x</td><td>Risk-Free / Safety</td></tr>
-                            <tr><td><strong>PCRIX</strong></td><td>Commodity Index</td><td>1.0x</td><td>Inflation Hedge</td></tr>
-                        </tbody>
-                    </table>
+                <div class="doc-container">
+                    <!-- NAVIGATION (TOC) -->
+                    <div class="doc-toc">
+                        <h4><i class="fas fa-list-ul"></i> Master Manual: Table of Contents</h4>
+                        <nav class="toc-grid">
+                            <a href="#ch1" class="toc-link"><i class="fas fa-database"></i> 1. Data Foundations</a>
+                            <a href="#ch2" class="toc-link"><i class="fas fa-calculator"></i> 2. Asset Synthesis</a>
+                            <a href="#ch3" class="toc-link"><i class="fas fa-chart-line"></i> 3. Volatility Drag</a>
+                            <a href="#ch4" class="toc-link"><i class="fas fa-shield-alt"></i> 4. Regime Detection</a>
+                            <a href="#ch5" class="toc-link"><i class="fas fa-project-diagram"></i> 5. Hysteresis Engine</a>
+                            <a href="#ch6" class="toc-link"><i class="fas fa-percentage"></i> 6. Statistical Glossary</a>
+                            <a href="#ch7" class="toc-link"><i class="fas fa-microchip"></i> 7. System Architecture</a>
+                            <a href="#ch8" class="toc-link"><i class="fas fa-balance-scale"></i> 8. Ladder Philosophy</a>
+                            <a href="#ch9" class="toc-link"><i class="fas fa-vial"></i> 9. Benchmarking Theory</a>
+                            <a href="#ch10" class="toc-link"><i class="fas fa-exclamation-triangle"></i> 10. Risks & Limits</a>
+                        </nav>
+                    </div>
 
-                    <h3>2. Calculation Methods</h3>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <div class="tier-box">
-                            <div class="tier-label">Compounded Return</div>
-                            <code>Final / Initial - 1</code>
+                    <!-- CHAPTER 1 -->
+                    <div id="ch1" class="doc-chapter">
+                        <h2><i class="fas fa-database"></i> 1. Data Foundations</h2>
+                        <p>The reliability of any quantitative simulation is dictated by the quality and continuity of its underlying data. This platform utilizes the "Standard Epoch" approach to ensure 100% mathematical integrity across all instruments.</p>
+                        
+                        <h3>Historical Continuity (The 2002 Decision)</h3>
+                        <p>The simulation begins on <strong>July 1st, 2002</strong>. This is not arbitrary; it is the inception date of the <strong>PCRIX (PIMCO Commodity Real Return Strategy)</strong>, which serves as our high-fidelity proxy for the <strong>Bloomberg Commodity Index (DJP)</strong>.</p>
+                        <div class="doc-alert info">
+                            <strong>Why not 1993?</strong> While SPY launched in 1993, adding Commodities to the mix requires overlapping data. By anchoring to the 2002 threshold, we eliminate the risk of mismatched correlations and statistical extrapolation error in the early years of the backtest.
                         </div>
-                        <div class="tier-box">
-                            <div class="tier-label">Vol Drag Factor</div>
-                            <code>CAGR ≈ Mean - 0.5 * Var</code>
+
+                        <h3>Instrument & Data Mapping</h3>
+                        <p>For complete quantitative transparency, the following table details the origin, processing logic, and tracking target of every instrument used in our simulation engine.</p>
+                        <div class="doc-table-wrapper">
+                            <table class="doc-table">
+                                <thead>
+                                    <tr><th>Asset</th><th>Data Source</th><th>Methodology</th><th>Tracks</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><strong>SPY (VOO)</strong></td><td>Yahoo Finance</td><td>Adjusted Close</td><td>S&P 500 Index (Total Return)</td></tr>
+                                    <tr><td><strong>SSO (2x)</strong></td><td>Synthetic (Calculated)</td><td>2&times; SPY &minus; 1&times; BILL</td><td>2x Leveraged S&P 500</td></tr>
+                                    <tr><td><strong>SPYU (4x)</strong></td><td>Synthetic (Calculated)</td><td>4&times; SPY &minus; 3&times; BILL</td><td>4x Leveraged S&P 500</td></tr>
+                                    <tr><td><strong>BILL (VFISX)</strong></td><td>Yahoo Finance</td><td>Adjusted Close</td><td>Short-Term Treasury (Risk-Free)</td></tr>
+                                    <tr><td><strong>DJP (PCRIX)</strong></td><td>Yahoo Finance</td><td>Adjusted Close</td><td>Bloomberg Commodity Index</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3>Dividend Accounting & Total Return</h3>
+                        <p>We utilize <strong>Adjusted Close</strong> prices fetched via the <code>yfinance</code> API. This methodology is critical for professional-grade backtesting because it ensures that all dividends, stock splits, and capital gains distributions are automatically "baked in" to the equity curve. The results represent <strong>Total Return (DRIP)</strong>, assuming immediate reinvestment.</p>
+                    </div>
+
+                    <!-- CHAPTER 2 -->
+                    <div id="ch2" class="doc-chapter">
+                        <h2><i class="fas fa-calculator"></i> 2. Synthetic Asset Synthesis</h2>
+                        <p>Since 3x and 4x leveraged ETFs often suffer from high expense ratios, tracking errors, and late inception dates, we synthesize their returns daily using a rigorous <strong>Cost of Carry</strong> model.</p>
+                        
+                        <div class="math-block">
+                            R_{synthetic} = (R_{underlying} &times; L) - (R_{financing} &times; (L - 1))
+                        </div>
+                        
+                        <ul>
+                            <li><strong>R_lev</strong>: The daily return of the leveraged synthetic asset.</li>
+                            <li><strong>L</strong>: The leverage factor (2.0 for SSO, 4.0 for SPYU).</li>
+                            <li><strong>R_fin</strong>: The daily financing rate, proxied by <strong>VFISX (Short-Term Treasuries)</strong>.</li>
+                        </ul>
+                        <p><strong>Example (4x SPYU)</strong>: If the S&P 500 rises 1% and the treasury rate is 0.01%, the synthetic 4x return is calculated as <code>(0.01 * 4) - (0.0001 * 3) = 3.97%</code>. This ensures our backtests account for the real-world cost of borrowing capital to achieved elevated exposure.</p>
+
+                        <h3>The Proof: Why Borrowing Costs Matter</h3>
+                        <p>A common question is: <em>"Why is the formula for SSO 2x SPY minus 1x BILL?"</em>. To understand this, we must look at the balance sheet of a leveraged trade.</p>
+                        
+                        <p>Imagine you have <strong>$10,000</strong> and you want 2x leverage. To achieve this, you must:</p>
+                        <ol>
+                            <li>Use your <strong>$10,000</strong> to buy SPY.</li>
+                            <li><strong>Borrow another $10,000</strong> in cash.</li>
+                            <li>Use that borrowed $10,000 to buy more SPY.</li>
+                        </ol>
+
+                        <div class="doc-alert info">
+                            <strong>Your Position:</strong><br>
+                            &bull; <strong>Assets:</strong> $20,000 worth of SPY (200% exposure)<br>
+                            &bull; <strong>Liabilities:</strong> $10,000 loan (100% financing)
+                        </div>
+
+                        <p>At the end of the day, your return is the profit from your <strong>Assets</strong> minus the interest paid on your <strong>Liabilities</strong>. In our simulation, we use <strong>BILL (VFISX)</strong> as the proxy for that interest rate.</p>
+
+                        <div class="math-block">
+                            Net Return = (200\% \times R_{spy}) - (100\% \times R_{bill}) = 2R_{spy} - 1R_{bill}
+                        </div>
+
+                        <p>For <strong>4x SPYU</strong>, the logic scales accordingly. To reach 400% exposure, you must borrow <strong>300%</strong> of your capital's value, which leads to the formula: <code>4R - 3Rf</code>.</p>
+                    </div>
+
+                    <!-- CHAPTER 3 -->
+                    <div id="ch3" class="doc-chapter">
+                        <h2><i class="fas fa-chart-line"></i> 3. Volatility Drag (Beta Slippage)</h2>
+                        <p>Leveraged instruments reset their exposure daily. In non-trending, volatile markets, this daily compounding leads to a "mathematical bleed" known as volatility drag or beta slippage.</p>
+                        
+                        <h3>The 3-Day Breakdown</h3>
+                        <div class="doc-table-wrapper">
+                            <table class="doc-table">
+                                <thead>
+                                    <tr><th>Day</th><th>SPY (1x)</th><th>SPYU (4x)</th><th>Result</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><strong>Day 0</strong></td><td>$100.00</td><td>$100.00</td><td>Baseline</td></tr>
+                                    <tr><td><strong>Day 1</strong></td><td>$90.00 (-10%)</td><td>$60.00 (-40%)</td><td>Crash</td></tr>
+                                    <tr><td><strong>Day 2</strong></td><td>$100.00 (+11.1%)</td><td>$86.66 (+44.4%)</td><td><strong>Recovery Deficit</strong></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="doc-alert warning">
+                            Even though SPY returned to its original price, the 4x leveraged asset is still down <strong>13.34%</strong>. This is why "Blind" leverage is a recipe for long-term failure. Our strategy is designed specifically to solve this by de-risking during high-volatility regimes.
                         </div>
                     </div>
 
-                    <h3>3. State Machine Logic</h3>
-                    <p>The core engine follows a state machine where the current "Tier" (T0 through T4) dictates the portfolio mix. </p>
-                    <ul>
-                        <li><strong>Daily Transition</strong>: Moves between states freely based on current drawdown.</li>
-                        <li><strong>Ratchet Transition</strong>: Moves to higher tiers (deeper DD) but refuses to move back to lower tiers until a 0% drawdown (New All-Time High) is reached.</li>
-                    </ul>
-                </section>
+                    <!-- CHAPTER 4 -->
+                    <div id="ch4" class="doc-chapter">
+                        <h2><i class="fas fa-shield-alt"></i> 4. Regime Detection (The SMA Shield)</h2>
+                        <p>We use the <strong>200-day Simple Moving Average (SMA)</strong> as a <em>Regime Filter</em>, not a market-timing signal. Its purpose is to differentiate between high-probability growth regimes and structural bear markets.</p>
+                        
+                        <h3>Operational Logic</h3>
+                        <ul>
+                            <li><strong>🟢 Bullish Growth</strong>: When price is &ge; SMA 200, the "Search for Alpha" is active. The strategy follows the standard drawdown-based leverage scaling.</li>
+                            <li><strong>🔴 Structural Protection</strong>: When price is &lt; SMA 200, the strategy forces a "Safe State." Depending on your Quant Lab settings, the portfolio defaults to <strong>Tier 0 (Benchmark)</strong> or <strong>100% Cash (BILLS)</strong>.</li>
+                        </ul>
+                        <p>This avoids the "slow bleed" of 2x-4x leverage during long-duration structural crashes like the 2000 Dot-com bubble or 2008 Financial Crisis.</p>
+                    </div>
+
+                    <!-- CHAPTER 5 -->
+                    <div id="ch5" class="doc-chapter">
+                        <h2><i class="fas fa-project-diagram"></i> 5. The Hysteresis Engine (Tiers)</h2>
+                        <p>The strategy categorizes market "pain" into five distinct tiers, based on the percentage drawdown from the trailing 1-year high-water mark.</p>
+                        
+                        <div class="doc-table-wrapper">
+                            <table class="doc-table">
+                                <thead>
+                                    <tr><th>Tier</th><th>Condition</th><th>Strategy Intent</th></tr>
+                                </thead>
+                                <tbody>
+                                    <tr><td><strong>T0</strong></td><td>Drawdown 0% - 5%</td><td>Capital Preservation & Core Tracking</td></tr>
+                                    <tr><td><strong>T1</strong></td><td>Drawdown 5% - 10%</td><td>Defensive Accumulation</td></tr>
+                                    <tr><td><strong>T2</strong></td><td>Drawdown 10% - 20%</td><td>Neutral Positioning</td></tr>
+                                    <tr><td><strong>T3</strong></td><td>Drawdown 20% - 30%</td><td>Aggressive Recovery Scaling</td></tr>
+                                    <tr><td><strong>T4</strong></td><td>Drawdown &gt; 30%</td><td>Maximum Alpha Tilt (Deep Recovery)</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <h3>Hysteresis (Ratchet Logic)</h3>
+                        <p>Under <strong>Ratchet Logic</strong>, transitions are one-way during a crash. If the market hits T4, the strategy "locks in" that leverage level and refuses to de-escalate until a <strong>New All-Time High</strong> is achieved. This ensures the portfolio is fully tilted for the <em>entire</em> duration of the recovery rally.</p>
+                    </div>
+
+                    <!-- CHAPTER 6 -->
+                    <div id="ch6" class="doc-chapter">
+                        <h2><i class="fas fa-percentage"></i> 6. Statistical Glossary</h2>
+                        <div class="glossary-grid">
+                            <div class="glossary-card">
+                                <strong>CAGR</strong>
+                                <span>Compounded Annual Growth Rate. Calculated via geometric mean. It represents the "smooth" annual return required to reach the final value.</span>
+                            </div>
+                            <div class="glossary-card">
+                                <strong>Sortino Ratio</strong>
+                                <span>Measures return per unit of <em>bad</em> (downside) volatility. Unlike Sharpe, it doesn't penalize huge upward spikes (positive volatility), which is essential for alpha-seeking strategies.</span>
+                            </div>
+                            <div class="glossary-card">
+                                <strong>Recovery Factor</strong>
+                                <span>(Total Return / Max Drawdown). A measure of how efficiently the strategy "buys back" its losses. A value > 1.0 is generally considered robust.</span>
+                            </div>
+                            <div class="glossary-card">
+                                <strong>Real Return</strong>
+                                <span>Purchasing power growth adjusted for inflation using interpolated FRED CPI data.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- CHAPTER 7 -->
+                    <div id="ch7" class="doc-chapter">
+                        <h2><i class="fas fa-microchip"></i> 7. System Architecture</h2>
+                        <p>The <strong>Strategy Tournament Laboratory</strong> is built on a high-performance, client-side simulation engine. It utilizes <code>Float32Array</code> memory optimization to ensure ultra-low latency.</p>
+                        <div class="doc-alert success">
+                            <strong>Privacy First</strong>: All calculations for your custom "Quant Lab" strategies are performed locally in your browser. No financial parameters, weights, or boundaries are ever transmitted to our servers.
+                        </div>
+                    </div>
+
+                    <!-- CHAPTER 8 -->
+                    <div id="ch8" class="doc-chapter">
+                        <h2><i class="fas fa-balance-scale"></i> 8. Ladder Philosophy</h2>
+                        <p>The core philosophy of this platform is the <strong>"Leverage Ladder"</strong>. We believe that leverage should not be a static choice, but a dynamic reward earned by the market's stability.</p>
+                        <p>By scaling exposure up as the market crashes, we are effectively rebalancing into higher future expected returns. By scaling exposure down as the market hits new highs, we "take chips off the table" and prepare for the next cycle of volatility.</p>
+                    </div>
+
+                    <!-- CHAPTER 9 -->
+                    <div id="ch9" class="doc-chapter">
+                        <h2><i class="fas fa-vial"></i> 9. Benchmarking Theory</h2>
+                        <p>We provide static benchmarks (1x, 2x, 4x) for the S&P 500 to serve as "Stress Tests."</p>
+                        <ul>
+                            <li><strong>1x Benchmark</strong>: The baseline performance of a low-cost S&P 500 index fund.</li>
+                            <li><strong>2x / 4x Benchmarks</strong>: Theoretical models that do not use our state-machine logic. These often show massive "terminal wealth" but suffer from drawdowns exceeding 90%, which are psychologically impossible for most human investors to hold through.</li>
+                        </ul>
+                    </div>
+
+                    <!-- CHAPTER 10 -->
+                    <div id="ch10" class="doc-chapter">
+                        <h2><i class="fas fa-exclamation-triangle"></i> 10. Risks & Limits</h2>
+                        <p>Every backtest has limitations. Professional investors must account for the following "real-world" frictions:</p>
+                        <ul>
+                            <li><strong>Slippage</strong>: The 0.01% - 0.10% cost of the bid-ask spread during rebalancing.</li>
+                            <li><strong>Gap-Down Risk</strong>: Our simulation uses daily close data. A "Flash Crash" that occurs mid-session or an overnight gap could exceed our drawdown bounds before a state transition is possible.</li>
+                            <li><strong>Tax Drag</strong>: In a taxable account, every transition between T1 and T4 would trigger a capital gains event. These strategies are best suited for tax-advantaged accounts (IRA / 401k).</li>
+                        </ul>
+                        <div class="doc-alert warning">
+                            <strong>Disclaimer</strong>: Past performance is not indicative of future results. Leverage carries high risk of total loss. This tool is for institutional-grade educational simulation only.
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>

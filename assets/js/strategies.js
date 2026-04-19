@@ -41,6 +41,23 @@ const STRATEGY_REGISTRY_DATA = [
         params: { logic: 'Daily', mix: 'Pure', sma: 0 }
     },
 
+    {
+        id: 'Benchmark SSO (2x) + SMA',
+        group: 'Benchmark',
+        text: '2x Leveraged benchmark that de-risks to 1x SPY when price is below the SMA 200.',
+        bounds: [0, 0, 0, 0],
+        weights: [[100, 0, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0]],
+        params: { logic: 'Daily', mix: 'Pure', sma: 200 }
+    },
+    {
+        id: 'Benchmark SPYU (4x) + SMA',
+        group: 'Benchmark',
+        text: '4x Leveraged benchmark that de-risks to 1x SPY when price is below the SMA 200.',
+        bounds: [0, 0, 0, 0],
+        weights: [[100, 0, 0, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0]],
+        params: { logic: 'Daily', mix: 'Pure', sma: 200 }
+    },
+
     // === CATEGORY: STANDARD ===
     {
         id: 'Standard Daily Safeties',

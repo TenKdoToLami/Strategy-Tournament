@@ -161,13 +161,14 @@ function parseStrategy(name) {
         const isTrend = smaPeriod > 0;
         const logic = p.logic || 'Daily';
         const mix = p.mix || 'Pure';
-        return { name, logic, mix, isTrend, smaPeriod };
+        return { name, logic, mix, isTrend, smaPeriod, level: entry.group };
     }
     // Fallback for custom or legacy
     if (name.startsWith('Benchmark')) return { level: 'Benchmark', logic: 'Daily', mix: 'Pure' };
     if (name.startsWith('Special')) return { level: 'Special', logic: 'Daily', mix: 'Pure' };
     const parts = name.split(' ');
-    return { level: parts[0], logic: parts[1], mix: parts[2] || 'Safeties' };
+    // Default to 'Standard' if we can't parse or find it
+    return { level: parts[0] || 'Standard', logic: parts[1] || 'Daily', mix: parts[2] || 'Pure' };
 }
 
 // ── Lab Simulation Engine ──────────────────────────────────────────
@@ -480,7 +481,7 @@ function renderAnalysisSuite(prefix, name, compareName) {
                 const signalSlice = globalData.signals.sma200.slice(globalData.dates.indexOf(document.getElementById('start-date').value), globalData.dates.indexOf(document.getElementById('end-date').value) + 1);
                 const bearDays = signalSlice.filter(v => v === 0).length;
                 const pct = ((bearDays / signalSlice.length) * 100).toFixed(1);
-                const modeStr = meta.params?.smaMode || (prefix === 'lab' ? document.getElementById('sim-sma-mode').value : 'T0');
+                const modeStr = meta.params?.smaMode || (prefix === 'lab' ? document.getElementById('lab-sma-mode').value : 'T0');
                 metaContainer.innerHTML += `<span class="pill-badge active" style="background:rgba(255,82,82,0.1); border-color:var(--red); color:#ff5252">SMA 200 (${modeStr}): ${bearDays.toLocaleString()} Days Protected (${pct}%)</span>`;
             } else {
                 metaContainer.innerHTML += '<span class="pill-badge" style="opacity:0.5">No Trend Filter (Always 100% Active)</span>';
