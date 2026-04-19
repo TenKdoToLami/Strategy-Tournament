@@ -14,7 +14,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Standard S&P 500 Index tracking. No leverage, no hedging.',
         bounds: [0, 0, 0, 0],
         weights: [[100, 0, 0, 0, 0], [100, 0, 0, 0, 0], [100, 0, 0, 0, 0], [100, 0, 0, 0, 0], [100, 0, 0, 0, 0]],
-        params: { logic: 'Daily', mix: 'Pure', trend: 'No-Trend' }
+        params: { logic: 'Daily', mix: 'Pure', sma: 0 }
     },
     {
         id: 'Benchmark SSO (2x)',
@@ -22,7 +22,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Standard 2x Leveraged S&P 500 tracking. Constant leverage, no reset.',
         bounds: [0, 0, 0, 0],
         weights: [[0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0]],
-        params: { logic: 'Daily', mix: 'Pure', trend: 'No-Trend' }
+        params: { logic: 'Daily', mix: 'Pure', sma: 0 }
     },
     {
         id: 'Benchmark SPYU (4x)',
@@ -30,7 +30,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Aggressive 4x Leveraged S&P 500 tracking. High volatility path.',
         bounds: [0, 0, 0, 0],
         weights: [[0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Pure', trend: 'No-Trend' }
+        params: { logic: 'Daily', mix: 'Pure', sma: 0 }
     },
     {
         id: 'Benchmark DJP (1x)',
@@ -38,7 +38,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Broad Commodity Tracking Index. Used as a hedge against inflation.',
         bounds: [0, 0, 0, 0],
         weights: [[0, 0, 0, 100, 0], [0, 0, 0, 100, 0], [0, 0, 0, 100, 0], [0, 0, 0, 100, 0], [0, 0, 0, 100, 0]],
-        params: { logic: 'Daily', mix: 'Pure', trend: 'No-Trend' }
+        params: { logic: 'Daily', mix: 'Pure', sma: 0 }
     },
 
     // === CATEGORY: STANDARD ===
@@ -48,7 +48,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Standard 1x-4x ladder with 20% dedicated to safety nets (DJP/BILL).',
         bounds: [5.0, 10.0, 20.0, 30.0],
         weights: [[80, 0, 0, 10, 10], [40, 40, 0, 10, 10], [0, 80, 0, 10, 10], [0, 40, 40, 10, 10], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Safeties', trend: 'Trend' }
+        params: { logic: 'Daily', mix: 'Safeties', sma: 200 }
     },
     {
         id: 'Standard Daily Pure',
@@ -56,7 +56,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Standard 1x-4x equity ladder. No safety nets, maximum recovery leverage.',
         bounds: [5.0, 10.0, 20.0, 30.0],
         weights: [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Pure', trend: 'Trend' }
+        params: { logic: 'Daily', mix: 'Pure', sma: 200 }
     },
     {
         id: 'Standard Ratchet Safeties',
@@ -64,7 +64,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Standard 1x-4x Safeties with Ratchet logic (locks in leverage level).',
         bounds: [5.0, 10.0, 20.0, 30.0],
         weights: [[80, 0, 0, 10, 10], [40, 40, 0, 10, 10], [0, 80, 0, 10, 10], [0, 40, 40, 10, 10], [0, 0, 100, 0, 0]],
-        params: { logic: 'Ratchet', mix: 'Safeties', trend: 'Trend' }
+        params: { logic: 'Ratchet', mix: 'Safeties', sma: 200 }
     },
     {
         id: 'Standard Ratchet Pure',
@@ -72,7 +72,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Standard 1x-4x Pure with Ratchet logic (locks in leverage level).',
         bounds: [5.0, 10.0, 20.0, 30.0],
         weights: [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Ratchet', mix: 'Pure', trend: 'Trend' }
+        params: { logic: 'Ratchet', mix: 'Pure', sma: 200 }
     },
 
     // === CATEGORY: AGGRESSIVE ===
@@ -82,7 +82,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Aggressive 1x-4x transition with tighter bounds and 20% safety margin.',
         bounds: [3.0, 7.0, 12.0, 20.0],
         weights: [[80, 0, 0, 10, 10], [40, 40, 0, 10, 10], [0, 80, 0, 10, 10], [0, 40, 40, 10, 10], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Safeties', trend: 'Trend' }
+        params: { logic: 'Daily', mix: 'Safeties', sma: 200 }
     },
     {
         id: 'Aggressive Daily Pure',
@@ -90,7 +90,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Aggressive 1x-4x pure equity ladder. Ultra-fast ramp up on minor drawdowns.',
         bounds: [3.0, 7.0, 12.0, 20.0],
         weights: [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Pure', trend: 'Trend' }
+        params: { logic: 'Daily', mix: 'Pure', sma: 200 }
     },
     {
         id: 'Aggressive Ratchet Safeties',
@@ -98,7 +98,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Aggressive 1x-4x Safeties with Ratchet logic.',
         bounds: [3.0, 7.0, 12.0, 20.0],
         weights: [[80, 0, 0, 10, 10], [40, 40, 0, 10, 10], [0, 80, 0, 10, 10], [0, 40, 40, 10, 10], [0, 0, 100, 0, 0]],
-        params: { logic: 'Ratchet', mix: 'Safeties', trend: 'Trend' }
+        params: { logic: 'Ratchet', mix: 'Safeties', sma: 200 }
     },
     {
         id: 'Aggressive Ratchet Pure',
@@ -106,7 +106,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Aggressive 1x-4x Pure with Ratchet logic.',
         bounds: [3.0, 7.0, 12.0, 20.0],
         weights: [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Ratchet', mix: 'Pure', trend: 'Trend' }
+        params: { logic: 'Ratchet', mix: 'Pure', sma: 200 }
     },
 
     // === CATEGORY: CONSERVATIVE ===
@@ -116,7 +116,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Conservative 1x-4x transition with wide bounds and 20% safety margin.',
         bounds: [10.0, 20.0, 35.0, 50.0],
         weights: [[80, 0, 0, 10, 10], [40, 40, 0, 10, 10], [0, 80, 0, 10, 10], [0, 40, 40, 10, 10], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Safeties', trend: 'Trend' }
+        params: { logic: 'Daily', mix: 'Safeties', sma: 200 }
     },
     {
         id: 'Conservative Daily Pure',
@@ -124,7 +124,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Conservative 1x-4x pure equity ladder. Only ramps up during major crashes.',
         bounds: [10.0, 20.0, 35.0, 50.0],
         weights: [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Pure', trend: 'Trend' }
+        params: { logic: 'Daily', mix: 'Pure', sma: 200 }
     },
     {
         id: 'Conservative Ratchet Safeties',
@@ -132,7 +132,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Conservative 1x-4x Safeties with Ratchet logic.',
         bounds: [10.0, 20.0, 35.0, 50.0],
         weights: [[80, 0, 0, 10, 10], [40, 40, 0, 10, 10], [0, 80, 0, 10, 10], [0, 40, 40, 10, 10], [0, 0, 100, 0, 0]],
-        params: { logic: 'Ratchet', mix: 'Safeties', trend: 'Trend' }
+        params: { logic: 'Ratchet', mix: 'Safeties', sma: 200 }
     },
     {
         id: 'Conservative Ratchet Pure',
@@ -140,7 +140,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Conservative 1x-4x Pure with Ratchet logic.',
         bounds: [10.0, 20.0, 35.0, 50.0],
         weights: [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Ratchet', mix: 'Pure', trend: 'Trend' }
+        params: { logic: 'Ratchet', mix: 'Pure', sma: 200 }
     },
 
     // === CATEGORY: SPECIAL (HALL OF FAME) ===
@@ -156,7 +156,7 @@ const STRATEGY_REGISTRY_DATA = [
             [0, 0, 100, 0, 0],
             [13, 0, 9, 48, 30]
         ],
-        params: { logic: 'Daily', mix: 'Safeties', trend: 'Trend' }
+        params: { logic: 'Daily', mix: 'Safeties', sma: 200 }
     },
     {
         id: 'Special SCALPEL',
@@ -170,7 +170,7 @@ const STRATEGY_REGISTRY_DATA = [
             [25, 9, 22, 20, 24],
             [87, 10, 0, 3, 0]
         ],
-        params: { logic: 'Daily', mix: 'Pure', trend: 'Trend' }
+        params: { logic: 'Daily', mix: 'Pure', sma: 200, smaMode: 'T0' }
     },
     {
         id: 'Special SHIELD',
@@ -184,7 +184,7 @@ const STRATEGY_REGISTRY_DATA = [
             [73, 0, 20, 5, 2],
             [1, 34, 1, 63, 1]
         ],
-        params: { logic: 'Daily', mix: 'Safeties', trend: 'Trend' }
+        params: { logic: 'Daily', mix: 'Safeties', sma: 200, smaMode: 'Cash' }
     }
 ];
 
@@ -193,7 +193,8 @@ const STRATEGY_METADATA = {
     groups: ['Benchmark', 'Standard', 'Aggressive', 'Conservative', 'Special'],
     logics: ['Daily', 'Ratchet'],
     mixes: ['Safeties', 'Pure'],
-    trends: ['Trend', 'No-Trend']
+    sma: ['SMA 200', 'None'],
+    smaModes: ['T0', 'Cash']
 };
 
 window.STRATEGY_REGISTRY_DATA = STRATEGY_REGISTRY_DATA;

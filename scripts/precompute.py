@@ -60,7 +60,12 @@ def get_precomputed_data():
     spy_cum_global = (1 + r_spy).cumprod()
     spy_ath_global = spy_cum_global.cummax()
     spy_dd_global = (spy_cum_global - spy_ath_global) / spy_ath_global
-    spy_sma_200 = raw_df[TICKERS['VOO']].rolling(200).mean()
+    spy_sma_cache = {}
+    def get_spy_sma(period):
+        if period <= 0: return None
+        if period not in spy_sma_cache:
+            spy_sma_cache[period] = raw_df[TICKERS['VOO']].rolling(period).mean()
+        return spy_sma_cache[period]
 
     # --- Fetch Inflation (CPI) ---
     print("  Calculating inflation baseline...")
@@ -75,7 +80,7 @@ def get_precomputed_data():
         days = (raw_df.index - raw_df.index[0]).days
         inflation_levels = pd.Series(np.exp(days * np.log(1.025) / 365.25), index=raw_df.index)
 
-    def simulate_strategy(bounds, include_safeties=True, use_trend_filter=True, is_ratchet=False, custom_weights=None):
+    def simulate_strategy(bounds, include_safeties=True, sma_period=0, is_ratchet=False, custom_weights=None, sma_into_cash=False):
         # Normalize weights to standard format [VOO, SSO, SPYU, DJP, BILL]
         ws = custom_weights
         if ws is None:
@@ -90,7 +95,7 @@ def get_precomputed_data():
         
         y_dd = spy_dd_global.shift(1).fillna(0)
         y_price = raw_df[TICKERS['VOO']].shift(1)
-        y_sma = spy_sma_200.shift(1)
+        y_sma = get_spy_sma(sma_period).shift(1) if sma_period > 0 else None
         
         def get_tier(dd):
             if dd <= -norm_bounds[3]: return 4
@@ -112,7 +117,7 @@ def get_precomputed_data():
         else:
             daily_tiers = y_dd.apply(get_tier)
         
-        if use_trend_filter:
+        if sma_period > 0:
             daily_tiers.loc[y_price < y_sma] = 0
             
         def get_weights_for_tier(tier):
@@ -126,6 +131,15 @@ def get_precomputed_data():
 
         for asset_idx in range(5):
             w_series = daily_tiers.map(lambda t: get_weights_for_tier(t)[asset_idx])
+            
+            if sma_period > 0 and sma_into_cash:
+                is_bear = (y_price < y_sma)
+                # BILLS is index 4
+                if asset_idx == 4:
+                    w_series.loc[is_bear] = 1.0
+                else:
+                    w_series.loc[is_bear] = 0.0
+
             strat_return += w_series * asset_returns[asset_idx]
             if asset_idx < 3: # Leverage assets
                 mult = [1, 2, 4][asset_idx]
@@ -184,8 +198,9 @@ def get_precomputed_data():
             bounds=strat['bounds'],
             include_safeties=p.get('mix') == 'Safeties',
             is_ratchet=p.get('logic') == 'Ratchet',
-            use_trend_filter=p.get('trend') == 'Trend',
-            custom_weights=strat['weights']
+            sma_period=p.get('sma', 0),
+            custom_weights=strat['weights'],
+            sma_into_cash=p.get('smaMode') == 'Cash'
         )
         
         variants[name] = r
@@ -196,21 +211,25 @@ def get_precomputed_data():
     dates = variants['Benchmark SPY (1x)'].index.strftime('%Y-%m-%d').tolist()
     raw_sub = returns_raw.loc[SIM_START:]
     spy_absolute_price = raw_df[TICKERS['VOO']].loc[SIM_START:]
-    signal_sma = (spy_absolute_price > spy_sma_200.loc[SIM_START:]).astype(int).tolist()
+    signal_sma = (spy_absolute_price > get_spy_sma(200).loc[SIM_START:]).astype(int).tolist()
     
+    def to_df_list(s, start):
+        res = s.loc[start:]
+        return res.fillna(0.0).tolist()
+
     data_out = {
         'dates': dates,
-        'inflation': inflation_levels.loc[SIM_START:].tolist(),
-        'variants': {name: v.tolist() for name, v in variants.items()},
-        'leverage': {name: l.tolist() for name, l in leverage.items()},
+        'inflation': to_df_list(inflation_levels, SIM_START),
+        'variants': {name: v.loc[SIM_START:].fillna(0.0).tolist() for name, v in variants.items()},
+        'leverage': {name: l.loc[SIM_START:].fillna(0.0).tolist() for name, l in leverage.items()},
         'weights': weights_out,
         'bounds': bounds_out,
         'raw_returns': {
-            'VOO': raw_sub[TICKERS['VOO']].tolist(),
-            'SSO': (raw_sub[TICKERS['VOO']] * 2.0).tolist(),
-            'SPYU': (raw_sub[TICKERS['VOO']] * 4.0).tolist(),
-            'BILL': raw_sub[TICKERS['BILL']].tolist(),
-            'DJP': raw_sub[TICKERS['DJP']].tolist() if TICKERS['DJP'] in raw_sub.columns else [0.0]*len(raw_sub),
+            'VOO': to_df_list(raw_sub[TICKERS['VOO']], SIM_START),
+            'SSO': (raw_sub[TICKERS['VOO']] * 2.0).loc[SIM_START:].fillna(0.0).tolist(),
+            'SPYU': (raw_sub[TICKERS['VOO']] * 4.0).loc[SIM_START:].fillna(0.0).tolist(),
+            'BILL': to_df_list(raw_sub[TICKERS['BILL']], SIM_START),
+            'DJP': to_df_list(raw_sub[TICKERS['DJP']], SIM_START) if TICKERS['DJP'] in raw_sub.columns else [0.0]*len(dates),
         },
         'signals': {
             'sma200': signal_sma

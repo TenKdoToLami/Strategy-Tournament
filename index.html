@@ -100,10 +100,10 @@
                         </div>
                     </div>
                     <div class="filter-group">
-                        <div class="filter-group-label">Execution</div>
-                        <div class="filter-options" id="filter-trend">
-                            <div class="pill active" data-value="Trend">Trend</div>
-                            <div class="pill active" data-value="No-Trend">No-Trend</div>
+                        <div class="filter-group-label">Trend Filter (SMA)</div>
+                        <div class="filter-options" id="filter-sma">
+                            <div class="pill active" data-value="SMA 200">SMA 200</div>
+                            <div class="pill active" data-value="None">None</div>
                         </div>
                     </div>
                 </section>
@@ -278,11 +278,21 @@
                     </div>
 
                     <div class="lab-controls">
-                        <label class="lab-toggle"><input type="checkbox" id="lab-ratchet"> Ratchet</label>
-                        <label class="lab-toggle"><input type="checkbox" id="lab-safeties" checked> Safeties</label>
+                        <label class="lab-toggle"><input type="checkbox" id="lab-ratchet"> Ratchet Logic</label>
                         <label class="lab-toggle"><input type="checkbox" id="lab-trend" checked> Trend Filter</label>
+                        <div class="lab-input-group" style="width: 80px; margin: 0 10px;">
+                            <label style="font-size: 0.6rem; margin-bottom: 2px;">SMA Days</label>
+                            <input type="number" id="lab-sma" value="200" style="padding: 4px; font-size: 0.8rem;">
+                        </div>
+                        <div class="lab-input-group" style="width: 100px;">
+                            <label style="font-size: 0.6rem; margin-bottom: 2px;">Bearish Target</label>
+                            <select id="lab-sma-mode" class="btn-ghost" style="padding: 2px; font-size: 0.75rem; width:100%;">
+                                <option value="T0">T0 Portfolio</option>
+                                <option value="Cash">100% Cash</option>
+                            </select>
+                        </div>
                         <div class="lab-spacer"></div>
-                        <button class="lab-btn" id="lab-run">Test Strategy</button>
+                        <button class="lab-btn" id="lab-run">Run Analysis</button>
                     </div>
                 </section>
 
@@ -362,11 +372,18 @@
                             </div>
 
                             <div class="sim-strategy-select" style="margin-top: 12px;">
-                                <label class="tier-label">Market Trend (200 SMA)</label>
-                                <select id="sim-trend-signal" class="btn-ghost" style="width:100%; text-align:left;">
-                                    <option value="bull">Bullish (Price > 200 SMA)</option>
-                                    <option value="bear">Bearish (Price < 200 SMA)</option>
-                                </select>
+                                <label class="tier-label">Market Trend (SMA Signal)</label>
+                                <div style="display: flex; gap: 8px;">
+                                    <select id="sim-trend-signal" class="btn-ghost" style="flex: 2; text-align:left;">
+                                        <option value="bull">Bullish (Price > SMA)</option>
+                                        <option value="bear">Bearish (Price < SMA)</option>
+                                    </select>
+                                    <input type="number" id="sim-sma" value="200" style="width: 50px; background: transparent; border: 1px solid var(--border); color: var(--text-primary); border-radius: 4px; padding: 0 4px; font-size: 0.8rem;" title="SMA Period">
+                                    <select id="sim-sma-mode" class="btn-ghost" style="width:70px; font-size:0.75rem;">
+                                        <option value="T0">To T0</option>
+                                        <option value="Cash">Cash</option>
+                                    </select>
+                                </div>
                             </div>
 
                             <div class="sim-slider-box">
