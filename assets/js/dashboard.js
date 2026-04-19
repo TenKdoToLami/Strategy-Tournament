@@ -76,11 +76,17 @@ function initTooltipEngine(chartIds) {
     });
 }
 
+// ── Registry Build ────────────────────────────────────────────────
+const STRATEGY_DATA = window.STRATEGY_REGISTRY_DATA || [];
+const STRATEGY_META = window.STRATEGY_METADATA || { groups: [], logics: [], mixes: [] };
+const STRATEGY_MAP = {};
+STRATEGY_DATA.forEach(s => STRATEGY_MAP[s.id] = s);
+
 // ── State ──────────────────────────────────────────────────────────
 const activeFilters = {
-    level: ['Benchmark', 'Special', 'Standard', 'Aggressive', 'Conservative'],
-    logic: ['Daily', 'Ratchet'],
-    mix: ['Safeties', 'Pure']
+    level: [...STRATEGY_META.groups],
+    logic: [...STRATEGY_META.logics],
+    mix: [...STRATEGY_META.mixes]
 };
 
 let labWeights = [
@@ -146,10 +152,19 @@ function cloneLayout() { return JSON.parse(JSON.stringify(PLOTLY_LAYOUT)); }
 // ── Logic simulator data ───────────────────────────────────────────
 let simMaxTierReached = 0;
 
-// ── Parsing ────────────────────────────────────────────────────────
 function parseStrategy(name) {
-    if (name.startsWith('Benchmark')) return { level: 'Benchmark', logic: 'Daily', mix: 'Safeties' };
-    if (name.startsWith('Special')) return { level: 'Special', logic: 'Daily', mix: 'Safeties' };
+    const entry = STRATEGY_MAP[name];
+    if (entry) {
+        return {
+            level: entry.group,
+            logic: entry.params.logic,
+            mix: entry.params.mix,
+            text: entry.text
+        };
+    }
+    // Fallback for custom or legacy
+    if (name.startsWith('Benchmark')) return { level: 'Benchmark', logic: 'Daily', mix: 'Pure' };
+    if (name.startsWith('Special')) return { level: 'Special', logic: 'Daily', mix: 'Pure' };
     const parts = name.split(' ');
     return { level: parts[0], logic: parts[1], mix: parts[2] || 'Safeties' };
 }
@@ -389,39 +404,46 @@ function renderAnalysisSuite(prefix, name, compareName) {
     const nameEl = document.getElementById(`${prefix}-name`);
     if (nameEl) nameEl.textContent = name === '🧪 USER CUSTOM LAB' ? 'Custom Lab Prototype' : name;
 
+    const matrixId = (prefix === 'lab') ? 'lab-allocation-matrix' : 'allocation-matrix';
+    const matrixContainer = document.getElementById(matrixId);
     const metaContainer = document.getElementById(`${prefix}-meta-pills`);
-    if (metaContainer) {
-        metaContainer.innerHTML = '';
-        const meta = parseStrategy(name);
-        const isRatchet = meta.logic === 'Ratchet' || (prefix === 'lab' && document.getElementById('lab-ratchet').checked);
-        const isTrend = meta.trend || (prefix === 'lab' && document.getElementById('lab-trend').checked);
-        metaContainer.innerHTML += `<span class="pill-badge ${isRatchet ? 'active' : ''}">${isRatchet ? 'Ratchet Logic' : 'Daily Reset'}</span>`;
-        if (isTrend || name.includes('BEAST') || name.includes('SCALPEL')) metaContainer.innerHTML += '<span class="pill-badge trend">Trend Filter Active</span>';
-        if (meta.mix === 'Pure') metaContainer.innerHTML += '<span class="pill-badge">Pure Equity</span>';
-    }
+    const textContainer = document.getElementById(`${prefix}-description`);
 
-    const matrixContainer = document.getElementById(`${prefix}-allocation-matrix`);
     if (matrixContainer) {
-        let weights = globalData.weights[name] || [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]];
+        const entry = STRATEGY_MAP[name] || { bounds: [0.05, 0.1, 0.2, 0.3], weights: [[100,0,0,0,0],[50,50,0,0,0],[0,100,0,0,0],[0,50,50,0,0],[0,0,100,0,0]] };
+        const meta = parseStrategy(name);
+
+        if (metaContainer) {
+            metaContainer.innerHTML = `<span class="pill-badge group-badge">${meta.level}</span>`;
+            const isRatchet = meta.logic === 'Ratchet' || (prefix === 'lab' && document.getElementById('lab-ratchet').checked);
+            metaContainer.innerHTML += `<span class="pill-badge ${isRatchet ? 'active' : ''}">${isRatchet ? 'Ratchet Logic' : 'Daily Reset'}</span>`;
+            if (meta.mix === 'Pure') metaContainer.innerHTML += '<span class="pill-badge">Pure Equity</span>';
+        }
+        if (textContainer && meta.text) textContainer.innerHTML = `<p class="strategy-description">${meta.text}</p>`;
+
+        let weights = entry.weights;
         if (prefix === 'lab') weights = labWeights.map(r => [r.VOO, r.SSO, r.SPYU, r.DJP, r.BILL]);
 
-        const FALLBACK_BOUNDS = {
-            'Standard': [0.05, 0.10, 0.20, 0.30], 'Aggressive': [0.03, 0.07, 0.12, 0.20], 'Conservative': [0.10, 0.20, 0.35, 0.50],
-            'Special BEAST': [0.01, 0.05, 0.09, 0.53], 'Special SCALPEL': [0.01, 0.05, 0.30, 0.60], 'Special SHIELD': [0.05, 0.10, 0.39, 0.58],
-            'Special': [0.05, 0.10, 0.30, 0.50], 'Benchmark': [0, 0, 0, 0]
-        };
-        let b = [0, 0, 0, 0];
-        if (prefix === 'lab' || name === '🧪 USER CUSTOM LAB') b = [parseFloat(document.getElementById('lab-b1').value), parseFloat(document.getElementById('lab-b2').value), parseFloat(document.getElementById('lab-b3').value), parseFloat(document.getElementById('lab-b4').value)].map(v => v / 100);
-        else { const cat = name.split(' ')[0]; const src = globalData.bounds || FALLBACK_BOUNDS; b = src[name] || src[cat] || [0.05, 0.10, 0.20, 0.30]; }
+        let b = entry.bounds;
+        if (prefix === 'lab' || name === '🧪 USER CUSTOM LAB') {
+            b = [
+                parseFloat(document.getElementById('lab-b1').value),
+                parseFloat(document.getElementById('lab-b2').value),
+                parseFloat(document.getElementById('lab-b3').value),
+                parseFloat(document.getElementById('lab-b4').value)
+            ].map(v => v / 100);
+        }
 
         let tableHtml = `<table class="weights-table-explorer"><thead><tr><th>Tier / Drawdown</th><th>VOO</th><th>SSO</th><th>SPYU</th><th>DJP</th><th>BILL</th><th>Lev</th></tr></thead><tbody>`;
         weights.forEach((w, i) => {
-            const lev = (w[0] * 1 + w[1] * 2 + w[2] * 4 + w[3] * 1);
             const factor = w.reduce((s, v) => s + v, 0) < 2.0 ? 100 : 1;
+            const lev = (w[0] * 1 + w[1] * 2 + w[2] * 4 + (factor === 1 ? w[3] * 1 : w[3] * 1)) / (factor === 1 ? 100 : 1);
+            
             let rangeStr = (i === 0) ? `0 – ${(b[0] * 100).toFixed(1)}%` : (i === 4) ? `> ${(b[3] * 100).toFixed(1)}%` : `${(b[i - 1] * 100).toFixed(1)} – ${(b[i] * 100).toFixed(1)}%`;
-            tableHtml += `<tr><td class="tier-highlight"><div style="font-size:0.75rem">T${i}</div><div style="font-size:0.6rem; opacity:0.7">${rangeStr}</div></td><td>${(w[0] * factor).toFixed(0)}%</td><td>${(w[1] * factor).toFixed(0)}%</td><td>${(w[2] * factor).toFixed(0)}%</td><td>${(w[3] * factor).toFixed(0)}%</td><td>${(w[4] * factor).toFixed(0)}%</td><td class="lev-high">${(factor === 100 ? lev : lev / 100).toFixed(2)}x</td></tr>`;
+            tableHtml += `<tr><td class="tier-highlight"><div style="font-size:0.75rem">T${i}</div><div style="font-size:0.6rem; opacity:0.7">${rangeStr}</div></td><td>${(w[0] * factor).toFixed(0)}%</td><td>${(w[1] * factor).toFixed(0)}%</td><td>${(w[2] * factor).toFixed(0)}%</td><td>${(w[3] * factor).toFixed(0)}%</td><td>${(w[4] * factor).toFixed(0)}%</td><td class="lev-high">${lev.toFixed(2)}x</td></tr>`;
         });
-        tableHtml += '</tbody></table>'; matrixContainer.innerHTML = tableHtml;
+        tableHtml += '</tbody></table>';
+        matrixContainer.innerHTML = tableHtml;
     }
 
     const chartReturns = m.cumSeries.slice(1);
