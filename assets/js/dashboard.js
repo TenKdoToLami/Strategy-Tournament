@@ -78,7 +78,7 @@ function initTooltipEngine(chartIds) {
 
 // ── Registry Build ────────────────────────────────────────────────
 const STRATEGY_DATA = window.STRATEGY_REGISTRY_DATA || [];
-const STRATEGY_META = window.STRATEGY_METADATA || { groups: [], logics: [], mixes: [] };
+const STRATEGY_META = window.STRATEGY_METADATA || { groups: [], logics: [], mixes: [], trends: [] };
 const STRATEGY_MAP = {};
 STRATEGY_DATA.forEach(s => STRATEGY_MAP[s.id] = s);
 
@@ -86,7 +86,8 @@ STRATEGY_DATA.forEach(s => STRATEGY_MAP[s.id] = s);
 const activeFilters = {
     level: [...STRATEGY_META.groups],
     logic: [...STRATEGY_META.logics],
-    mix: [...STRATEGY_META.mixes]
+    mix: [...STRATEGY_META.mixes],
+    trend: [...STRATEGY_META.trends]
 };
 
 let labWeights = [
@@ -159,6 +160,7 @@ function parseStrategy(name) {
             level: entry.group,
             logic: entry.params.logic,
             mix: entry.params.mix,
+            trend: entry.params.trend || 'No-Trend',
             text: entry.text
         };
     }
@@ -236,7 +238,10 @@ function update() {
     const activeStrategyNames = Object.keys(globalData.variants).filter(name => {
         if (name.startsWith('Benchmark') || name.startsWith('Special')) return false;
         const meta = parseStrategy(name);
-        return activeFilters.level.includes(meta.level) && activeFilters.logic.includes(meta.logic) && activeFilters.mix.includes(meta.mix);
+        return activeFilters.level.includes(meta.level) && 
+               activeFilters.logic.includes(meta.logic) && 
+               activeFilters.mix.includes(meta.mix) &&
+               activeFilters.trend.includes(meta.trend);
     });
 
     const traces = { linear: [], log: [], drawdown: [], vol: [], yearly: [], leverage: [], real: [] };
@@ -323,24 +328,66 @@ function update() {
     }
 
     renderTable(metricsArr);
+    
+    // Calculate Bear Market Shapes for Visualization
+    const signalSlice = globalData.signals.sma200.slice(startIndex, endIndex + 1);
+    const bearShapes = [];
+    let bearStart = null;
+    for (let i = 0; i < signalSlice.length; i++) {
+        if (signalSlice[i] === 0) {
+            if (bearStart === null) bearStart = slicedDates[i];
+        } else {
+            if (bearStart !== null) {
+                bearShapes.push({
+                    type: 'rect', xref: 'x', yref: 'paper',
+                    x0: bearStart, x1: slicedDates[i - 1],
+                    y0: 0, y1: 1,
+                    fillcolor: 'rgba(255, 0, 0, 0.06)',
+                    line: { width: 0 },
+                    layer: 'below'
+                });
+                bearStart = null;
+            }
+        }
+    }
+    if (bearStart !== null) {
+        bearShapes.push({
+            type: 'rect', xref: 'x', yref: 'paper',
+            x0: bearStart, x1: slicedDates[slicedDates.length - 1],
+            y0: 0, y1: 1,
+            fillcolor: 'rgba(255, 0, 0, 0.06)',
+            line: { width: 0 },
+            layer: 'below'
+        });
+    }
+
     if (currentTab === 'dashboard') {
         const baseLayout = {
             ...cloneLayout(),
             hovermode: 'x',
-            xaxis: { showspikes: true, spikemode: 'across', spikecolor: '#fff', spikethickness: 1 }
+            xaxis: { showspikes: true, spikemode: 'across', spikecolor: '#fff', spikethickness: 1 },
+            shapes: bearShapes
         };
 
+        // Add dummy trace for legend
+        const bearLegend = {
+            x: [null], y: [null], name: 'Bearish Trend (SMA200 Active)',
+            mode: 'markers', marker: { color: 'rgba(255,0,0,0.2)', symbol: 'square', size: 10 },
+            showlegend: true
+        };
+        const activeTraces = (t) => [bearLegend, ...t];
+
         const linLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, title: 'Return (%)', tickformat: '.0%' } };
-        Plotly.react('chart-linear', traces.linear, linLay, PLOTLY_CONFIG);
+        Plotly.react('chart-linear', activeTraces(traces.linear), linLay, PLOTLY_CONFIG);
 
         const logLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, type: 'log', title: 'Index (Log Scale)' } };
-        Plotly.react('chart-log', traces.log, logLay, PLOTLY_CONFIG);
+        Plotly.react('chart-log', activeTraces(traces.log), logLay, PLOTLY_CONFIG);
 
         const ddLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, title: 'Drawdown (%)', tickformat: '.1%', range: [null, 0] } };
-        Plotly.react('chart-drawdown', traces.drawdown, ddLay, PLOTLY_CONFIG);
+        Plotly.react('chart-drawdown', activeTraces(traces.drawdown), ddLay, PLOTLY_CONFIG);
 
         const volLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, title: '1-Year Vol (%)' } };
-        Plotly.react('chart-volatility', traces.vol, volLay, PLOTLY_CONFIG);
+        Plotly.react('chart-volatility', activeTraces(traces.vol), volLay, PLOTLY_CONFIG);
 
         const levLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, title: 'Leverage', range: [0, 4.5], tickformat: '.1f' } };
         Plotly.react('chart-leverage', traces.leverage, levLay, PLOTLY_CONFIG);
@@ -413,11 +460,22 @@ function renderAnalysisSuite(prefix, name, compareName) {
         const entry = STRATEGY_MAP[name] || { bounds: [0.05, 0.1, 0.2, 0.3], weights: [[100,0,0,0,0],[50,50,0,0,0],[0,100,0,0,0],[0,50,50,0,0],[0,0,100,0,0]] };
         const meta = parseStrategy(name);
 
+        const isRatchet = meta.logic === 'Ratchet' || (prefix === 'lab' && document.getElementById('lab-ratchet').checked);
+        const useTrend = meta.trend === 'Trend' || (prefix === 'lab' && document.getElementById('lab-trend').checked);
+
         if (metaContainer) {
             metaContainer.innerHTML = `<span class="pill-badge group-badge">${meta.level}</span>`;
-            const isRatchet = meta.logic === 'Ratchet' || (prefix === 'lab' && document.getElementById('lab-ratchet').checked);
             metaContainer.innerHTML += `<span class="pill-badge ${isRatchet ? 'active' : ''}">${isRatchet ? 'Ratchet Logic' : 'Daily Reset'}</span>`;
             if (meta.mix === 'Pure') metaContainer.innerHTML += '<span class="pill-badge">Pure Equity</span>';
+            
+            if (useTrend) {
+                const signalSlice = globalData.signals.sma200.slice(globalData.dates.indexOf(document.getElementById('start-date').value), globalData.dates.indexOf(document.getElementById('end-date').value) + 1);
+                const bearDays = signalSlice.filter(v => v === 0).length;
+                const pct = ((bearDays / signalSlice.length) * 100).toFixed(1);
+                metaContainer.innerHTML += `<span class="pill-badge active" style="background:rgba(255,82,82,0.1); border-color:var(--red); color:#ff5252">SMA200 Active: ${bearDays.toLocaleString()} Days Protected (${pct}%)</span>`;
+            } else {
+                metaContainer.innerHTML += '<span class="pill-badge" style="opacity:0.5">No Trend Filter (Always 100% Active)</span>';
+            }
         }
         if (textContainer && meta.text) textContainer.innerHTML = `<p class="strategy-description">${meta.text}</p>`;
 
@@ -431,16 +489,29 @@ function renderAnalysisSuite(prefix, name, compareName) {
                 parseFloat(document.getElementById('lab-b2').value),
                 parseFloat(document.getElementById('lab-b3').value),
                 parseFloat(document.getElementById('lab-b4').value)
-            ].map(v => v / 100);
+            ]; // Values are already percentages from inputs
         }
 
         let tableHtml = `<table class="weights-table-explorer"><thead><tr><th>Tier / Drawdown</th><th>VOO</th><th>SSO</th><th>SPYU</th><th>DJP</th><th>BILL</th><th>Lev</th></tr></thead><tbody>`;
         weights.forEach((w, i) => {
-            const factor = w.reduce((s, v) => s + v, 0) < 2.0 ? 100 : 1;
-            const lev = (w[0] * 1 + w[1] * 2 + w[2] * 4 + (factor === 1 ? w[3] * 1 : w[3] * 1)) / (factor === 1 ? 100 : 1);
+            const lev = (w[0] * 1 + w[1] * 2 + w[2] * 4 + w[3] * 1) / 100;
             
-            let rangeStr = (i === 0) ? `0 – ${(b[0] * 100).toFixed(1)}%` : (i === 4) ? `> ${(b[3] * 100).toFixed(1)}%` : `${(b[i - 1] * 100).toFixed(1)} – ${(b[i] * 100).toFixed(1)}%`;
-            tableHtml += `<tr><td class="tier-highlight"><div style="font-size:0.75rem">T${i}</div><div style="font-size:0.6rem; opacity:0.7">${rangeStr}</div></td><td>${(w[0] * factor).toFixed(0)}%</td><td>${(w[1] * factor).toFixed(0)}%</td><td>${(w[2] * factor).toFixed(0)}%</td><td>${(w[3] * factor).toFixed(0)}%</td><td>${(w[4] * factor).toFixed(0)}%</td><td class="lev-high">${lev.toFixed(2)}x</td></tr>`;
+            let rangeStr = (i === 0) ? `0 – ${b[0].toFixed(1)}%` : (i === 4) ? `> ${b[3].toFixed(1)}%` : `${b[i - 1].toFixed(1)} – ${b[i].toFixed(1)}%`;
+            const isTrendTarget = (useTrend && i === 0);
+            
+            tableHtml += `<tr>
+                <td class="tier-highlight">
+                    <div style="font-size:0.75rem">Tier ${i}</div>
+                    <div style="font-size:0.6rem; opacity:0.7">${rangeStr}</div>
+                    ${isTrendTarget ? '<div class="trend-tag">SMA Safety Target</div>' : ''}
+                </td>
+                <td>${w[0].toFixed(0)}%</td>
+                <td>${w[1].toFixed(0)}%</td>
+                <td>${w[2].toFixed(0)}%</td>
+                <td>${w[3].toFixed(0)}%</td>
+                <td>${w[4].toFixed(0)}%</td>
+                <td class="lev-high">${lev.toFixed(2)}x</td>
+            </tr>`;
         });
         tableHtml += '</tbody></table>';
         matrixContainer.innerHTML = tableHtml;
@@ -512,34 +583,60 @@ function updateSimulator() {
     const entry = STRATEGY_MAP[selectedName] || { 
         bounds: [0.05, 0.1, 0.2, 0.3], 
         weights: [[100,0,0,0,0],[50,50,0,0,0],[0,100,0,0,0],[0,50,50,0,0],[0,0,100,0,0]], 
-        params: { logic: 'Daily' } 
+        params: { logic: 'Daily', trend: 'Trend' } 
     };
     const b = entry.bounds;
     const isRatchet = (entry.params && entry.params.logic === 'Ratchet') || entry.logic === 'Ratchet';
+    const isTrendStrat = entry.params && entry.params.trend === 'Trend';
+    const trendSignal = document.getElementById('sim-trend-signal').value; // 'bull' or 'bear'
+    const isBearish = trendSignal === 'bear';
     
     let dailyTier = 0;
-    if (dd >= b[3]*100) dailyTier = 4; 
-    else if (dd >= b[2]*100) dailyTier = 3; 
-    else if (dd >= b[1]*100) dailyTier = 2; 
-    else if (dd >= b[0]*100) dailyTier = 1;
+    if (dd >= b[3]) dailyTier = 4; 
+    else if (dd >= b[2]) dailyTier = 3; 
+    else if (dd >= b[1]) dailyTier = 2; 
+    else if (dd >= b[0]) dailyTier = 1;
     
     if (dd === 0) simMaxTierReached = 0; 
     else if (dailyTier > simMaxTierReached) simMaxTierReached = dailyTier;
 
-    const effectiveTier = isRatchet ? simMaxTierReached : dailyTier;
+    let effectiveTier = isRatchet ? simMaxTierReached : dailyTier;
+
+    // Trend De-escalation Override
+    let isDeescalated = false;
+    if (isTrendStrat && isBearish) {
+        effectiveTier = 0;
+        isDeescalated = true;
+    }
 
     document.getElementById('sim-daily-state').textContent = `Tier ${dailyTier}`;
-    document.getElementById('sim-ratchet-state').textContent = `Tier ${simMaxTierReached}`;
+    document.getElementById('sim-ratchet-state').textContent = isDeescalated ? `Tier 0 (Trend FORCED)` : `Tier ${simMaxTierReached}`;
+    
+    // Add Trend Status to Simulator
+    const decisionEngine = document.querySelector('.decision-engine h4');
+    if (decisionEngine) {
+        const trendStatus = isTrendStrat ? ' ✅ Trend Filter Enabled' : ' ❌ No Trend Filter';
+        decisionEngine.innerHTML = `<span style="color:var(--accent)">Decision Engine</span><span style="float:right; font-size:0.6rem; opacity:0.7">${trendStatus}</span>`;
+    }
+    
+    const ratchetEl = document.getElementById('sim-ratchet-state');
+    if (isDeescalated) {
+        ratchetEl.classList.add('trend-warning');
+        ratchetEl.style.color = 'var(--red)';
+    } else {
+        ratchetEl.classList.remove('trend-warning');
+        ratchetEl.style.color = 'var(--accent)';
+    }
 
     // Update Boundaries Column
     const boundaryList = document.getElementById('sim-boundaries-list');
     if (boundaryList) {
         const ranges = [
-            { t: 'T0', r: `0% — ${(b[0]*100).toFixed(0)}%` },
-            { t: 'T1', r: `${(b[0]*100).toFixed(0)}% — ${(b[1]*100).toFixed(0)}%` },
-            { t: 'T2', r: `${(b[1]*100).toFixed(0)}% — ${(b[2]*100).toFixed(0)}%` },
-            { t: 'T3', r: `${(b[2]*100).toFixed(0)}% — ${(b[3]*100).toFixed(0)}%` },
-            { t: 'T4', r: `> ${(b[3]*100).toFixed(0)}%` }
+            { t: 'T0', r: `0% — ${b[0].toFixed(0)}%` },
+            { t: 'T1', r: `${b[0].toFixed(0)}% — ${b[1].toFixed(0)}%` },
+            { t: 'T2', r: `${b[1].toFixed(0)}% — ${b[2].toFixed(0)}%` },
+            { t: 'T3', r: `${b[2].toFixed(0)}% — ${b[3].toFixed(0)}%` },
+            { t: 'T4', r: `> ${b[3].toFixed(0)}%` }
         ];
         boundaryList.innerHTML = ranges.map((range, i) => `
             <div class="boundary-item" style="color:${i === effectiveTier ? 'var(--accent)' : 'inherit'}">
@@ -559,26 +656,43 @@ function updateSimulator() {
         }).join('');
     }
 
-    // Update Daily Tower Highlights (Always Spot/Daily logic)
+    // Update Daily Tower Highlights
     document.querySelectorAll('#flow-svg-daily .flow-node').forEach(n => {
         n.classList.remove('active-market', 'active-execution');
         const id = parseInt(n.id.replace('node-daily-', ''));
+        
+        // Market Signal is what the drawdown alone says
         if (id === dailyTier) n.classList.add('active-market');
+        
+        // Execution is where we ACTUALLY are (could be forced to 0)
+        // For Daily column, it's either dailyTier OR 0 if de-escalated
+        const execTier = isDeescalated ? 0 : dailyTier;
+        if (id === execTier) n.classList.add('active-execution');
     });
     document.querySelectorAll('#flow-svg-daily .flow-path').forEach(p => p.classList.remove('active'));
-    for (let i = 0; i < dailyTier; i++) {
+    
+    // Path should only go up to execution tier
+    const dailyExecLimit = isDeescalated ? 0 : dailyTier;
+    for (let i = 0; i < dailyExecLimit; i++) {
         const p = document.getElementById(`path-daily-${i}-${i + 1}`);
         if (p) p.classList.add('active');
     }
 
-    // Update Ratchet Tower Highlights (Always Ratchet/Max logic)
+    // Update Ratchet Tower Highlights
     document.querySelectorAll('#flow-svg-ratchet .flow-node').forEach(n => {
         n.classList.remove('active-market', 'active-execution');
         const id = parseInt(n.id.replace('node-ratchet-', ''));
-        if (id === simMaxTierReached) n.classList.add('active-execution');
+        
+        // Market Signal is the current max tier
+        if (id === simMaxTierReached) n.classList.add('active-market');
+        
+        // Execution is effectiveTier (could be forced to 0)
+        if (id === effectiveTier) n.classList.add('active-execution');
     });
     document.querySelectorAll('#flow-svg-ratchet .flow-path').forEach(p => p.classList.remove('active'));
-    for (let i = 0; i < simMaxTierReached; i++) {
+    
+    // Path should only go up to execution tier
+    for (let i = 0; i < effectiveTier; i++) {
         const p = document.getElementById(`path-ratchet-${i}-${i + 1}`);
         if (p) p.classList.add('active');
     }
@@ -588,19 +702,18 @@ function updateSimulator() {
     if (matrixContainer) {
         let tableHtml = `<table class="excel-table" style="width:100%"><thead><tr><th>Tier</th><th>VOO</th><th>SSO</th><th>SPYU</th><th>DJP</th><th>BILL</th><th>Total</th><th>Lev</th></tr></thead><tbody>`;
         entry.weights.forEach((w, i) => {
-            const factor = w.reduce((s, v) => s + v, 0) < 2.0 ? 100 : 1;
-            const lev = (w[0] * 1 + w[1] * 2 + w[2] * 4 + w[3] * 1) / (factor === 1 ? 100 : 1);
-            const sum = w.reduce((s, v) => s + v, 0) * (factor);
+            const lev = (w[0] * 1 + w[1] * 2 + w[2] * 4 + w[3] * 1) / 100;
+            const sum = w.reduce((s, v) => s + v, 0);
             const isEff = (i === effectiveTier);
             const isDaily = (i === dailyTier && !isEff);
             
             tableHtml += `<tr class="${isEff ? 'active-execution' : ''} ${isDaily ? 'active-market' : ''}">
                 <td class="tier-label">T${i}</td>
-                <td><input type="text" readonly value="${(w[0] * factor).toFixed(0)}%"></td>
-                <td><input type="text" readonly value="${(w[1] * factor).toFixed(0)}%"></td>
-                <td><input type="text" readonly value="${(w[2] * factor).toFixed(0)}%"></td>
-                <td><input type="text" readonly value="${(w[3] * factor).toFixed(0)}%"></td>
-                <td><input type="text" readonly value="${(w[4] * factor).toFixed(0)}%"></td>
+                <td><input type="text" readonly value="${w[0].toFixed(0)}%"></td>
+                <td><input type="text" readonly value="${w[1].toFixed(0)}%"></td>
+                <td><input type="text" readonly value="${w[2].toFixed(0)}%"></td>
+                <td><input type="text" readonly value="${w[3].toFixed(0)}%"></td>
+                <td><input type="text" readonly value="${w[4].toFixed(0)}%"></td>
                 <td class="sum-cell" style="background:transparent; color:${Math.abs(sum-100) < 0.1 ? 'var(--green)' : 'var(--red)'}">${sum.toFixed(0)}%</td>
                 <td style="font-weight:700; color:var(--text-primary)">${lev.toFixed(2)}x</td>
             </tr>`;
@@ -668,6 +781,7 @@ async function init() {
         document.querySelectorAll('.nav-item').forEach(n => n.onclick = () => switchTab(n.dataset.tab));
 
         document.getElementById('drawdown-slider').oninput = updateSimulator;
+        document.getElementById('sim-trend-signal').onchange = updateSimulator;
         renderWeightTable();
 
         document.getElementById('lab-run').onclick = () => {

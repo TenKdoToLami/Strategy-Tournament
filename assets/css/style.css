@@ -1368,17 +1368,54 @@ tr.active-execution td {
     margin-bottom: 20px;
 }
 
-tr.active-tier {
-    background: var(--highlight-bg) !important;
-    position: relative;
-    box-shadow: inset 2px 0 0 var(--accent);
+tr.active-execution {
+    background: rgba(48, 96, 176, 0.15) !important;
+    box-shadow: inset 3px 0 0 var(--accent);
 }
 
-tr.active-tier td {
-    color: var(--accent) !important;
+tr.active-market {
+    background: rgba(255, 255, 255, 0.03) !important;
+    border-left: 2px dashed rgba(255,255,255,0.2) !important;
+}
+
+/* SVG Flow States */
+.flow-node.active-execution {
+    fill: var(--accent) !important;
+    filter: drop-shadow(0 0 8px var(--accent-glow));
+}
+
+.flow-node.active-market {
+    stroke: var(--accent);
+    stroke-width: 2px;
+    stroke-dasharray: 4, 2;
+    fill: rgba(255,255,255,0.05) !important;
+}
+
+.flow-path.active {
+    stroke: var(--accent);
+    stroke-width: 3px;
+    filter: drop-shadow(0 0 4px var(--accent-glow));
+    opacity: 1 !important;
+}
+
+.trend-warning {
+    animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+    0% { opacity: 1; }
+    50% { opacity: 0.6; }
+    100% { opacity: 1; }
+}
+.trend-tag {
+    display: inline-block;
+    font-size: 0.55rem;
+    padding: 2px 6px;
+    background: rgba(48,156,236,0.1);
+    color: var(--blue);
+    border: 1px solid rgba(48,156,236,0.3);
+    border-radius: 4px;
+    margin-top: 4px;
+    text-transform: uppercase;
     font-weight: 700;
-}
-
-.weights-table-explorer tr {
-    transition: background var(--transition-fast);
 }

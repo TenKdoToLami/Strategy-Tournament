@@ -13,7 +13,7 @@ TICKERS = {
     'DJP': 'PCRIX'
 }
 SIM_START = '2002-07-01'
-PRIME_START = '2002-07-01'
+PRIME_START = '2000-01-01'
 
 def fetch_single(ticker, start, retries=3):
     """Download a single ticker with retries to handle yfinance lock errors."""
@@ -84,23 +84,19 @@ def get_precomputed_data():
             else:
                 ws = [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]]
         
-        # Ensure 0.0-1.0 scale
-        processed_ws = []
-        for tier in ws:
-            row = []
-            for v in tier:
-                row.append(v / 100.0 if v > 1.1 else v)
-            processed_ws.append(row)
+        # Unified 0-100% scale conversion
+        processed_ws = [[v / 100.0 for v in tier] for tier in ws]
+        norm_bounds = [b / 100.0 for b in bounds]
         
         y_dd = spy_dd_global.shift(1).fillna(0)
         y_price = raw_df[TICKERS['VOO']].shift(1)
         y_sma = spy_sma_200.shift(1)
         
         def get_tier(dd):
-            if dd <= -bounds[3]: return 4
-            if dd <= -bounds[2]: return 3
-            if dd <= -bounds[1]: return 2
-            if dd <= -bounds[0]: return 1
+            if dd <= -norm_bounds[3]: return 4
+            if dd <= -norm_bounds[2]: return 3
+            if dd <= -norm_bounds[1]: return 2
+            if dd <= -norm_bounds[0]: return 1
             return 0
 
         if is_ratchet:
@@ -188,7 +184,7 @@ def get_precomputed_data():
             bounds=strat['bounds'],
             include_safeties=p.get('mix') == 'Safeties',
             is_ratchet=p.get('logic') == 'Ratchet',
-            use_trend_filter=p.get('trend', True),
+            use_trend_filter=p.get('trend') == 'Trend',
             custom_weights=strat['weights']
         )
         
