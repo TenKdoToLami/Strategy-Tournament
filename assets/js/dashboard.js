@@ -295,6 +295,160 @@ const BENCHMARK_COLORS = {
     'Special SHIELD': '#f1fa8c'
 };
 
+// ── State Sync (Deep Linking) ──────────────────────────────────────
+function syncStateToUrl(isNewState = true) {
+    const params = new URLSearchParams();
+    
+    // Tab
+    params.set('tab', currentTab);
+    
+    // Dates
+    const start = document.getElementById('start-date')?.value;
+    const end = document.getElementById('end-date')?.value;
+    if (start) params.set('start', start);
+    if (end) params.set('end', end);
+    
+    // Strategy Selections
+    const explorerStrat = document.getElementById('explorer-picker')?.value;
+    const explorerCompare = document.getElementById('explorer-compare-picker')?.value;
+    if (explorerStrat) params.set('strat', explorerStrat);
+    if (explorerCompare) params.set('compare', explorerCompare);
+    
+    const simStrat = document.getElementById('sim-strategy-picker')?.value;
+    if (simStrat) params.set('sStrat', simStrat);
+    
+    const labCompare = document.getElementById('lab-compare-picker')?.value;
+    if (labCompare) params.set('lCompare', labCompare);
+    
+    // Full Lab Config (Only if we have a custom result or are on lab tab)
+    if (currentTab === 'lab' || window.customStrategyResult) {
+        params.set('lR', document.getElementById('lab-ratchet')?.checked ? '1' : '0');
+        params.set('lT', document.getElementById('lab-trend')?.checked ? '1' : '0');
+        params.set('lE', document.getElementById('lab-use-ema')?.checked ? '1' : '0');
+        params.set('lS', document.getElementById('lab-sma')?.value || '200');
+        params.set('lEP', document.getElementById('lab-ema')?.value || '50');
+        params.set('lM', document.getElementById('lab-sma-mode')?.value || 'T0');
+        
+        const b = [
+            document.getElementById('lab-b1')?.value || '5',
+            document.getElementById('lab-b2')?.value || '10',
+            document.getElementById('lab-b3')?.value || '20',
+            document.getElementById('lab-b4')?.value || '30'
+        ];
+        params.set('lB', b.join(','));
+        
+        const weights = [];
+        labWeights.forEach(row => {
+            weights.push(row.VOO, row.VOO2, row.VOO4, row.DJP, row.BILL);
+        });
+        params.set('lW', weights.join(','));
+    }
+    
+    // Filters
+    if (activeFilters.level.length > 0) params.set('fLevel', activeFilters.level.join(','));
+    if (activeFilters.logic.length > 0) params.set('fLogic', activeFilters.logic.join(','));
+    if (activeFilters.mix.length > 0) params.set('fMix', activeFilters.mix.join(','));
+    if (activeFilters.trendType.length > 0) params.set('fTrend', activeFilters.trendType.join(','));
+    
+    const newHash = '#' + params.toString();
+    if (location.hash !== newHash) {
+        if (isNewState) {
+            history.pushState(null, '', newHash);
+        } else {
+            history.replaceState(null, '', newHash);
+        }
+    }
+}
+
+function syncStateFromUrl() {
+    const hash = location.hash.replace('#', '');
+    if (!hash) return;
+    
+    const params = new URLSearchParams(hash);
+    
+    // Dates
+    const start = params.get('start');
+    const end = params.get('end');
+    if (start) document.getElementById('start-date').value = start;
+    if (end) document.getElementById('end-date').value = end;
+    
+    // Strategy Selections
+    const strat = params.get('strat');
+    const compare = params.get('compare');
+    if (strat) document.getElementById('explorer-picker').value = strat;
+    if (compare) document.getElementById('explorer-compare-picker').value = compare;
+    
+    const sStrat = params.get('sStrat');
+    if (sStrat && document.getElementById('sim-strategy-picker')) {
+        document.getElementById('sim-strategy-picker').value = sStrat;
+    }
+    
+    const lCompare = params.get('lCompare');
+    if (lCompare && document.getElementById('lab-compare-picker')) {
+        document.getElementById('lab-compare-picker').value = lCompare;
+    }
+    
+    // Lab Config
+    let shouldRunLab = false;
+    if (params.has('lW')) {
+        shouldRunLab = true;
+        const w = params.get('lW').split(',').map(v => parseFloat(v) || 0);
+        if (w.length === 25) {
+            for (let i = 0; i < 5; i++) {
+                labWeights[i] = {
+                    VOO: w[i*5], VOO2: w[i*5+1], VOO4: w[i*5+2], DJP: w[i*5+3], BILL: w[i*5+4]
+                };
+            }
+            renderWeightTable();
+        }
+        
+        const b = params.get('lB')?.split(',') || [];
+        if (b.length === 4) {
+            document.getElementById('lab-b1').value = b[0];
+            document.getElementById('lab-b2').value = b[1];
+            document.getElementById('lab-b3').value = b[2];
+            document.getElementById('lab-b4').value = b[3];
+        }
+        
+        if (params.has('lR')) document.getElementById('lab-ratchet').checked = params.get('lR') === '1';
+        if (params.has('lT')) document.getElementById('lab-trend').checked = params.get('lT') === '1';
+        if (params.has('lE')) document.getElementById('lab-use-ema').checked = params.get('lE') === '1';
+        if (params.has('lS')) document.getElementById('lab-sma').value = params.get('lS');
+        if (params.has('lEP')) document.getElementById('lab-ema').value = params.get('lEP');
+        if (params.has('lM')) document.getElementById('lab-sma-mode').value = params.get('lM');
+    }
+    
+    // Filters
+    const parseFilter = (key, filterKey) => {
+        const val = params.get(key);
+        if (val !== null) {
+            activeFilters[filterKey] = val ? val.split(',') : [];
+            // Update UI pills
+            document.querySelectorAll(`#filter-${filterKey} .pill`).forEach(p => {
+                p.classList.toggle('active', activeFilters[filterKey].includes(p.dataset.value));
+            });
+        }
+    };
+    parseFilter('fLevel', 'level');
+    parseFilter('fLogic', 'logic');
+    parseFilter('fMix', 'mix');
+    parseFilter('fTrend', 'trendType');
+    
+    // Tab (Switching tab should be last as it calls update())
+    const tab = params.get('tab');
+    if (tab && tab !== currentTab) {
+        switchTab(tab, false); // Pass false to prevent re-pushing state
+    } else {
+        update(); // If tab didn't change, we still need to update charts for dates/filters
+        if (currentTab === 'explorer') updateExplorer();
+        if (currentTab === 'simulator') updateSimulator();
+        if (currentTab === 'lab' || shouldRunLab) {
+            if (shouldRunLab) runLabSimulation(false); // don't push state again
+            else if (window.customStrategyResult) updateLabResults();
+        }
+    }
+}
+
 function getAdaptiveColor(index, total) {
     if (total === 0) return '#ffffff';
     const hue = (index * 360) / total;
@@ -969,6 +1123,7 @@ function renderUnifiedAnalyticsStrip(containerId, mPrimary, ratiosPrimary, mComp
 function selectStrategyForExplorer(name) {
     document.getElementById('explorer-picker').value = name;
     updateExplorer();
+    syncStateToUrl(true);
 }
 
 
@@ -1350,7 +1505,7 @@ function updateSimulator() {
 }
 
 // ── Tab Switching ───────────────────────────────────────────────────
-function switchTab(tabId) {
+function switchTab(tabId, pushState = true) {
     currentTab = tabId;
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.getElementById(`tab-${tabId}`).classList.add('active');
@@ -1359,7 +1514,9 @@ function switchTab(tabId) {
         if (n.dataset.tab === tabId) n.classList.add('active');
     });
     update();
+    if (tabId === 'explorer') updateExplorer();
     if (tabId === 'simulator') updateSimulator();
+    if (pushState) syncStateToUrl(true);
     setTimeout(() => { window.dispatchEvent(new Event('resize')); }, 100);
 }
 
@@ -1388,13 +1545,13 @@ async function init() {
             }
         });
 
-        picker.onchange = updateExplorer;
-        comparePicker.onchange = updateExplorer;
-        labCompare.onchange = updateLabResults;
-        if (simPicker) simPicker.onchange = updateSimulator;
+        picker.onchange = () => { updateExplorer(); syncStateToUrl(true); };
+        comparePicker.onchange = () => { updateExplorer(); syncStateToUrl(true); };
+        labCompare.onchange = () => { updateLabResults(); syncStateToUrl(true); };
+        if (simPicker) simPicker.onchange = () => { updateSimulator(); syncStateToUrl(true); };
 
-        startInput.onchange = update;
-        endInput.onchange = update;
+        startInput.onchange = () => { update(); syncStateToUrl(false); };
+        endInput.onchange = () => { update(); syncStateToUrl(false); };
         document.getElementById('reset-btn').onclick = () => { startInput.value = dates[0]; endInput.value = dates[dates.length - 1]; update(); };
 
         // Initialize active filters state for static groups
@@ -1413,6 +1570,7 @@ async function init() {
                     activeFilters[group] = activeFilters[group].filter(v => v !== val);
                 }
                 update();
+                syncStateToUrl(true);
             };
         });
 
@@ -1421,23 +1579,7 @@ async function init() {
         document.getElementById('drawdown-slider').oninput = updateSimulator;
         renderWeightTable();
 
-        document.getElementById('lab-run').onclick = () => {
-            const bounds = [parseFloat(document.getElementById('lab-b1').value), parseFloat(document.getElementById('lab-b2').value), parseFloat(document.getElementById('lab-b3').value), parseFloat(document.getElementById('lab-b4').value)];
-            const smaPeriod = parseInt(document.getElementById('lab-sma').value) || 200;
-            const emaPeriod = parseInt(document.getElementById('lab-ema').value) || 50;
-            const smaMode = document.getElementById('lab-sma-mode').value;
-            window.customStrategyResult = simulateCustomStrategy(
-                bounds, 
-                document.getElementById('lab-ratchet').checked, 
-                document.getElementById('lab-trend').checked, 
-                smaPeriod, 
-                document.getElementById('lab-use-ema').checked, 
-                emaPeriod, 
-                smaMode
-            );
-            update();
-            updateLabResults();
-        };
+        document.getElementById('lab-run').onclick = () => runLabSimulation(true);
 
         document.querySelectorAll('#metrics-table thead th').forEach(th => th.onclick = () => {
             const key = th.dataset.sort;
@@ -1453,7 +1595,17 @@ async function init() {
         loader.style.opacity = '0';
         setTimeout(() => loader.style.display = 'none', 300);
         initAnalyticsTooltips();
-        update();
+
+        // Initial State Sync
+        if (location.hash) {
+            syncStateFromUrl();
+        } else {
+            update();
+        }
+
+        window.onpopstate = () => {
+            syncStateFromUrl();
+        };
     } catch (e) {
         console.error('Quant Engine Error:', e);
     }
@@ -1563,3 +1715,43 @@ function hideAnalyticsTooltip() {
 
 // Call init on load
 initAnalyticsTooltips();
+
+function runLabSimulation(pushState = true) {
+    const bounds = [
+        parseFloat(document.getElementById('lab-b1').value), 
+        parseFloat(document.getElementById('lab-b2').value), 
+        parseFloat(document.getElementById('lab-b3').value), 
+        parseFloat(document.getElementById('lab-b4').value)
+    ];
+    const smaPeriod = parseInt(document.getElementById('lab-sma').value) || 200;
+    const emaPeriod = parseInt(document.getElementById('lab-ema').value) || 50;
+    const smaMode = document.getElementById('lab-sma-mode').value;
+    
+    window.customStrategyResult = simulateCustomStrategy(
+        bounds, 
+        document.getElementById('lab-ratchet').checked, 
+        document.getElementById('lab-trend').checked, 
+        smaPeriod, 
+        document.getElementById('lab-use-ema').checked, 
+        emaPeriod, 
+        smaMode
+    );
+    update();
+    updateLabResults();
+    if (pushState) {
+        syncStateToUrl(true);
+        // Visual feedback
+        const btn = document.getElementById('lab-run');
+        if (btn) {
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class=\"fas fa-link\"></i> Link Updated';
+            btn.style.borderColor = 'var(--green)';
+            btn.style.color = 'var(--green)';
+            setTimeout(() => {
+                btn.innerHTML = original;
+                btn.style.borderColor = '';
+                btn.style.color = '';
+            }, 2000);
+        }
+    }
+}
