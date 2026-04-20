@@ -948,27 +948,32 @@ function renderAnalysisSuite(prefix, name, compareName) {
             else metaContainer.innerHTML += '<span class="pill-badge active" style="border-color:var(--accent); color:var(--accent)">Safeties Active</span>';
             
             const prices = getSpyPrices();
-            const startIdx = globalData.dates.indexOf(document.getElementById('start-date').value);
-            const endIdx = globalData.dates.indexOf(document.getElementById('end-date').value);
-            const totalDays = endIdx - startIdx + 1;
-            const modeStr = meta.smaMode || (prefix === 'lab' ? document.getElementById('lab-sma-mode').value : 'T0');
-
-            if (useSMA) {
-                const smaPeriod = meta.smaPeriod || (prefix === 'lab' ? parseInt(document.getElementById('lab-sma').value) : 200);
-                const smaValues = calculateSMAVector(prices, smaPeriod);
-                let bearDays = 0;
-                for(let i = startIdx; i <= endIdx; i++) if (prices[i] < smaValues[i]) bearDays++;
-                const pct = ((bearDays / totalDays) * 100).toFixed(1);
-                metaContainer.innerHTML += `<span class="pill-badge active" style="background:rgba(255,82,82,0.1); border-color:var(--red); color:#ff5252">SMA ${smaPeriod} (Target: ${modeStr}): ${bearDays.toLocaleString()} Days Protected (${pct}%)</span>`;
-            }
+            const startVal = document.getElementById('start-date').value;
+            const endVal = document.getElementById('end-date').value;
+            const startIdx = globalData.dates.findIndex(d => d >= startVal);
+            const endIdx = globalData.dates.findLastIndex(d => d <= endVal);
             
-            if (useEMA) {
-                const emaPeriod = (meta.params?.ema) || (prefix === 'lab' ? parseInt(document.getElementById('lab-ema').value) : 50);
-                const emaValues = calculateEMAVector(prices, emaPeriod);
-                let bearDays = 0;
-                for(let i = startIdx; i <= endIdx; i++) if (prices[i] < emaValues[i]) bearDays++;
-                const pct = ((bearDays / totalDays) * 100).toFixed(1);
-                metaContainer.innerHTML += `<span class="pill-badge active" style="background:rgba(255,160,0,0.1); border-color:var(--orange); color:#ffa000">EMA ${emaPeriod} (Target: ${modeStr}): ${bearDays.toLocaleString()} Days Protected (${pct}%)</span>`;
+            if (startIdx !== -1 && endIdx !== -1) {
+                const totalDays = endIdx - startIdx + 1;
+                const modeStr = meta.smaMode || (prefix === 'lab' ? document.getElementById('lab-sma-mode').value : 'T0');
+
+                if (useSMA) {
+                    const smaPeriod = meta.smaPeriod || (prefix === 'lab' ? parseInt(document.getElementById('lab-sma').value) : 200);
+                    const smaValues = calculateSMAVector(prices, smaPeriod);
+                    let bearDays = 0;
+                    for(let i = startIdx; i <= endIdx; i++) if (prices[i] < smaValues[i]) bearDays++;
+                    const pct = ((bearDays / totalDays) * 100).toFixed(1);
+                    metaContainer.innerHTML += `<span class="pill-badge active" style="background:rgba(255,82,82,0.1); border-color:var(--red); color:#ff5252">SMA ${smaPeriod} (Target: ${modeStr}): ${bearDays.toLocaleString()} Days Protected (${pct}%)</span>`;
+                }
+                
+                if (useEMA) {
+                    const emaPeriod = (meta.params?.ema) || (prefix === 'lab' ? parseInt(document.getElementById('lab-ema').value) : 50);
+                    const emaValues = calculateEMAVector(prices, emaPeriod);
+                    let bearDays = 0;
+                    for(let i = startIdx; i <= endIdx; i++) if (prices[i] < emaValues[i]) bearDays++;
+                    const pct = ((bearDays / totalDays) * 100).toFixed(1);
+                    metaContainer.innerHTML += `<span class="pill-badge active" style="background:rgba(255,160,0,0.1); border-color:var(--orange); color:#ffa000">EMA ${emaPeriod} (Target: ${modeStr}): ${bearDays.toLocaleString()} Days Protected (${pct}%)</span>`;
+                }
             }
 
             if (!useSMA && !useEMA) {
@@ -1064,8 +1069,12 @@ function renderAnalysisSuite(prefix, name, compareName) {
     const cLev = cObj ? (compareName === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.leverage : globalData.leverage[compareName]).slice(globalData.dates.length - chartReturns.length) : null;
     Plotly.react(`chart-${prefix}-leverage`, traces(levSlice, cLev, name, compareName, 'var(--blue)'), { ...expBaseLayout, yaxis: { title: 'Leverage', range: [0, 4.5] }, height: 400 }, PLOTLY_CONFIG);
     // Calculate and render Unified Analytics Strip
-    const startIdx = globalData.dates.indexOf(document.getElementById('start-date').value);
-    const endIdx = globalData.dates.indexOf(document.getElementById('end-date').value);
+    const startVal = document.getElementById('start-date').value;
+    const endVal = document.getElementById('end-date').value;
+    const startIdx = globalData.dates.findIndex(d => d >= startVal);
+    const endIdx = globalData.dates.findLastIndex(d => d <= endVal);
+
+    if (startIdx === -1 || endIdx === -1) return;
     
     // Benchmarks
     const bRaw = globalData.raw_returns['VOO'].slice(startIdx, endIdx + 1);
