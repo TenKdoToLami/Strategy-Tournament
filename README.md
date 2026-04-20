@@ -12,9 +12,9 @@
 ---
 
 ## 🏛️ Project Vision
-**Strategy Tournament** is a professional-grade quantitative simulation environment designed to stress-test **dynamic drawdown-based leveraging strategies**. Unlike static backtests, this platform utilizes a state-machine architecture to transition between market regimes, optimizing capital efficiency while strictly managing downside risk.
+The core thesis of this platform is **systematic recovery scaling**: taking advantage of transitory drawdowns within the S&P 500 (SPX) to strategically rotate into leveraged instruments (2x/4x VOO). By increasing exposure during "blood in the streets" scenarios and reverting to safety during all-time highs, the engine aims to radically amplify the market's long-term upward trend.
 
-> "Leverage should not be a static choice, but a dynamic reward earned by the market's stability."
+> "Leverage was given to us by greedy addicted gamblers, and I see it as an absolute win."
 
 ---
 
@@ -62,12 +62,19 @@ Under **Ratchet Logic**, state transitions are "sticky" during recovery. A portf
 ---
 
 ## 🏆 The Strategy "Hall of Fame"
-Results from a **500,000-iteration** global optimization at 5% resolution.
+Results from a **Standard Epoch (2002+)** simulation based on the latest genetic optimization.
 
-| Strategy | Performance Goal | Highlight |
-|:---------|:-----------------|:----------|
-| **Special BEAST** | Maximum Growth | **20.03% CAGR** using Ratchet Logic. |
-| **Special SCALPEL** | Equity Replacement | Beats VOO CAGR with **-23.6% Max Drawdown**. |
+| Strategy | CAGR | Drawdown | Sharpe | Highlight |
+|:---------|:-----|:---------|:-------|:----------|
+| **Special BEAST (v2)** | **36.15%** | -86.7% | 0.88 | **1,530.4x Multiplier**. Absolute growth apex. |
+| **Special SCALPEL (v2)** | **14.01%** | **-15.0%** | **1.30** | **Institutional Precision**. Beats 1x Benchmark with extreme low volatility. |
+| **Benchmark VOO** | 10.73% | -55.2% | 0.63 | Standard S&P 500 Index tracking. |
+
+### Logic Explanations
+
+*   **Special BEAST (v2)**: Discovered via a 50-epoch deep-search. It utilizes a **362/400-day Trend Hybrid** (Adaptive SMA/EMA filter) and specialized aggression in Tier 4 recovery. It is designed to maximize terminal wealth regardless of peak volatility.
+*   **Special SCALPEL (v2)**: Evolved for maximum **Risk-Adjusted Return**. It achieves a Sharpe ratio of 1.30 (more than double the benchmark) by using a **232/124-day Trend Hybrid**. It focuses on surgical precision and ultra-low volatility drag during market chop.
+*   **Special PREDATOR**: The robust optimizer. Dominates the modern era (2020+) utilizing an ultra-resilient **290-day trend logic**. Designed to thrive where standard drawdown strategies fail by maintaining survivability during structural shifts.
 
 ---
 
