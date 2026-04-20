@@ -473,6 +473,157 @@ const PLOTLY_CONFIG = { responsive: true, displayModeBar: false };
 
 function cloneLayout() { return JSON.parse(JSON.stringify(PLOTLY_LAYOUT)); }
 
+// ── Chart Control Panel Logic ──
+function initChartControls() {
+    // 1. Add Global Timeframe bar to the controls-bar
+    const globalBar = document.querySelector('.controls-bar');
+    if (globalBar && !document.getElementById('global-tf-selector')) {
+        const tfDiv = document.createElement('div');
+        tfDiv.id = 'global-tf-selector';
+        tfDiv.className = 'global-timeframes';
+        tfDiv.innerHTML = `
+            <button class="global-tf-btn" onclick="applyGlobalTimeframe(1)">1M</button>
+            <button class="global-tf-btn" onclick="applyGlobalTimeframe(6)">6M</button>
+            <button class="global-tf-btn active" onclick="applyGlobalTimeframe(12)">1Y</button>
+            <button class="global-tf-btn" onclick="applyGlobalTimeframe(36)">3Y</button>
+            <button class="global-tf-btn" onclick="applyGlobalTimeframe(60)">5Y</button>
+            <button class="global-tf-btn" onclick="applyGlobalTimeframe(0)">MAX</button>
+        `;
+        globalBar.appendChild(tfDiv);
+    }
+
+    // 2. Enhance all .chart-box containers
+    document.querySelectorAll('.chart-box').forEach(box => {
+        if (box.dataset.controlsInitialized) return;
+        box.dataset.controlsInitialized = 'true';
+
+        const chartDiv = box.querySelector('.chart-div');
+        if (!chartDiv) return;
+        const chartId = chartDiv.id;
+        if (!box.id) box.id = 'box-' + chartId;
+
+        // Wrap existing title if not already wrapped
+        const titleEl = box.querySelector('.chart-title');
+        const subtitleEl = box.querySelector('.chart-subtitle');
+        
+        const headerRow = document.createElement('div');
+        headerRow.className = 'chart-header-row';
+        
+        const titleArea = document.createElement('div');
+        titleArea.className = 'chart-title-area';
+        if (titleEl) titleArea.appendChild(titleEl);
+        if (subtitleEl) titleArea.appendChild(subtitleEl);
+        
+        const controls = document.createElement('div');
+        controls.className = 'chart-controls';
+        controls.innerHTML = `
+            <button class="ctrl-btn" onclick="setChartDragMode('${chartId}', 'zoom')" title="Zoom Mode"><i class="fas fa-search"></i></button>
+            <button class="ctrl-btn" onclick="setChartDragMode('${chartId}', 'pan')" title="Pan Mode"><i class="fas fa-hand-paper"></i></button>
+            <button class="ctrl-btn" onclick="resetChartZoom('${chartId}')" title="Reset Zoom"><i class="fas fa-sync-alt"></i></button>
+            <button class="ctrl-btn expand-btn" onclick="toggleChartFullscreen('${box.id}')" title="Full Screen"><i class="fas fa-expand"></i></button>
+        `;
+        
+        headerRow.appendChild(titleArea);
+        headerRow.appendChild(controls);
+        
+        // Insert at the top of box
+        box.insertBefore(headerRow, chartDiv);
+    });
+}
+
+function setChartDragMode(chartId, mode) {
+    Plotly.relayout(chartId, { dragmode: mode });
+    // Update button states
+    const box = document.getElementById('box-' + chartId);
+    if (box) {
+        box.querySelectorAll('.ctrl-btn').forEach(btn => {
+            const isMatch = (mode === 'zoom' && btn.innerHTML.includes('fa-search')) || 
+                            (mode === 'pan' && btn.innerHTML.includes('fa-hand'));
+            btn.classList.toggle('active', isMatch);
+        });
+    }
+}
+
+function resetChartZoom(chartId) {
+    Plotly.relayout(chartId, {
+        'xaxis.autorange': true,
+        'yaxis.autorange': true
+    });
+}
+
+function toggleChartFullscreen(boxId) {
+    const box = document.getElementById(boxId);
+    if (!box) return;
+
+    const isFullscreen = box.classList.toggle('fullscreen');
+    document.body.classList.toggle('has-fullscreen', isFullscreen);
+    
+    // Update expand icon
+    const icon = box.querySelector('.expand-btn i');
+    if (icon) {
+        icon.className = isFullscreen ? 'fas fa-compress' : 'fas fa-expand';
+    }
+
+    // Resize Plotly
+    const chartDiv = box.querySelector('.chart-div');
+    if (chartDiv) {
+        Plotly.Plots.resize(chartDiv);
+    }
+
+    // Handle ESC key to exit
+    if (isFullscreen) {
+        const escHandler = (e) => {
+            if (e.key === 'Escape') {
+                toggleChartFullscreen(boxId);
+                window.removeEventListener('keydown', escHandler);
+            }
+        };
+        window.addEventListener('keydown', escHandler);
+    }
+}
+
+function applyGlobalTimeframe(months) {
+    if (!globalData || !globalData.dates) return;
+    
+    const endInput = document.getElementById('end-date');
+    const startInput = document.getElementById('start-date');
+    
+    const lastDateStr = globalData.dates[globalData.dates.length - 1];
+    const lastDate = new Date(lastDateStr);
+    
+    let startDate;
+    if (months === 0) {
+        startDate = new Date(globalData.dates[0]);
+    } else {
+        startDate = new Date(lastDate);
+        startDate.setMonth(startDate.getMonth() - months);
+        // Ensure we don't go before available data
+        const minAvailable = new Date(globalData.dates[0]);
+        if (startDate < minAvailable) startDate = minAvailable;
+    }
+
+    // Format to YYYY-MM-DD for input[type="date"]
+    const fmt = (d) => d.toISOString().split('T')[0];
+    
+    startInput.value = fmt(startDate);
+    endInput.value = fmt(lastDate);
+    
+    // Update global buttons UI
+    document.querySelectorAll('.global-tf-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.textContent.includes(months === 0 ? 'MAX' : (months >= 12 ? (months/12) + 'Y' : months + 'M')));
+        // Simplified check:
+        if (months === 0 && btn.textContent === 'MAX') btn.classList.add('active');
+        else if (months === 1 && btn.textContent === '1M') btn.classList.add('active');
+        else if (months === 6 && btn.textContent === '6M') btn.classList.add('active');
+        else if (months === 12 && btn.textContent === '1Y') btn.classList.add('active');
+        else if (months === 36 && btn.textContent === '3Y') btn.classList.add('active');
+        else if (months === 60 && btn.textContent === '5Y') btn.classList.add('active');
+        else btn.classList.remove('active');
+    });
+
+    update();
+}
+
 // ── Logic simulator data ───────────────────────────────────────────
 let simMaxTierReached = 0;
 
@@ -752,16 +903,29 @@ function renderMechanismChart(prefix, name, startIndex, endIndex) {
 
     const layout = {
         ...cloneLayout(),
-        yaxis: { ...PLOTLY_LAYOUT.yaxis, type: 'log', title: 'Price (Log)' },
+        yaxis: { ...PLOTLY_LAYOUT.yaxis, type: 'log', title: 'Price (Log)', autorange: true },
+        xaxis: { 
+            ...PLOTLY_LAYOUT.xaxis,
+            rangeslider: { 
+                visible: true, 
+                yaxis: { rangemode: 'auto' },
+                bgcolor: 'rgba(255,255,255,0.03)', 
+                bordercolor: 'rgba(255,255,255,0.1)' 
+            }
+        },
+        margin: { ...PLOTLY_LAYOUT.margin, b: 80 },
         shapes: shapes,
-        height: 400
+        height: 480 
     };
 
     Plotly.react(chartId, traces, layout, PLOTLY_CONFIG);
+    attachSyncListeners([chartId]);
+    initChartControls();
 }
 
 // ── Main Update Loop ───────────────────────────────────────────────
 function update() {
+    initChartControls();
     if (!globalData) return;
     const start = document.getElementById('start-date').value;
     const end = document.getElementById('end-date').value;
@@ -897,10 +1061,23 @@ function update() {
         const baseLayout = {
             ...cloneLayout(),
             hovermode: 'x',
-            xaxis: { showspikes: true, spikemode: 'across', spikecolor: '#fff', spikethickness: 1 }
+            yaxis: { ...PLOTLY_LAYOUT.yaxis, autorange: true },
+            xaxis: { 
+                showspikes: true, 
+                spikemode: 'across', 
+                spikecolor: '#fff', 
+                spikethickness: 1,
+                rangeslider: { 
+                    visible: true, 
+                    yaxis: { rangemode: 'auto' },
+                    bgcolor: 'rgba(255,255,255,0.03)', 
+                    bordercolor: 'rgba(255,255,255,0.1)' 
+                }
+            },
+            margin: { ...PLOTLY_LAYOUT.margin, b: 80 } // Increase bottom margin for slider
         };
 
-        const linLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, title: 'Return (%)', tickformat: '.0%' } };
+        const linLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, title: 'Return (%)', tickformat: '.0%', autorange: true } };
         Plotly.react('chart-linear', traces.linear, linLay, PLOTLY_CONFIG);
 
         const logLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, type: 'log', title: 'Index (Log Scale)' } };
@@ -918,14 +1095,127 @@ function update() {
         const realLay = { ...baseLayout, yaxis: { ...baseLayout.yaxis, title: 'Real Growth (Inflation Adj)', type: 'log' } };
         Plotly.react('chart-real', traces.real, realLay, PLOTLY_CONFIG);
 
-        const yearLay = { ...cloneLayout(), yaxis: { ...PLOTLY_LAYOUT.yaxis, title: 'Yearly Return (%)', tickformat: '.0%' }, barmode: 'group' };
+        const yearLay = { 
+            ...cloneLayout(), 
+            yaxis: { ...PLOTLY_LAYOUT.yaxis, title: 'Yearly Return (%)', tickformat: '.0%' }, 
+            xaxis: { 
+                ...PLOTLY_LAYOUT.xaxis,
+                rangeslider: { 
+                    visible: true, 
+                    yaxis: { rangemode: 'auto' },
+                    bgcolor: 'rgba(255,255,255,0.03)', 
+                    bordercolor: 'rgba(255,255,255,0.1)' 
+                }
+            },
+            margin: { ...PLOTLY_LAYOUT.margin, b: 80 },
+            barmode: 'group' 
+        };
         Plotly.react('chart-yearly', traces.yearly, yearLay, PLOTLY_CONFIG);
 
-        initTooltipEngine(['chart-linear', 'chart-log', 'chart-drawdown', 'chart-volatility', 'chart-leverage', 'chart-real', 'chart-yearly']);
+        const syncIds = ['chart-linear', 'chart-log', 'chart-drawdown', 'chart-volatility', 'chart-leverage', 'chart-real'];
+        const allIds = [...syncIds, 'chart-yearly'];
+        initTooltipEngine(allIds);
+        attachSyncListeners(allIds);
     }
 
     window.allMetrics = metricsArr;
     updateExplorer();
+}
+
+function rescaleChartYAxis(el, xRange, extraUpdate = {}) {
+    if (!el || !el.data || !xRange) return;
+
+    // Detect if we are dealing with numeric indices (categorical axis) or date strings
+    const isNumericRange = typeof xRange[0] === 'number';
+    const startVal = isNumericRange ? xRange[0] : new Date(xRange[0]).getTime();
+    const endVal = isNumericRange ? xRange[1] : new Date(xRange[1]).getTime();
+    
+    let minY = Infinity, maxY = -Infinity;
+    let found = false;
+
+    el.data.forEach(trace => {
+        if (!trace.x || !trace.y || trace.visible === 'legendonly') return;
+        const x = trace.x, y = trace.y, len = x.length;
+        
+        for (let i = 0; i < len; i++) {
+            let valX;
+            if (isNumericRange) {
+                // For categorical axes (like Yearly bars), Plotly uses indices in the range
+                valX = i;
+            } else {
+                valX = new Date(x[i]).getTime();
+            }
+
+            // For index-based ranges, we add a tiny buffer to include the full bars
+            const isInside = isNumericRange 
+                ? (valX >= startVal - 0.5 && valX <= endVal + 0.5)
+                : (valX >= startVal && valX <= endVal);
+
+            if (isInside) {
+                const valY = y[i];
+                if (valY !== null && typeof valY === 'number' && !isNaN(valY)) {
+                    if (valY < minY) minY = valY;
+                    if (valY > maxY) maxY = valY;
+                    found = true;
+                }
+            }
+        }
+    });
+
+    const update = { ...extraUpdate };
+    if (found && minY !== Infinity) {
+        const margin = (maxY - minY) * 0.1;
+        const finalRange = (el.layout.yaxis.type === 'log') 
+            ? [Math.log10(Math.max(1e-6, minY * 0.9)), Math.log10(maxY * 1.1)] 
+            : [minY - margin, maxY + margin];
+        
+        update['yaxis.range'] = finalRange;
+        update['yaxis.autorange'] = false;
+    } else {
+        update['yaxis.autorange'] = true;
+    }
+    
+    return Plotly.relayout(el, update);
+}
+
+// ── Sync Engine ───────────────────────────────────────────────────
+window._isSyncing = false;
+function attachSyncListeners(chartIds) {
+    chartIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el || el.dataset.syncInitialized) return;
+        el.dataset.syncInitialized = 'true';
+        
+        el.on('plotly_relayout', (eventData) => {
+            if (window._isSyncing) return;
+            
+            let xRange = null;
+            if (eventData['xaxis.range[0]'] !== undefined) {
+                xRange = [eventData['xaxis.range[0]'], eventData['xaxis.range[1]']];
+            } else if (eventData['xaxis.range'] !== undefined) {
+                xRange = eventData['xaxis.range'];
+            }
+
+            if (!xRange && !eventData['xaxis.autorange']) return;
+
+            // Defer update to avoid Plotly's '_guiEditing' race condition
+            // and apply local Y-rescaling while keeping views independent.
+            requestAnimationFrame(() => {
+                if (window._isSyncing) return;
+                window._isSyncing = true;
+
+                if (xRange) {
+                    // Apply X range + Rescale Y vertically to fit data for THIS chart ONLY
+                    rescaleChartYAxis(el, xRange);
+                } else if (eventData['xaxis.autorange']) {
+                    // Reset Y-autoscale for THIS chart ONLY
+                    Plotly.relayout(el, { 'yaxis.autorange': true });
+                }
+
+                setTimeout(() => { window._isSyncing = false; }, 50); 
+            });
+        });
+    });
 }
 
 // ── Table ──────────────────────────────────────────────────────────
@@ -1258,7 +1548,24 @@ function renderAnalysisSuite(prefix, name, compareName) {
     const levFull = (m.Strategy === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.leverage : globalData.leverage[m.Strategy]);
     const levSlice = levFull.slice(startIndex);
 
-    const expBaseLayout = { ...cloneLayout(), margin: { l: 60, r: 20, t: 30, b: 80 }, autosize: true, hoverlabel: { bgcolor: '#1a1d23', font: { color: '#ffffff', size: 12 }, bordercolor: 'var(--accent)' }, xaxis: { showspikes: true, spikemode: 'across', spikecolor: '#fff', spikethickness: 1 } };
+    const expBaseLayout = { 
+        ...cloneLayout(), 
+        margin: { l: 60, r: 20, t: 30, b: 100 }, 
+        autosize: true, 
+        hoverlabel: { bgcolor: '#1a1d23', font: { color: '#ffffff', size: 12 }, bordercolor: 'var(--accent)' }, 
+        xaxis: { 
+            showspikes: true, 
+            spikemode: 'across', 
+            spikecolor: '#fff', 
+            spikethickness: 1,
+            rangeslider: { 
+                visible: true, 
+                yaxis: { rangemode: 'auto' },
+                bgcolor: 'rgba(255,255,255,0.03)', 
+                bordercolor: 'rgba(255,255,255,0.1)' 
+            }
+        } 
+    };
     const traces = (yP, yC, nP, nC, pColor, isBar = false) => {
         const arr = [{ x: syncedDates, y: yP, name: nP, line: { color: pColor, width: 3 }, type: isBar ? 'bar' : 'scatter', hoverinfo: 'none' }];
         if (yC) arr.push({ x: syncedDates, y: yC, name: nC, line: { color: 'rgba(255,255,255,0.5)', width: 2, dash: 'dot' }, marker: { color: 'rgba(255,255,255,0.3)' }, type: isBar ? 'bar' : 'scatter', opacity: 0.8, hoverinfo: 'none' });
@@ -1340,7 +1647,11 @@ function renderAnalysisSuite(prefix, name, compareName) {
     
     renderMechanismChart(prefix, name, startIndex, globalData.dates.length - 1);
     
-    initTooltipEngine([`chart-${prefix}-linear`, `chart-${prefix}-log`, `chart-${prefix}-drawdown`, `chart-${prefix}-vol`, `chart-${prefix}-leverage`, `chart-${prefix}-real`, `chart-${prefix}-yearly`, `chart-${prefix}-mechanism`]);
+    const ids = [`chart-${prefix}-linear`, `chart-${prefix}-log`, `chart-${prefix}-drawdown`, `chart-${prefix}-vol`, `chart-${prefix}-leverage`, `chart-${prefix}-real` ];
+    const allIds = [...ids, `chart-${prefix}-yearly`, `chart-${prefix}-mechanism` ];
+    initTooltipEngine(allIds);
+    attachSyncListeners(allIds);
+    initChartControls();
 }
 
 function updateExplorer() {

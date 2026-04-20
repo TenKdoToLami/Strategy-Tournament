@@ -2140,3 +2140,154 @@ tr.active-market {
         grid-template-columns: 1fr;
     }
 }
+
+/* --- Advanced Chart Interactivity --- */
+.chart-box {
+    position: relative;
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.chart-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.chart-title-area {
+    flex: 1;
+}
+
+.chart-controls {
+    display: flex;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    padding: 4px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(8px);
+}
+
+.ctrl-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-size: 0.85rem;
+}
+
+.ctrl-btn:hover {
+    background: var(--bg-elevated);
+    color: var(--accent);
+}
+
+.ctrl-btn.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+}
+
+.ctrl-btn i {
+    pointer-events: none;
+}
+
+/* Timeframe Selector */
+.timeframe-bar {
+    display: flex;
+    gap: 6px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+}
+
+.tf-pill {
+    padding: 4px 10px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 6px;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: var(--font-mono);
+}
+
+.tf-pill:hover {
+    border-color: var(--accent);
+    color: var(--text-primary);
+}
+
+.tf-pill.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg-primary);
+}
+
+/* Expanded/Fullscreen Mode */
+.chart-box.fullscreen {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    right: 20px;
+    bottom: 20px;
+    z-index: 2500;
+    background: var(--bg-card);
+    padding: 40px;
+    margin: 0 !important;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 0 100px rgba(0,0,0,0.8);
+    border-color: var(--accent);
+}
+
+.chart-box.fullscreen .chart-div {
+    flex: 1;
+    height: auto !important; /* Force expansion in flex layout */
+}
+
+/* Darker overlay for fullscreen */
+body.has-fullscreen::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(8px);
+    z-index: 2400;
+}
+
+/* Global timeframe bar in header */
+.global-timeframes {
+    display: flex;
+    gap: 12px;
+    margin-left: 24px;
+}
+
+.global-tf-btn {
+    padding: 8px 16px;
+    border-radius: var(--radius-sm);
+    font-size: 0.8rem;
+    font-weight: 700;
+    background: var(--bg-elevated);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.global-tf-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+.global-tf-btn.active {
+    background: var(--accent-glow);
+    color: var(--accent);
+    border-color: var(--accent);
+}
