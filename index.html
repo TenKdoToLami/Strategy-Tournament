@@ -330,7 +330,12 @@
                             </select>
                         </div>
                         <div class="lab-spacer"></div>
-                        <button class="lab-btn" id="lab-run">Run Analysis</button>
+                        <button class="lab-btn lab-btn--config" id="lab-export" style="margin-right: 12px;">
+                            <i class="fas fa-file-export"></i> Export Strategist
+                        </button>
+                        <button class="lab-btn" id="lab-run">
+                            <i class="fas fa-play"></i> Run Analysis
+                        </button>
                     </div>
                 </section>
 
@@ -912,7 +917,28 @@
         </div>
     </main>
 
-    <script defer src="assets/js/strategies.js"></script>
+    <div id="export-modal" class="modal-overlay">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <div class="modal-title">🚀 Strategy Export</div>
+                <button class="close-modal" id="close-export">&times;</button>
+            </div>
+            <p class="modal-desc">
+                Copy this configuration directly into <code>assets/js/strategies.js</code> to permanently register this strategy in the tournament.
+            </p>
+            <div class="code-export-container">
+                <textarea id="export-json" spellcheck="false"></textarea>
+            </div>
+            <div class="modal-actions">
+                <button class="lab-btn lab-btn--cancel" id="close-export-btn">Close</button>
+                <button class="lab-btn" id="copy-export-btn">
+                    <i class="fas fa-copy"></i> Copy to Clipboard
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="assets/js/strategies.js"></script>
     <script defer src="assets/js/dashboard.js"></script>
     <div id="chart-tooltip" class="custom-tooltip" style="display: none;"></div>
 </body>

@@ -1580,6 +1580,24 @@ async function init() {
         renderWeightTable();
 
         document.getElementById('lab-run').onclick = () => runLabSimulation(true);
+        document.getElementById('lab-export').onclick = () => exportStrategy();
+
+        // Modal Controls
+        const modal = document.getElementById('export-modal');
+        const closeModal = () => modal.style.display = 'none';
+        document.getElementById('close-export').onclick = closeModal;
+        document.getElementById('close-export-btn').onclick = closeModal;
+        window.onclick = (e) => { if (e.target === modal) closeModal(); };
+
+        document.getElementById('copy-export-btn').onclick = () => {
+            const textarea = document.getElementById('export-json');
+            textarea.select();
+            document.execCommand('copy');
+            const btn = document.getElementById('copy-export-btn');
+            const original = btn.innerHTML;
+            btn.innerHTML = '<i class=\"fas fa-check\"></i> Copied!';
+            setTimeout(() => btn.innerHTML = original, 2000);
+        };
 
         document.querySelectorAll('#metrics-table thead th').forEach(th => th.onclick = () => {
             const key = th.dataset.sort;
@@ -1754,4 +1772,37 @@ function runLabSimulation(pushState = true) {
             }, 2000);
         }
     }
+}
+
+function exportStrategy() {
+    const bounds = [
+        parseFloat(document.getElementById('lab-b1').value) || 0,
+        parseFloat(document.getElementById('lab-b2').value) || 0,
+        parseFloat(document.getElementById('lab-b3').value) || 0,
+        parseFloat(document.getElementById('lab-b4').value) || 0
+    ];
+    
+    const weights = labWeights.map(row => [
+        row.VOO, row.VOO2, row.VOO4, row.DJP, row.BILL
+    ]);
+    
+    const logic = document.getElementById('lab-ratchet').checked ? "Ratchet" : "Daily";
+    const sma = parseInt(document.getElementById('lab-sma').value) || 0;
+    const ema = parseInt(document.getElementById('lab-ema').value) || 0;
+    const mode = document.getElementById('lab-sma-mode').value;
+    
+    // Manually construct the string to match strategies.js style precisely (4-space indent, unquoted keys)
+    let js = "{\n";
+    js += `    id: 'USER CUSTOM LAB',\n`;
+    js += `    group: 'Lab',\n`;
+    js += `    text: 'Custom strategy generated on ${new Date().toLocaleDateString()}',\n`;
+    js += `    bounds: [${bounds.map(b => b.toFixed(1).replace('.0', '')).join(', ')}],\n`;
+    js += `    weights: [\n`;
+    js += weights.map(w => `        [${w.join(', ')}]`).join(',\n') + '\n';
+    js += `    ],\n`;
+    js += `    params: { logic: '${logic}', sma: ${sma}, ema: ${ema}, smaMode: '${mode}' }\n`;
+    js += "}";
+    
+    document.getElementById('export-json').value = js;
+    document.getElementById('export-modal').style.display = 'flex';
 }
