@@ -1,134 +1,109 @@
-# 📊 Dynamic Drawdown Strategy Tournament
+# 📈 Strategy Tournament: Dynamic Leverage & Quant Console
 
-A high-performance, interactive backtesting suite that evaluates **dynamic drawdown-based leveraging strategies** across multiple market cycles. This tool combines modern quantitative finance with a "Strategy Laboratory" for real-time browser-side simulation.
-
-🔗 **[Live Dashboard →](https://tenkdotolami.github.io/Strategy-Tournament/)**
-
----
-
-## 🔥 Key Features
-
-- **Interactive Strategy Laboratory**: Design your own strategy in the browser. Adjust drawdown tiers and asset weights in a live 5x5 matrix.
-- **Macro-Economic Context**: Integrated **FRED (Federal Reserve)** data for the US Consumer Price Index (CPI-U).
-- **Real Returns Suite**: Automatically adjust performance charts for inflation to see "Constant Dollar" purchasing power growth.
-- **High-Resolution Data**: Daily rebalancing simulations across 21+ years of historical data.
-- **Adaptive Visualization**: High-contrast, dynamic coloring system for multi-strategy comparison.
+<div align="center">
+  <img src="assets/images/banner.png" alt="Strategy Tournament Banner" width="100%">
+  <br>
+  
+  [![Live Dashboard](https://img.shields.io/badge/Live-Dashboard-6E56CF?style=for-the-badge&logo=opsgenie&logoColor=white)](https://tenkdotolami.github.io/Strategy-Tournament/)
+  [![Tech Stack](https://img.shields.io/badge/Stack-Python%20%7C%20JS%20%7C%20Plotly-0052FF?style=for-the-badge)](https://github.com/TenKdoToLami/Strategy-Tournament)
+  [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+</div>
 
 ---
 
-## 🌎 Data & Macro-Economics
+## 🏛️ Project Vision
+**Strategy Tournament** is a professional-grade quantitative simulation environment designed to stress-test **dynamic drawdown-based leveraging strategies**. Unlike static backtests, this platform utilizes a state-machine architecture to transition between market regimes, optimizing capital efficiency while strictly managing downside risk.
 
-### Asset Universe
-| Asset | Ticker Proxy | Role |
-|:------|:-------------|:-----|
-| **S&P 500** | VOO | 1x Core Equity |
-| **SSO (2x)** | *Simulated* | 2x Daily Leveraged Equity |
-| **VOO (4x)** | *Simulated* | 4x Daily Leveraged Equity |
-| **Treasuries** | VFISX | Cash-equivalent safe haven |
-| **Commodities** | PCRIX | Inflation-hedging component |
-| **CPI** | FRED: CPIAUCSL | Macro inflation context |
-
-### Inflation Logic (Real Returns)
-We fetch historical CPI-U data from the St. Louis Fed. Since CPI is reported monthly, the engine **interpolates daily multipliers** based on linear growth between reports. This allows us to calculate:
-`Real Growth = Nominal Growth / (CPI_current / CPI_start)`
-This chart is essential for identifying if a strategy is truly building wealth or simply keeping pace with devaluing currency.
+> "Leverage should not be a static choice, but a dynamic reward earned by the market's stability."
 
 ---
 
-## 🧪 Interactive Strategy Laboratory
+## 🚀 Key Modules
 
-The **Strategy Laboratory** allows users to break away from precomputed models and test their own quantitative theories in real-time.
+### 1. 📊 Performance Dashboard
+The "Tournament" view compares 20+ precomputed institutional strategies against S&P 500 benchmarks.
+- **Advanced Metrics**: Calmar, Sortino, Jensen's Alpha, and Omega Ratios.
+- **Dual Visuals**: Linear and Logarithmic growth curves.
+- **Real Returns**: Inflation-adjusted performance using FRED CPI-U data.
 
-### 1. Dynamic Allocation Matrix
-Configure a custom portfolio for 5 distinct market regimes:
-- **Tier 0 (Safe)**: Minimal drawdown (usually 0 to -5%).
-- **Tiers 1-3**: Intermediate "buy the dip" zones.
-- **Tier 4 (Crash)**: Major market discounts (typically > -20% or -30%).
+### 2. 🧪 Quant Lab (Strategy Builder)
+An interactive "Strategy Laboratory" for real-time browser-side simulation.
+- **Allocation Matrix**: Define custom asset weights across 5 drawdown tiers (T0-T4).
+- **Logic Selection**: Toggle between **Daily Rebalancing** and **Ratchet Logic**.
+- **Regime Filters**: Configure 200-day SMA/EMA trend shields.
 
-### 2. Logic Engines
-- **Daily Rebalance**: High responsiveness to market moves.
-- **Ratchet Logic**: A path-dependent engine that "locks in" high leverage until a new All-Time High is reached.
-- **Trend Filter**: 200-day SMA override that forces de-leveraging during structural bear markets.
+### 3. 🕹️ Logic Simulator
+A high-fidelity visualization of the strategy state-machine.
+- **Drawdown Slider**: Adjust current market conditions to see logic transitions in real-time.
+- **Decision Engine**: Visualize path-dependent "Ratchet" vs "Linear" logic.
 
----
-
-## 📐 Asset Allocation Tiers (Precomputed)
-
-Each strategy dynamically shifts its internal weight matrix based on the **previous day's drawdown**. To prevent look-ahead bias, all signals are lagged by 1 business day.
-
-### The Standard "Ladder" (0.2x to 3.2x)
-This is our primary Safeties benchmark. It scales internal equity leverage from 1x (T0) to 4x (T4) but reduces the final leverage by 0.8x to allocate into a 50/50 Bond/Commodity buffer.
-
-| Tier | Drawdown Range | VOO (1x) | SSO (2x) | VOO (4x) | DJP | BILL | Eff. Leverage |
-|:-----|:---------------|:---------|:---------|:----------|:----|:-----|:--------------|
-| **Safe (T0)** | 0% to −5% | 80% | 0% | 0% | 10% | 10% | **0.8x** |
-| **T1** | −5% to −10% | 40% | 40% | 0% | 10% | 10% | **1.2x** |
-| **T2** | −10% to −20% | 0% | 80% | 0% | 10% | 10% | **1.6x** |
-| **T3** | −20% to −30% | 0% | 40% | 40% | 10% | 10% | **2.4x** |
-| **T4** | > −30% | 0% | 0% | 80% | 10% | 10% | **3.2x** |
-
-### The Pure "Ladder" (1.0x to 4.0x)
-Maintains 100% equity exposure at all times.
-
-| Tier | Drawdown Range | VOO (1x) | SSO (2x) | VOO (4x) | Eff. Leverage |
-|:-----|:---------------|:---------|:---------|:----------|:--------------|
-| **Safe (T0)** | 0% to −5% | 100% | 0% | 0% | **1.0x** |
-| **T1** | −5% to −10% | 50% | 50% | 0% | **1.5x** |
-| **T2** | −10% to −20% | 0% | 100% | 0% | **2.0x** |
-| **T3** | −20% to −30% | 0% | 50% | 50% | **3.0x** |
-| **T4** | > −30% | 0% | 0% | 100% | **4.0x** |
+### 4. 🧭 Strategy Explorer
+Side-by-side comparison tool for deep-diving into specific strategy mechanisms, trend-filter interactions, and calendar year performance.
 
 ---
 
-## 🏆 The "Honest" Hall of Fame
+## 📐 Quantitative Methodology
 
-The **Special** variants are the result of a **500,000-iteration** global optimization at 5% resolution using strictly lagged data.
+### The Standard Epoch (2002+)
+To ensure 100% mathematical integrity, all simulations begin on **July 1st, 2002**. This aligns with the inception of the **PCRIX (Commodity Proxy)**, eliminating the statistical "interpolation error" often found in longer-duration backtests that lack commodity data.
 
-- **Special BEAST**: The maximum growth engine. Achieves **20.03% CAGR** using Ratchet Logic and 5% resolution weights. Optimized for absolute wealth accumulation.
-- **Special SCALPEL**: The "Growth Scalpel." Specifically optimized to **beat VOO (11.15% vs 10.65%)** while maintaining an ultra-low **-23.6% Max Drawdown**.
-- **Special SHIELD**: The hybrid efficiency king. Achieves **14.35% CAGR** with a **0.68 Sharpe Ratio**, using high-resolution Daily rebalancing.
+### Synthetic Asset Synthesis
+Since high-leverage (4x) ETFs are rare or suffer from extreme fees, our engine synthesizes their returns using a **Cost of Carry** model:
+
+$$R_{lev} = (R_{und} \times L) - (R_{fin} \times (L - 1))$$
+
+- **$R_{und}$**: VOO (1x) Daily Return.
+- **$L$**: Leverage Factor (2.0x, 4.0x).
+- **$R_{fin}$**: Financing Rate (Proxied by VFISX/BILL).
+
+### The Hysteresis Engine (Ratchet Logic)
+Under **Ratchet Logic**, state transitions are "sticky" during recovery. A portfolio that hits T4 (Major Crash) remains at maximum tilt until a **New All-Time High** is reached, ensuring the strategy captures the full velocity of the recovery rally.
 
 ---
 
-## 🚀 Technical Implementation & Methodology
+## 🏆 The Strategy "Hall of Fame"
+Results from a **500,000-iteration** global optimization at 5% resolution.
 
-- **Honest Simulation**: Unlike many backtests that "peek" at daily closing prices, this engine uses `shift(1)` for all signals. Trades are executed at *today's* price based solely on *yesterday's* state.
-- **Python (Backend)**: Uses `pandas` to precompute 17+ core variants.
-- **JavaScript (Frontend)**: ES6 simulation engine for the Strategy Laboratory.
-- **Data Refresh**: Github Actions triggers a daily fetch via Yahoo Finance and FRED.
+| Strategy | Performance Goal | Highlight |
+|:---------|:-----------------|:----------|
+| **Special BEAST** | Maximum Growth | **20.03% CAGR** using Ratchet Logic. |
+| **Special SCALPEL** | Equity Replacement | Beats VOO CAGR with **-23.6% Max Drawdown**. |
 
 ---
 
-## 📂 Project Structure
+## 🛠️ Local Development & Pipeline
 
-- `index.html`: Main dashboard entry point.
-- `assets/`:
-  - `css/style.css`: Dashboard styling.
-  - `js/dashboard.js`: Frontend logic and "Strategy Laboratory" engine.
-- `data/`:
-  - `data.json`: Precomputed market data and signals.
-- `scripts/`:
-  - `precompute.py`: Data pipeline script to refresh `data/data.json`.
-  - `optimization/`: Quantitative research and optimization tools.
-- `requirements.txt`: Python dependencies.
-- `.gitignore`, `.nojekyll`: Project configuration.
+### 1. Requirements
+- Python 3.10+
+- Pandas, YFinance, Scipy (see `requirements.txt`)
 
-## 🛠️ Local Development
-
+### 2. Setup
 ```bash
-# 1. Clone & Install
-git clone https://github.com/tenkdotolami/Strategy-Tournament.git
+# Clone the repository
+git clone https://github.com/TenKdoToLami/Strategy-Tournament.git
+
+# Install dependencies
 pip install -r requirements.txt
 
-# 2. Precompute Data
+# Run the precompute pipeline (Updates data/data.json)
 python scripts/precompute.py
 
-# 3. View Dashboard (Local Server required for fetch)
+# Launch the locally
 python -m http.server 8000
-# Open http://localhost:8000
 ```
+
+### 3. Data Flow
+1. **Fetch**: Github Actions triggers `scripts/precompute.py`.
+2. **Compute**: Pandas calculates signals, synthetic assets, and precomputes "Hall of Fame" variants.
+3. **Serve**: `data/data.json` is exported for the frontend JS engine.
 
 ---
 
-## ⚖️ License
-MIT
+## 📜 Technical Documentation
+For a deeper dive into "Volatility Drag", "Regime Detection", and "Ladder Philosophy", visit the **Master Manual** located directly inside the [Live Dashboard Documentation Tab](https://tenkdotolami.github.io/Strategy-Tournament/).
+
+---
+
+## ⚖️ License & Disclaimer
+This project is for **educational and research purposes only**. Leverage carries extreme risk of loss. 
+**MIT License** | Developed by [TenKdoToLami](https://github.com/TenKdoToLami)
