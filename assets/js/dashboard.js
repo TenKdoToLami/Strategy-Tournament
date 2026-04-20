@@ -1581,8 +1581,10 @@ async function init() {
 
         document.getElementById('lab-run').onclick = () => runLabSimulation(true);
         document.getElementById('lab-export').onclick = () => exportStrategy();
-        document.getElementById('explorer-export').onclick = () => exportExplorerSelection();
-        document.getElementById('lab-result-export').onclick = () => exportLabResult();
+        document.getElementById('lab-import').onclick = () => openImportModal();
+        document.getElementById('explorer-clone').onclick = () => cloneExplorerStrategyToLab();
+        document.getElementById('explorer-copy').onclick = (e) => copyExplorerSelection(e.currentTarget);
+        document.getElementById('lab-result-copy').onclick = (e) => copyLabResult(e.currentTarget);
         document.getElementById('sim-export').onclick = () => exportSimulatorSelection();
 
         // Modal Controls
@@ -1601,6 +1603,8 @@ async function init() {
             btn.innerHTML = '<i class=\"fas fa-check\"></i> Copied!';
             setTimeout(() => btn.innerHTML = original, 2000);
         };
+
+        document.getElementById('apply-import-btn').onclick = () => applyImportedStrategy();
 
         document.querySelectorAll('#metrics-table thead th').forEach(th => th.onclick = () => {
             const key = th.dataset.sort;
@@ -1822,23 +1826,124 @@ function exportStrategy() {
     };
     
     document.getElementById('export-json').value = formatStrategyForExport(stratObj);
+    document.getElementById('apply-import-btn').style.display = 'none';
+    document.getElementById('copy-export-btn').style.display = 'inline-block';
     document.getElementById('export-modal').style.display = 'flex';
 }
 
-function exportExplorerSelection() {
+function openImportModal() {
+    document.getElementById('export-json').value = '';
+    document.getElementById('export-json').placeholder = "Paste strategy code here (e.g. { id: '...', bounds: [...], ... })";
+    document.getElementById('apply-import-btn').style.display = 'inline-block';
+    document.getElementById('copy-export-btn').style.display = 'none';
+    document.getElementById('export-modal').style.display = 'flex';
+}
+
+function applyImportedStrategy() {
+    const text = document.getElementById('export-json').value.trim();
+    if (!text) return;
+    
+    try {
+        const strat = new Function('return ' + text)();
+        applyStrategyToLabDOM(strat);
+        document.getElementById('export-modal').style.display = 'none';
+    } catch (e) {
+        alert("Import Error: " + e.message);
+    }
+}
+
+function applyStrategyToLabDOM(strat) {
+    if (!strat.weights || !strat.bounds) {
+        throw new Error("Invalid Format: Missing 'weights' or 'bounds'.");
+    }
+    
+    // Update Bounds
+    if (Array.isArray(strat.bounds) && strat.bounds.length === 4) {
+        document.getElementById('lab-b1').value = strat.bounds[0];
+        document.getElementById('lab-b2').value = strat.bounds[1];
+        document.getElementById('lab-b3').value = strat.bounds[2];
+        document.getElementById('lab-b4').value = strat.bounds[3];
+    }
+    
+    // Update Logic
+    if (strat.params) {
+        document.getElementById('lab-ratchet').checked = (strat.params.logic === 'Ratchet');
+        document.getElementById('lab-trend').checked = (strat.params.sma > 0);
+        document.getElementById('lab-sma').value = strat.params.sma || 200;
+        document.getElementById('lab-ema').value = strat.params.ema || 50;
+        document.getElementById('lab-use-ema').checked = (strat.params.ema > 0);
+        if (strat.params.smaMode) document.getElementById('lab-sma-mode').value = strat.params.smaMode;
+    }
+    
+    // Update Weights
+    if (Array.isArray(strat.weights) && strat.weights.length === 5) {
+        strat.weights.forEach((wRow, i) => {
+            if (Array.isArray(wRow) && wRow.length === 5) {
+                labWeights[i] = {
+                    VOO: wRow[0], VOO2: wRow[1], VOO4: wRow[2], DJP: wRow[3], BILL: wRow[4]
+                };
+            }
+        });
+    }
+    
+    renderWeightTable();
+    runLabSimulation(false);
+}
+
+function cloneExplorerStrategyToLab() {
     const name = document.getElementById('explorer-picker').value;
     if (!name) return;
     
     const strat = STRATEGY_REGISTRY_DATA.find(s => s.id === name);
     if (strat) {
-        document.getElementById('export-json').value = formatStrategyForExport(strat);
-        document.getElementById('export-modal').style.display = 'flex';
+        applyStrategyToLabDOM(strat);
+        switchTab('lab');
+        // Scroll to top of Lab
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 }
 
-function exportLabResult() {
-    // Current custom weights/bounds from Lab inputs or window.customStrategyResult
-    exportStrategy();
+function copyExplorerSelection(btn) {
+    const name = document.getElementById('explorer-picker').value;
+    if (!name) return;
+    
+    const strat = STRATEGY_REGISTRY_DATA.find(s => s.id === name);
+    if (strat) {
+        const js = formatStrategyForExport(strat);
+        copyTextWithFeedback(js, btn);
+    }
+}
+
+function copyLabResult(btn) {
+    const bounds = [
+        parseFloat(document.getElementById('lab-b1').value) || 0,
+        parseFloat(document.getElementById('lab-b2').value) || 0,
+        parseFloat(document.getElementById('lab-b3').value) || 0,
+        parseFloat(document.getElementById('lab-b4').value) || 0
+    ];
+    const weights = labWeights.map(row => [row.VOO, row.VOO2, row.VOO4, row.DJP, row.BILL]);
+    const stratObj = {
+        id: 'LAB CLONE', group: 'Lab', bounds, weights,
+        params: {
+            logic: document.getElementById('lab-ratchet').checked ? "Ratchet" : "Daily",
+            sma: parseInt(document.getElementById('lab-sma').value) || 0,
+            ema: parseInt(document.getElementById('lab-ema').value) || 0,
+            smaMode: document.getElementById('lab-sma-mode').value
+        }
+    };
+    copyTextWithFeedback(formatStrategyForExport(stratObj), btn);
+}
+
+function copyTextWithFeedback(text, btn) {
+    navigator.clipboard.writeText(text).then(() => {
+        const original = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check"></i>';
+        btn.style.color = 'var(--green)';
+        setTimeout(() => {
+            btn.innerHTML = original;
+            btn.style.color = '';
+        }, 2000);
+    });
 }
 
 function exportSimulatorSelection() {

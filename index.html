@@ -185,8 +185,11 @@
                                     style="flex: 1; min-width: 200px; border-color: rgba(255,255,255,0.1)">
                                     <option value="">Compare with...</option>
                                 </select>
-                                <button id="explorer-export" class="btn-ghost" title="Export Configuration" style="padding: 10px 14px;">
-                                    <i class="fas fa-file-export"></i>
+                                <button id="explorer-clone" class="btn-ghost" title="Clone to Lab" style="padding: 10px 14px;">
+                                    <i class="fas fa-flask"></i>
+                                </button>
+                                <button id="explorer-copy" class="btn-ghost" title="Copy JSON" style="padding: 10px 14px;">
+                                    <i class="fas fa-copy"></i>
                                 </button>
                             </div>
                         </div>
@@ -333,6 +336,9 @@
                             </select>
                         </div>
                         <div class="lab-spacer"></div>
+                        <button class="lab-btn lab-btn--config" id="lab-import" style="margin-right: 12px;">
+                            <i class="fas fa-file-import"></i> Import Strategist
+                        </button>
                         <button class="lab-btn lab-btn--config" id="lab-export" style="margin-right: 12px;">
                             <i class="fas fa-file-export"></i> Export Strategist
                         </button>
@@ -356,8 +362,8 @@
                                     style="flex: 1; min-width: 200px; border-color: rgba(255,255,255,0.1)">
                                     <option value="">Compare with...</option>
                                 </select>
-                                <button id="lab-result-export" class="btn-ghost" title="Export Configuration" style="padding: 10px 14px;">
-                                    <i class="fas fa-file-export"></i>
+                                <button id="lab-result-copy" class="btn-ghost" title="Copy JSON" style="padding: 10px 14px;">
+                                    <i class="fas fa-copy"></i>
                                 </button>
                                 <button onclick="resetLabResults()" class="btn-ghost"
                                     style="border-color: rgba(255,100,100,0.2); color: var(--red)">
@@ -942,8 +948,11 @@
             </div>
             <div class="modal-actions">
                 <button class="lab-btn lab-btn--cancel" id="close-export-btn">Close</button>
-                <button class="lab-btn" id="copy-export-btn">
+                <button class="lab-btn btn-ghost" id="copy-export-btn" style="margin-right:8px;">
                     <i class="fas fa-copy"></i> Copy to Clipboard
+                </button>
+                <button class="lab-btn" id="apply-import-btn" style="display: none;">
+                    <i class="fas fa-download"></i> Apply Strategy to Lab
                 </button>
             </div>
         </div>
