@@ -1581,6 +1581,9 @@ async function init() {
 
         document.getElementById('lab-run').onclick = () => runLabSimulation(true);
         document.getElementById('lab-export').onclick = () => exportStrategy();
+        document.getElementById('explorer-export').onclick = () => exportExplorerSelection();
+        document.getElementById('lab-result-export').onclick = () => exportLabResult();
+        document.getElementById('sim-export').onclick = () => exportSimulatorSelection();
 
         // Modal Controls
         const modal = document.getElementById('export-modal');
@@ -1774,6 +1777,25 @@ function runLabSimulation(pushState = true) {
     }
 }
 
+function formatStrategyForExport(strat) {
+    const b = strat.bounds || [0, 0, 0, 0];
+    const w = strat.weights || [[100, 0, 0, 0, 0], [100, 0, 0, 0, 0], [100, 0, 0, 0, 0], [100, 0, 0, 0, 0], [100, 0, 0, 0, 0]];
+    const p = strat.params || { logic: 'Daily', sma: 200, ema: 0, smaMode: 'T0' };
+    
+    // Manually construct string to match strategies.js style precisely
+    let js = "{\n";
+    js += `    id: '${strat.id || 'Custom Strategy'}',\n`;
+    js += `    group: '${strat.group || 'Lab'}',\n`;
+    js += `    text: '${strat.text || ('Custom strategy config generated on ' + new Date().toLocaleDateString())}',\n`;
+    js += `    bounds: [${b.map(v => v.toFixed(1).replace('.0', '')).join(', ')}],\n`;
+    js += `    weights: [\n`;
+    js += w.map(row => `        [${row.join(', ')}]`).join(',\n') + '\n';
+    js += `    ],\n`;
+    js += `    params: { logic: '${p.logic}', sma: ${p.sma}, ema: ${p.ema}, smaMode: '${p.smaMode}' }\n`;
+    js += "}";
+    return js;
+}
+
 function exportStrategy() {
     const bounds = [
         parseFloat(document.getElementById('lab-b1').value) || 0,
@@ -1786,23 +1808,46 @@ function exportStrategy() {
         row.VOO, row.VOO2, row.VOO4, row.DJP, row.BILL
     ]);
     
-    const logic = document.getElementById('lab-ratchet').checked ? "Ratchet" : "Daily";
-    const sma = parseInt(document.getElementById('lab-sma').value) || 0;
-    const ema = parseInt(document.getElementById('lab-ema').value) || 0;
-    const mode = document.getElementById('lab-sma-mode').value;
+    const stratObj = {
+        id: 'USER CUSTOM LAB',
+        group: 'Lab',
+        bounds: bounds,
+        weights: weights,
+        params: {
+            logic: document.getElementById('lab-ratchet').checked ? "Ratchet" : "Daily",
+            sma: parseInt(document.getElementById('lab-sma').value) || 0,
+            ema: parseInt(document.getElementById('lab-ema').value) || 0,
+            smaMode: document.getElementById('lab-sma-mode').value
+        }
+    };
     
-    // Manually construct the string to match strategies.js style precisely (4-space indent, unquoted keys)
-    let js = "{\n";
-    js += `    id: 'USER CUSTOM LAB',\n`;
-    js += `    group: 'Lab',\n`;
-    js += `    text: 'Custom strategy generated on ${new Date().toLocaleDateString()}',\n`;
-    js += `    bounds: [${bounds.map(b => b.toFixed(1).replace('.0', '')).join(', ')}],\n`;
-    js += `    weights: [\n`;
-    js += weights.map(w => `        [${w.join(', ')}]`).join(',\n') + '\n';
-    js += `    ],\n`;
-    js += `    params: { logic: '${logic}', sma: ${sma}, ema: ${ema}, smaMode: '${mode}' }\n`;
-    js += "}";
-    
-    document.getElementById('export-json').value = js;
+    document.getElementById('export-json').value = formatStrategyForExport(stratObj);
     document.getElementById('export-modal').style.display = 'flex';
+}
+
+function exportExplorerSelection() {
+    const name = document.getElementById('explorer-picker').value;
+    if (!name) return;
+    
+    const strat = STRATEGY_REGISTRY_DATA.find(s => s.id === name);
+    if (strat) {
+        document.getElementById('export-json').value = formatStrategyForExport(strat);
+        document.getElementById('export-modal').style.display = 'flex';
+    }
+}
+
+function exportLabResult() {
+    // Current custom weights/bounds from Lab inputs or window.customStrategyResult
+    exportStrategy();
+}
+
+function exportSimulatorSelection() {
+    const name = document.getElementById('sim-strategy-picker').value;
+    if (!name) return;
+    
+    const strat = STRATEGY_REGISTRY_DATA.find(s => s.id === name);
+    if (strat) {
+        document.getElementById('export-json').value = formatStrategyForExport(strat);
+        document.getElementById('export-modal').style.display = 'flex';
+    }
 }
