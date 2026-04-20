@@ -42,20 +42,20 @@ const STRATEGY_REGISTRY_DATA = [
     },
 
     {
-        id: 'Benchmark SSO (2x) + SMA',
+        id: 'Benchmark SSO (2x) (With Safety Net)',
         group: 'Benchmark',
-        text: '2x Leveraged benchmark that de-risks to 1x SPY when price is below the SMA 200.',
+        text: 'Aggressive 2x strategy optimized for maximum absolute growth (41x+). Uses a 290-day SMA and pivots to 100% VOO (1x) during bearish regimes to maintain recovery speed.',
         bounds: [0, 0, 0, 0],
         weights: [[100, 0, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0]],
-        params: { logic: 'Daily', sma: 200, ema: 0, smaMode: 'T0' }
+        params: { logic: 'Daily', sma: 290, ema: 0, smaMode: 'T0' }
     },
     {
-        id: 'Benchmark SPYU (4x) + SMA',
+        id: 'Benchmark SPYU (4x) (With Safety Net)',
         group: 'Benchmark',
-        text: '4x Leveraged benchmark that de-risks to 1x SPY when price is below the SMA 200.',
+        text: 'Hyper-aggressive 4x strategy optimized for maximum wealth generation (191x+). Uses a 290-day SMA and pivots to a 50/50 VOO/BILL mix for high-leverage recovery.',
         bounds: [0, 0, 0, 0],
-        weights: [[100, 0, 0, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', sma: 200, ema: 0, smaMode: 'T0' }
+        weights: [[50, 0, 0, 0, 50], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0]],
+        params: { logic: 'Daily', sma: 290, ema: 0, smaMode: 'T0' }
     },
 
     // === CATEGORY: BASIC LADDERS ===
@@ -177,13 +177,11 @@ const STRATEGY_REGISTRY_DATA = [
     }
 ];
 
-// Metadata for UI generation
+// Metadata for UI buckets (high-level grouping only)
 const STRATEGY_METADATA = {
     groups: ['Benchmark', 'Special', 'Advanced', 'Basic'],
     logics: ['Daily', 'Ratchet'],
-    mixes: ['Safeties', 'Pure'],
-    sma: ['SMA 200', 'None'],
-    smaModes: ['T0', 'Cash']
+    mixes: ['Safeties', 'Pure']
 };
 
 window.STRATEGY_REGISTRY_DATA = STRATEGY_REGISTRY_DATA;

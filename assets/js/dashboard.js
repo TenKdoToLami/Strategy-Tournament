@@ -248,10 +248,10 @@ STRATEGY_DATA.forEach(s => STRATEGY_MAP[s.id] = s);
 
 // ── State ──────────────────────────────────────────────────────────
 const activeFilters = {
-    level: [...STRATEGY_META.groups],
-    logic: [...STRATEGY_META.logics],
-    mix: [...STRATEGY_META.mixes],
-    sma: [...STRATEGY_META.sma]
+    level: [],
+    logic: [],
+    mix: [],
+    trendType: ['SMA', 'EMA', 'None']
 };
 
 let labWeights = [
@@ -539,11 +539,18 @@ function update() {
 
     const filteredMetrics = metricsArr.filter(m => {
         const info = parseStrategy(m.Strategy);
-        const smaLabel = info.smaPeriod > 0 ? `SMA ${info.smaPeriod}` : 'None';
+        const hasSMA = info.smaPeriod > 0;
+        const hasEMA = info.params && info.params.ema > 0;
+        const isNone = !hasSMA && !hasEMA;
+
+        const trendMatch = (hasSMA && activeFilters.trendType.includes('SMA')) ||
+                           (hasEMA && activeFilters.trendType.includes('EMA')) ||
+                           (isNone && activeFilters.trendType.includes('None'));
+
         return activeFilters.level.includes(info.level || 'Special') &&
                activeFilters.logic.includes(info.logic) &&
                activeFilters.mix.includes(info.mix) &&
-               activeFilters.sma.includes(smaLabel);
+               trendMatch;
     });
 
     filteredMetrics.forEach(m => {
@@ -1203,11 +1210,23 @@ async function init() {
         endInput.onchange = update;
         document.getElementById('reset-btn').onclick = () => { startInput.value = dates[0]; endInput.value = dates[dates.length - 1]; update(); };
 
-        document.querySelectorAll('.pill').forEach(p => p.onclick = () => {
-            const group = p.parentElement.id.replace('filter-', '');
-            if (p.classList.toggle('active')) activeFilters[group].push(p.dataset.value);
-            else activeFilters[group] = activeFilters[group].filter(v => v !== p.dataset.value);
-            update();
+        // Initialize active filters state for static groups
+        activeFilters.level = [...STRATEGY_METADATA.groups];
+        activeFilters.logic = [...STRATEGY_METADATA.logics];
+        activeFilters.mix = [...STRATEGY_METADATA.mixes];
+
+        // Global pill handler for all groups in index.html (Level, Logic, Mix, TrendType)
+        document.querySelectorAll('.filter-toolbar .pill').forEach(p => {
+             p.onclick = () => {
+                const group = p.parentElement.id.replace('filter-', '');
+                const val = p.dataset.value;
+                if (p.classList.toggle('active')) {
+                    if (!activeFilters[group].includes(val)) activeFilters[group].push(val);
+                } else {
+                    activeFilters[group] = activeFilters[group].filter(v => v !== val);
+                }
+                update();
+            };
         });
 
         document.querySelectorAll('.nav-item').forEach(n => n.onclick = () => switchTab(n.dataset.tab));
