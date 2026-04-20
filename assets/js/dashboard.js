@@ -5,6 +5,170 @@
 
 'use strict';
 
+/**
+ * ── Financial Calculations ──────────────────────────────────────────
+ * Core math for advanced risk analytics.
+ */
+function getMean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
+function getStdDev(arr) {
+    const mean = getMean(arr);
+    const variance = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / arr.length;
+    return Math.sqrt(variance);
+}
+function getCovariance(arr1, arr2) {
+    const m1 = getMean(arr1);
+    const m2 = getMean(arr2);
+    let cov = 0;
+    for (let i = 0; i < arr1.length; i++) {
+        cov += (arr1[i] - m1) * (arr2[i] - m2);
+    }
+    return cov / arr1.length;
+}
+
+function calculateAdvancedRiskRatios(pReturns, bReturns, rfReturns) {
+    // Annualization factor (daily to yearly)
+    const annualFactor = 252;
+    const annSqrt = Math.sqrt(annualFactor);
+
+    // 1. Beta
+    const varB = Math.pow(getStdDev(bReturns), 2);
+    const beta = varB === 0 ? 1 : getCovariance(pReturns, bReturns) / varB;
+
+    // 2. Sharpe Ratio
+    const pExcess = pReturns.map((r, i) => r - rfReturns[i]);
+    const pMeanExcess = getMean(pExcess);
+    const pStdExcess = getStdDev(pExcess);
+    const sharpe = pStdExcess === 0 ? 0 : (pMeanExcess / pStdExcess) * annSqrt;
+
+    // 3. Sortino Ratio
+    const negatives = pExcess.filter(r => r < 0);
+    const downsideDev = negatives.length === 0 ? 1e-6 : Math.sqrt(negatives.reduce((a, b) => a + Math.pow(b, 2), 0) / pExcess.length);
+    const sortino = (pMeanExcess / downsideDev) * annSqrt;
+
+    // 4. Jensen's Alpha (Annualized)
+    const annRetP = Math.pow(pReturns.reduce((a, b) => a * (1 + b), 1), annualFactor / pReturns.length) - 1;
+    const annRetB = Math.pow(bReturns.reduce((a, b) => a * (1 + b), 1), annualFactor / bReturns.length) - 1;
+    const annRf = Math.pow(rfReturns.reduce((a, b) => a * (1 + b), 1), annualFactor / rfReturns.length) - 1;
+    const alpha = annRetP - (annRf + beta * (annRetB - annRf));
+
+    // 5. Omega Ratio (0 Threshold)
+    const posSum = pReturns.reduce((a, b) => a + (b > 0 ? b : 0), 0);
+    const negSum = Math.abs(pReturns.reduce((a, b) => a + (b < 0 ? b : 0), 0));
+    const omega = negSum === 0 ? 10 : posSum / negSum;
+
+    // 6. Treynor Ratio
+    const treynor = (beta === 0) ? 0 : (annRetP - annRf) / beta;
+
+    // 7. Information Ratio
+    const activeReturns = pReturns.map((r, i) => r - bReturns[i]);
+    const trackError = getStdDev(activeReturns) * annSqrt;
+    const infoRatio = trackError === 0 ? 0 : (annRetP - annRetB) / trackError;
+
+    // 8. Calmar Ratio
+    const cum = pReturns.reduce((acc, r) => {
+        const last = acc[acc.length - 1];
+        acc.push(last * (1 + r));
+        return acc;
+    }, [1.0]);
+    let maxDD = 0;
+    let peak = 0;
+    cum.forEach(v => {
+        if (v > peak) peak = v;
+        const dd = (peak - v) / peak;
+        if (dd > maxDD) maxDD = dd;
+    });
+    const cagr = annRetP;
+    const calmar = maxDD === 0 ? 10 : cagr / maxDD;
+
+    return { beta, sharpe, sortino, alpha, omega, treynor, infoRatio, calmar };
+}
+
+function renderRiskGrid(ratios, containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const config = {
+        beta: { 
+            title: 'Beta', icon: 'fa-chart-line', min: 0, max: 2, val: ratios.beta, 
+            label: ratios.beta.toFixed(2), class: 'grad-beta',
+            hint: 'Meaning: Sensitivity to market movements. 1.0 = Moves with market. > 1.0 = Aggressive.' 
+        },
+        sharpe: { 
+            title: 'Sharpe', icon: 'fa-bolt', min: -1, max: 3, val: ratios.sharpe, 
+            label: ratios.sharpe.toFixed(2), class: 'grad-pos',
+            hint: 'Meaning: Reward per unit of total risk. Higher is better.' 
+        },
+        sortino: { 
+            title: 'Sortino', icon: 'fa-shield-halved', min: -1, max: 4, val: ratios.sortino, 
+            label: ratios.sortino.toFixed(2), class: 'grad-pos',
+            hint: 'Meaning: Reward per unit of DOWNSIDE risk only. Focuses on "bad" volatility.' 
+        },
+        alpha: { 
+            title: 'Alpha', icon: 'fa-gem', min: -0.05, max: 0.15, val: ratios.alpha, 
+            label: (ratios.alpha * 100).toFixed(1) + '%', class: 'grad-alpha',
+            hint: 'Meaning: Excess return relative to the benchmark after adjusting for Beta.' 
+        },
+        omega: { 
+            title: 'Omega', icon: 'fa-scale-balanced', min: 0.5, max: 2.5, val: ratios.omega, 
+            label: ratios.omega.toFixed(2), class: 'grad-neutral',
+            hint: 'Meaning: Probability of gains vs losses. 1.0 is neutral. > 1.0 is desirable.' 
+        },
+        treynor: { 
+            title: 'Treynor', icon: 'fa-arrow-up-right-dots', min: -0.1, max: 0.4, val: ratios.treynor, 
+            label: (ratios.treynor * 100).toFixed(1) + '%', class: 'grad-neutral',
+            hint: 'Meaning: Return per unit of SYSTEMATIC (Market) risk.' 
+        },
+        infoRatio: { 
+            title: 'Information', icon: 'fa-circle-info', min: -1, max: 3, val: ratios.infoRatio, 
+            label: ratios.infoRatio.toFixed(2), class: 'grad-neutral',
+            hint: 'Meaning: Consistency of active return relative to benchmark. Skill-based.' 
+        },
+        calmar: { 
+            title: 'Calmar', icon: 'fa-mountain', min: -1, max: 5, val: ratios.calmar, 
+            label: ratios.calmar.toFixed(2), class: 'grad-pos',
+            hint: 'Meaning: Annual return relative to the Maximum Drawdown.' 
+        }
+    };
+
+    let html = `<div class="risk-metrics-grid">`;
+    Object.keys(config).forEach(k => {
+        const c = config[k];
+        let pct = ((c.val - c.min) / (c.max - c.min)) * 100;
+        pct = Math.max(2, Math.min(98, pct));
+
+        html += `
+            <div class="risk-gauge-card">
+                <div class="risk-gauge-header">
+                    <div class="risk-gauge-title">
+                        <i class="fas ${c.icon}"></i>
+                        <span>${c.title}</span>
+                        <i class="fas fa-circle-question info-trigger" data-hint="${c.hint}" data-title="${c.title}" style="cursor:pointer; opacity:0.7"></i>
+                    </div>
+                </div>
+                <div class="risk-gauge-value">${c.label}</div>
+                <div class="gauge-container">
+                    <div class="gauge-track ${c.class}"></div>
+                    <div class="gauge-marker" style="left: ${pct}%"></div>
+                </div>
+            </div>
+        `;
+    });
+    html += `</div>`;
+    container.innerHTML = html;
+    container.style.display = 'block';
+
+    // Add event listeners for info icons
+    container.querySelectorAll('.info-trigger').forEach(icon => {
+        icon.onclick = (e) => {
+            const h = e.target.dataset.hint;
+            const t = e.target.dataset.title;
+            alert(`${t}\n\n${h}`);
+        };
+    });
+}
+
+
+
 // ── Tooltip Engine ──────────────────────────────────────────────────
 function initTooltipEngine(chartIds) {
     const tooltip = document.getElementById('chart-tooltip');
@@ -156,19 +320,32 @@ let simMaxTierReached = 0;
 function parseStrategy(name) {
     const entry = STRATEGY_MAP[name];
     if (entry) {
-        const p = entry.params;
+        const p = entry.params || {};
         const smaPeriod = p.sma || 0;
         const isTrend = smaPeriod > 0;
         const logic = p.logic || 'Daily';
-        const mix = p.mix || 'Pure';
-        return { name, logic, mix, isTrend, smaPeriod, level: entry.group };
+        const smaMode = p.smaMode || (isTrend ? 'T0' : 'None');
+
+        // Deduce Mix: If any tier has DJP (idx 3) or BILL (idx 4) > 0, it's 'Safeties'
+        let mix = 'Pure';
+        if (entry.weights && entry.weights.some(w => w[3] > 0 || w[4] > 0)) {
+            mix = 'Safeties';
+        }
+
+        return { name, logic, mix, isTrend, smaPeriod, smaMode, level: entry.group, text: entry.text, params: p };
     }
     // Fallback for custom or legacy
-    if (name.startsWith('Benchmark')) return { level: 'Benchmark', logic: 'Daily', mix: 'Pure' };
-    if (name.startsWith('Special')) return { level: 'Special', logic: 'Daily', mix: 'Pure' };
+    if (name === '🧪 USER CUSTOM LAB') {
+        const entry = { weights: labWeights };
+        let mix = 'Pure';
+        if (labWeights.some(w => w.DJP > 0 || w.BILL > 0)) mix = 'Safeties';
+        return { name, level: 'Custom', logic: 'Linear', mix, text: 'Custom Lab strategy based on user-defined bounds and leverage weights.' };
+    }
+
+    if (name.startsWith('Benchmark')) return { name, level: 'Benchmark', logic: 'Daily', mix: 'Pure' };
+    if (name.startsWith('Special')) return { name, level: 'Special', logic: 'Daily', mix: 'Pure' };
     const parts = name.split(' ');
-    // Default to 'Standard' if we can't parse or find it
-    return { level: parts[0] || 'Standard', logic: parts[1] || 'Daily', mix: parts[2] || 'Pure' };
+    return { name, level: parts[0] || 'Standard', logic: parts[1] || 'Daily', mix: parts[2] || 'Pure' };
 }
 
 // ── Lab Simulation Engine ──────────────────────────────────────────
@@ -224,7 +401,16 @@ function simulateCustomStrategy(bounds, useRatchet, useTrend, smaPeriod = 200, s
         else if (yDD <= -bounds[1] / 100) tier = 2;
         else if (yDD <= -bounds[0] / 100) tier = 1;
 
-        if (useTrend && yTrend === 0) tier = 0;
+        if (useTrend && yTrend === 0) {
+            // Apply flexible SMA target
+            if (smaMode.startsWith('T')) {
+                tier = parseInt(smaMode[1]) || 0;
+            } else if (smaMode === 'Cash') {
+                tier = -1; // Sentinel for Cash/BILL
+            } else {
+                tier = 0;
+            }
+        }
 
         if (useRatchet) {
             if (yDD >= 0) currentMaxTier = 0;
@@ -244,13 +430,12 @@ function simulateCustomStrategy(bounds, useRatchet, useTrend, smaPeriod = 200, s
 
     for (let i = 0; i < n; i++) {
         const t = tiers[i];
-        const isBearish = useTrend && (i > 0) && (smaSignal[i - 1] === 0);
         let w;
         
-        if (isBearish && smaMode === 'Cash') {
+        if (t === -1) {
             w = { VOO: 0, SSO: 0, SPYU: 0, DJP: 0, BILL: 1.0 };
         } else {
-            w = normWeights[t];
+            w = normWeights[t] || normWeights[0];
         }
 
         results[i] = raw.VOO[i] * w.VOO + raw.SSO[i] * w.SSO + raw.SPYU[i] * w.SPYU + raw.DJP[i] * w.DJP + raw.BILL[i] * w.BILL;
@@ -299,7 +484,13 @@ function update() {
 
         const cagr = Math.pow(Math.max(1e-8, cum), 1 / (years || 1)) - 1;
         const vol = Math.sqrt(slice.reduce((a, b) => a + (b - sumReturn / slice.length) ** 2, 0) / slice.length * 252);
-        const sharpe = vol > 0.001 ? (cagr - 0.02) / vol : 0;
+        
+        const rfSlice = globalData.raw_returns['BILL'].slice(startIndex, endIndex + 1);
+        const pExcess = slice.map((r, i) => r - rfSlice[i]);
+        const pMeanExcess = getMean(pExcess);
+        const pStdExcess = getStdDev(pExcess);
+        const sharpe = pStdExcess === 0 ? 0 : (pMeanExcess / pStdExcess) * Math.sqrt(252);
+
 
         const yearlyMap = {};
         for (let i = 0; i < slice.length; i++) {
@@ -447,16 +638,159 @@ function renderTable(metrics) {
 }
 
 // ── Explorer & Lab Analysis Suite ──────────────────────────────────
+function renderUnifiedAnalyticsStrip(containerId, mPrimary, ratiosPrimary, mCompare, ratiosCompare) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const generateRowHtml = (m, ratios, label) => {
+        if (!m || !ratios) return '';
+
+        const perfConfig = [
+            { title: 'Total Return', value: (m['Total %'] + 1).toFixed(1) + 'x', class: m['Total %'] >= 0 ? 'pos' : 'neg', 
+              calc: 'Cumulative growth of capital: (Ending Value / Starting Value).',
+              meaning: 'Total absolute multiplier of the original investment over the period.' },
+            { title: 'Annual CAGR', value: (m.CAGR * 100).toFixed(1) + '%', class: m.CAGR >= 0 ? 'pos' : 'neg', 
+              calc: 'CAGR = ((End Value / Start Value)^(1/Years)) - 1.',
+              meaning: 'The geometric mean return that provides a steady rate of return over the period.' },
+            { title: 'Max Drawdown', value: (m['Max DD'] * 100).toFixed(1) + '%', class: 'neg', 
+              calc: 'Max DD = (Peak - Trough) / Peak.',
+              meaning: 'The largest peak-to-trough decline observed, indicating structural risk.' },
+            { title: 'Ann. Volatility', value: (m['Ann. Vol'] * 100).toFixed(1) + '%', class: '', 
+              calc: 'Standard deviation of daily returns * sqrt(252).',
+              meaning: 'A measure of price fluctuations. Higher volatility means greater price swings.' }
+        ];
+
+        const riskConfig = {
+            sharpe: { 
+                title: 'Sharpe', icon: 'fa-bolt', min: -1, max: 3, val: ratios.sharpe, 
+                label: ratios.sharpe.toFixed(2), class: 'grad-pos',
+                calc: '(Mean Excess Return / StdDev of Excess Return) * sqrt(252).',
+                meaning: 'Risk-adjusted return. Measures reward per unit of total risk.' 
+            },
+            beta: { 
+                title: 'Beta', icon: 'fa-chart-line', min: 0, max: 2, val: ratios.beta, 
+                label: ratios.beta.toFixed(2), class: 'grad-beta',
+                calc: 'Covariance(Portfolio, Market) / Variance(Market).',
+                meaning: 'Sensitivity to market movements. 1.0 = Moves with market. > 1.0 = Aggressive.' 
+            },
+            sortino: { 
+                title: 'Sortino', icon: 'fa-shield-halved', min: -1, max: 4, val: ratios.sortino, 
+                label: ratios.sortino.toFixed(2), class: 'grad-pos',
+                calc: '(Mean Excess Return / Downside StdDev) * sqrt(252).',
+                meaning: 'Risk-adjusted return focusing only on negative (bad) volatility.' 
+            },
+            alpha: { 
+                title: 'Alpha', icon: 'fa-gem', min: -0.05, max: 0.15, val: ratios.alpha, 
+                label: (ratios.alpha * 100).toFixed(1) + '%', class: 'grad-alpha',
+                calc: 'Portfolio Return - [RiskFree + Beta * (Market - RiskFree)]',
+                meaning: 'Value added by the strategy relative to its benchmark exposure.' 
+            },
+            omega: { 
+                title: 'Omega', icon: 'fa-scale-balanced', min: 0.5, max: 2.5, val: ratios.omega, 
+                label: ratios.omega.toFixed(2), class: 'grad-neutral',
+                calc: 'Sum(Gains) / |Sum(Losses)| above a threshold (0%).',
+                meaning: 'Probability-weighted ratio of gains versus losses.' 
+            },
+            treynor: { 
+                title: 'Treynor', icon: 'fa-arrow-up-right-dots', min: -0.1, max: 0.4, val: ratios.treynor, 
+                label: (ratios.treynor * 100).toFixed(1) + '%', class: 'grad-neutral',
+                calc: '(Portfolio Return - RiskFree Rate) / Beta.',
+                meaning: 'Risk-adjusted return based on systematic risk (market exposure).' 
+            },
+            infoRatio: { 
+                title: 'Information', icon: 'fa-circle-info', min: -1, max: 3, val: ratios.infoRatio, 
+                label: ratios.infoRatio.toFixed(2), class: 'grad-neutral',
+                calc: '(Strategy Return - Benchmark Return) / Tracking Error.',
+                meaning: 'Measures consistency of excess returns relative to a benchmark.' 
+            },
+            calmar: { 
+                title: 'Calmar', icon: 'fa-mountain', min: -1, max: 5, val: ratios.calmar, 
+                label: ratios.calmar.toFixed(2), class: 'grad-pos',
+                calc: 'Annualized Return / Maximum Drawdown.',
+                meaning: 'Efficiency ratio comparing return potential to drawdown risk.' 
+            }
+        };
+
+        let rowHtml = `
+            <div class="risk-row-group">
+                <div class="risk-row-label">${label}</div>
+                <div class="risk-row-data">
+        `;
+
+        perfConfig.forEach(c => {
+            rowHtml += `
+                <div class="risk-gauge-card">
+                    <div class="risk-gauge-header">
+                        <div class="risk-gauge-title">
+                            <span>${c.title}</span>
+                            <i class="fas fa-circle-question info-trigger" 
+                               data-calc="${c.calc}" 
+                               data-meaning="${c.meaning}" 
+                               data-title="${c.title}"></i>
+                        </div>
+                    </div>
+                    <div class="risk-gauge-value ${c.class}">${c.value}</div>
+                </div>
+            `;
+        });
+
+        Object.keys(riskConfig).forEach(k => {
+            const c = riskConfig[k];
+            let pct = ((c.val - c.min) / (c.max - c.min)) * 100;
+            pct = Math.max(2, Math.min(98, pct));
+            rowHtml += `
+                <div class="risk-gauge-card">
+                    <div class="risk-gauge-header">
+                        <div class="risk-gauge-title">
+                            <i class="fas ${c.icon}"></i>
+                            <span>${c.title}</span>
+                            <i class="fas fa-circle-question info-trigger" 
+                               data-calc="${c.calc}" 
+                               data-meaning="${c.meaning}" 
+                               data-title="${c.title}"></i>
+                        </div>
+                    </div>
+                    <div class="risk-gauge-value">${c.label}</div>
+                    <div class="gauge-container">
+                        <div class="gauge-track ${c.class}"></div>
+                        <div class="gauge-marker" style="left: ${pct}%"></div>
+                    </div>
+                </div>
+            `;
+        });
+
+        rowHtml += `</div></div>`;
+        return rowHtml;
+    };
+
+    let fullHtml = generateRowHtml(mPrimary, ratiosPrimary, mPrimary.Strategy);
+    if (mCompare && ratiosCompare) {
+        fullHtml += generateRowHtml(mCompare, ratiosCompare, mCompare.Strategy);
+    }
+
+    container.innerHTML = fullHtml;
+    container.style.display = 'block';
+
+    // Re-bind hover events for info-trigger
+    container.querySelectorAll('.info-trigger').forEach(target => {
+        target.addEventListener('mouseenter', showAnalyticsTooltip);
+        target.addEventListener('mouseleave', hideAnalyticsTooltip);
+    });
+}
+
 function selectStrategyForExplorer(name) {
     document.getElementById('explorer-picker').value = name;
     updateExplorer();
 }
+
 
 function renderAnalysisSuite(prefix, name, compareName) {
     if (!name || !window.allMetrics) return;
     const m = window.allMetrics.find(x => x.Strategy === name);
     if (!m) return;
 
+    const mCompare = compareName ? window.allMetrics.find(x => x.Strategy === compareName) : null;
+    
     const nameEl = document.getElementById(`${prefix}-name`);
     if (nameEl) nameEl.textContent = name === '🧪 USER CUSTOM LAB' ? 'Custom Lab Prototype' : name;
 
@@ -476,18 +810,24 @@ function renderAnalysisSuite(prefix, name, compareName) {
             metaContainer.innerHTML = `<span class="pill-badge group-badge">${meta.level}</span>`;
             metaContainer.innerHTML += `<span class="pill-badge ${isRatchet ? 'active' : ''}">${isRatchet ? 'Ratchet Logic' : 'Daily Reset'}</span>`;
             if (meta.mix === 'Pure') metaContainer.innerHTML += '<span class="pill-badge">Pure Equity</span>';
+            else metaContainer.innerHTML += '<span class="pill-badge active" style="border-color:var(--accent); color:var(--accent)">Safeties Active</span>';
             
             if (useTrend) {
                 const signalSlice = globalData.signals.sma200.slice(globalData.dates.indexOf(document.getElementById('start-date').value), globalData.dates.indexOf(document.getElementById('end-date').value) + 1);
                 const bearDays = signalSlice.filter(v => v === 0).length;
                 const pct = ((bearDays / signalSlice.length) * 100).toFixed(1);
-                const modeStr = meta.params?.smaMode || (prefix === 'lab' ? document.getElementById('lab-sma-mode').value : 'T0');
-                metaContainer.innerHTML += `<span class="pill-badge active" style="background:rgba(255,82,82,0.1); border-color:var(--red); color:#ff5252">SMA 200 (${modeStr}): ${bearDays.toLocaleString()} Days Protected (${pct}%)</span>`;
+                const modeStr = meta.smaMode || (prefix === 'lab' ? document.getElementById('lab-sma-mode').value : 'T0');
+                metaContainer.innerHTML += `<span class="pill-badge active" style="background:rgba(255,82,82,0.1); border-color:var(--red); color:#ff5252">SMA 200 (Target: ${modeStr}): ${bearDays.toLocaleString()} Days Protected (${pct}%)</span>`;
             } else {
                 metaContainer.innerHTML += '<span class="pill-badge" style="opacity:0.5">No Trend Filter (Always 100% Active)</span>';
             }
         }
-        if (textContainer && meta.text) textContainer.innerHTML = `<p class="strategy-description">${meta.text}</p>`;
+        if (textContainer && meta.text) {
+            textContainer.innerHTML = `<p class="strategy-description">${meta.text}</p>`;
+        } else if (textContainer) {
+            textContainer.innerHTML = `<p class="strategy-description" style="opacity:0.5; font-style:italic">No methodology description available for this strategy.</p>`;
+        }
+
 
         let weights = entry.weights;
         if (prefix === 'lab') weights = labWeights.map(r => [r.VOO, r.SSO, r.SPYU, r.DJP, r.BILL]);
@@ -556,6 +896,28 @@ function renderAnalysisSuite(prefix, name, compareName) {
     Plotly.react(`chart-${prefix}-vol`, traces(pVol, cVol, name, compareName, 'var(--orange)'), { ...expBaseLayout, yaxis: { title: '1-Year Vol (%)', tickformat: '.0%' }, height: 400 }, PLOTLY_CONFIG);
     const cLev = cObj ? (compareName === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.leverage : globalData.leverage[compareName]).slice(globalData.dates.length - chartReturns.length) : null;
     Plotly.react(`chart-${prefix}-leverage`, traces(levSlice, cLev, name, compareName, 'var(--blue)'), { ...expBaseLayout, yaxis: { title: 'Leverage', range: [0, 4.5] }, height: 400 }, PLOTLY_CONFIG);
+    // Calculate and render Unified Analytics Strip
+    const startIdx = globalData.dates.indexOf(document.getElementById('start-date').value);
+    const endIdx = globalData.dates.indexOf(document.getElementById('end-date').value);
+    
+    // Benchmarks
+    const bRaw = globalData.raw_returns['VOO'].slice(startIdx, endIdx + 1);
+    const rfRaw = globalData.raw_returns['BILL'].slice(startIdx, endIdx + 1);
+    const pRaw = (name === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.returns : globalData.variants[name]).slice(startIdx, endIdx + 1);
+    
+    const ratios = calculateAdvancedRiskRatios(pRaw, bRaw, rfRaw);
+
+    let ratiosCompare = null;
+    if (mCompare) {
+        const cRaw = (compareName === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.returns : globalData.variants[compareName]).slice(startIdx, endIdx + 1);
+        ratiosCompare = calculateAdvancedRiskRatios(cRaw, bRaw, rfRaw);
+    }
+
+    renderUnifiedAnalyticsStrip(`${prefix}-analytics-strip`, m, ratios, mCompare, ratiosCompare);
+
+
+
+
     const inflationNorm = globalData.inflation.slice(startIndex).map((v, i, a) => v / a[0]);
     const chartReal = chartReturns.map((v, i) => v / inflationNorm[i]); const cReal = cReturns ? cReturns.map((v, i) => v / inflationNorm[i]) : null;
     Plotly.react(`chart-${prefix}-real`, traces(chartReal, cReal, name, compareName, 'var(--green)'), { ...expBaseLayout, yaxis: { title: 'Real Growth (Log)', type: 'log' }, height: 450 }, PLOTLY_CONFIG);
@@ -802,11 +1164,13 @@ async function init() {
         const loader = document.getElementById('loader');
         loader.style.opacity = '0';
         setTimeout(() => loader.style.display = 'none', 300);
+        initAnalyticsTooltips();
         update();
     } catch (e) {
         console.error('Quant Engine Error:', e);
     }
 }
+
 
 function renderWeightTable() {
     const tbody = document.getElementById('weight-tbody');
@@ -853,3 +1217,61 @@ function renderWeightTable() {
 }
 
 init();
+
+// ── Analytics Tooltip Support ──────────────────────────────────────────
+function initAnalyticsTooltips() {
+    let tooltip = document.getElementById('analytics-tooltip');
+    if (!tooltip) {
+        tooltip = document.createElement('div');
+        tooltip.id = 'analytics-tooltip';
+        tooltip.className = 'analytics-tooltip';
+        document.body.appendChild(tooltip);
+    }
+}
+
+function showAnalyticsTooltip(e) {
+    const tooltip = document.getElementById('analytics-tooltip');
+    if (!tooltip) return;
+
+    const t = e.target.dataset.title;
+    const m = e.target.dataset.meaning;
+    const c = e.target.dataset.calc;
+
+    tooltip.innerHTML = `
+        <div class="tooltip-title">${t}</div>
+        <div class="tooltip-section">
+            <label>Meaning</label>
+            <p>${m}</p>
+        </div>
+        <div class="tooltip-section">
+            <label>How is it calculated?</label>
+            <p>${c}</p>
+        </div>
+    `;
+
+    tooltip.style.display = 'block';
+    
+    const rect = e.target.getBoundingClientRect();
+    const tooltipHeight = tooltip.offsetHeight;
+    const tooltipWidth = tooltip.offsetWidth;
+    
+    // Position above the icon
+    let top = rect.top - tooltipHeight - 10;
+    let left = rect.left + (rect.width / 2) - (tooltipWidth / 2);
+    
+    // Boundary checks
+    if (top < 10) top = rect.bottom + 10;
+    if (left < 10) left = 10;
+    if (left + tooltipWidth > window.innerWidth - 10) left = window.innerWidth - tooltipWidth - 10;
+
+    tooltip.style.top = top + 'px';
+    tooltip.style.left = left + 'px';
+}
+
+function hideAnalyticsTooltip() {
+    const tooltip = document.getElementById('analytics-tooltip');
+    if (tooltip) tooltip.style.display = 'none';
+}
+
+// Call init on load
+initAnalyticsTooltips();

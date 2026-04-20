@@ -80,14 +80,12 @@ def get_precomputed_data():
         days = (raw_df.index - raw_df.index[0]).days
         inflation_levels = pd.Series(np.exp(days * np.log(1.025) / 365.25), index=raw_df.index)
 
-    def simulate_strategy(bounds, include_safeties=True, sma_period=0, is_ratchet=False, custom_weights=None, sma_into_cash=False):
+    def simulate_strategy(bounds, sma_period=0, is_ratchet=False, custom_weights=None, sma_mode='T0'):
         # Normalize weights to standard format [VOO, SSO, SPYU, DJP, BILL]
         ws = custom_weights
         if ws is None:
-            if include_safeties:
-                ws = [[80, 0, 0, 10, 10], [40, 40, 0, 10, 10], [0, 80, 0, 10, 10], [0, 40, 40, 10, 10], [0, 0, 100, 0, 0]]
-            else:
-                ws = [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]]
+            # Fallback to standard ladder if weights missing (should ideally not happen with registry)
+            ws = [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]]
         
         # Unified 0-100% scale conversion
         processed_ws = [[v / 100.0 for v in tier] for tier in ws]
@@ -117,10 +115,17 @@ def get_precomputed_data():
         else:
             daily_tiers = y_dd.apply(get_tier)
         
+        # Apply SMA Mode Filter
         if sma_period > 0:
-            daily_tiers.loc[y_price < y_sma] = 0
-            
+            is_bear = (y_price < y_sma)
+            if sma_mode.startswith('T'):
+                target_tier = int(sma_mode[1])
+                daily_tiers.loc[is_bear] = target_tier
+            elif sma_mode == 'Cash':
+                daily_tiers.loc[is_bear] = -1 # Sentinel for 100% BILL
+
         def get_weights_for_tier(tier):
+            if tier == -1: return [0, 0, 0, 0, 1.0] # Cash Mode
             t = int(tier)
             if t >= len(processed_ws): return processed_ws[-1]
             return processed_ws[t]
@@ -131,15 +136,6 @@ def get_precomputed_data():
 
         for asset_idx in range(5):
             w_series = daily_tiers.map(lambda t: get_weights_for_tier(t)[asset_idx])
-            
-            if sma_period > 0 and sma_into_cash:
-                is_bear = (y_price < y_sma)
-                # BILLS is index 4
-                if asset_idx == 4:
-                    w_series.loc[is_bear] = 1.0
-                else:
-                    w_series.loc[is_bear] = 0.0
-
             strat_return += w_series * asset_returns[asset_idx]
             if asset_idx < 3: # Leverage assets
                 mult = [1, 2, 4][asset_idx]
@@ -196,11 +192,10 @@ def get_precomputed_data():
         p = strat.get('params', {})
         r, l = simulate_strategy(
             bounds=strat['bounds'],
-            include_safeties=p.get('mix') == 'Safeties',
             is_ratchet=p.get('logic') == 'Ratchet',
             sma_period=p.get('sma', 0),
             custom_weights=strat['weights'],
-            sma_into_cash=p.get('smaMode') == 'Cash'
+            sma_mode=p.get('smaMode', 'T0')
         )
         
         variants[name] = r
@@ -226,8 +221,8 @@ def get_precomputed_data():
         'bounds': bounds_out,
         'raw_returns': {
             'VOO': to_df_list(raw_sub[TICKERS['VOO']], SIM_START),
-            'SSO': (raw_sub[TICKERS['VOO']] * 2.0).loc[SIM_START:].fillna(0.0).tolist(),
-            'SPYU': (raw_sub[TICKERS['VOO']] * 4.0).loc[SIM_START:].fillna(0.0).tolist(),
+            'SSO': to_df_list(r_sso, SIM_START),
+            'SPYU': to_df_list(r_spyu, SIM_START),
             'BILL': to_df_list(raw_sub[TICKERS['BILL']], SIM_START),
             'DJP': to_df_list(raw_sub[TICKERS['DJP']], SIM_START) if TICKERS['DJP'] in raw_sub.columns else [0.0]*len(dates),
         },

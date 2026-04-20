@@ -14,7 +14,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Standard S&P 500 Index tracking. No leverage, no hedging.',
         bounds: [0, 0, 0, 0],
         weights: [[100, 0, 0, 0, 0], [100, 0, 0, 0, 0], [100, 0, 0, 0, 0], [100, 0, 0, 0, 0], [100, 0, 0, 0, 0]],
-        params: { logic: 'Daily', mix: 'Pure', sma: 0 }
+        params: { logic: 'Daily', sma: 0 }
     },
     {
         id: 'Benchmark SSO (2x)',
@@ -22,7 +22,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Standard 2x Leveraged S&P 500 tracking. Constant leverage, no reset.',
         bounds: [0, 0, 0, 0],
         weights: [[0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0]],
-        params: { logic: 'Daily', mix: 'Pure', sma: 0 }
+        params: { logic: 'Daily', sma: 0 }
     },
     {
         id: 'Benchmark SPYU (4x)',
@@ -30,7 +30,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Aggressive 4x Leveraged S&P 500 tracking. High volatility path.',
         bounds: [0, 0, 0, 0],
         weights: [[0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Pure', sma: 0 }
+        params: { logic: 'Daily', sma: 0 }
     },
     {
         id: 'Benchmark DJP (1x)',
@@ -38,7 +38,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Broad Commodity Tracking Index. Used as a hedge against inflation.',
         bounds: [0, 0, 0, 0],
         weights: [[0, 0, 0, 100, 0], [0, 0, 0, 100, 0], [0, 0, 0, 100, 0], [0, 0, 0, 100, 0], [0, 0, 0, 100, 0]],
-        params: { logic: 'Daily', mix: 'Pure', sma: 0 }
+        params: { logic: 'Daily', sma: 0 }
     },
 
     {
@@ -47,7 +47,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: '2x Leveraged benchmark that de-risks to 1x SPY when price is below the SMA 200.',
         bounds: [0, 0, 0, 0],
         weights: [[100, 0, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0]],
-        params: { logic: 'Daily', mix: 'Pure', sma: 200 }
+        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
     },
     {
         id: 'Benchmark SPYU (4x) + SMA',
@@ -55,109 +55,95 @@ const STRATEGY_REGISTRY_DATA = [
         text: '4x Leveraged benchmark that de-risks to 1x SPY when price is below the SMA 200.',
         bounds: [0, 0, 0, 0],
         weights: [[100, 0, 0, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Pure', sma: 200 }
+        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
     },
 
-    // === CATEGORY: STANDARD ===
+    // === CATEGORY: BASIC LADDERS ===
     {
         id: 'Standard Daily Safeties',
-        group: 'Standard',
+        group: 'Basic',
         text: 'Standard 1x-4x ladder with 20% dedicated to safety nets (DJP/BILL).',
         bounds: [5.0, 10.0, 20.0, 30.0],
         weights: [[80, 0, 0, 10, 10], [40, 40, 0, 10, 10], [0, 80, 0, 10, 10], [0, 40, 40, 10, 10], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Safeties', sma: 200 }
+        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
     },
     {
         id: 'Standard Daily Pure',
-        group: 'Standard',
+        group: 'Basic',
         text: 'Standard 1x-4x equity ladder. No safety nets, maximum recovery leverage.',
         bounds: [5.0, 10.0, 20.0, 30.0],
         weights: [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Pure', sma: 200 }
+        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
     },
-    {
-        id: 'Standard Ratchet Safeties',
-        group: 'Standard',
-        text: 'Standard 1x-4x Safeties with Ratchet logic (locks in leverage level).',
-        bounds: [5.0, 10.0, 20.0, 30.0],
-        weights: [[80, 0, 0, 10, 10], [40, 40, 0, 10, 10], [0, 80, 0, 10, 10], [0, 40, 40, 10, 10], [0, 0, 100, 0, 0]],
-        params: { logic: 'Ratchet', mix: 'Safeties', sma: 200 }
-    },
-    {
-        id: 'Standard Ratchet Pure',
-        group: 'Standard',
-        text: 'Standard 1x-4x Pure with Ratchet logic (locks in leverage level).',
-        bounds: [5.0, 10.0, 20.0, 30.0],
-        weights: [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Ratchet', mix: 'Pure', sma: 200 }
-    },
-
-    // === CATEGORY: AGGRESSIVE ===
     {
         id: 'Aggressive Daily Safeties',
-        group: 'Aggressive',
+        group: 'Basic',
         text: 'Aggressive 1x-4x transition with tighter bounds and 20% safety margin.',
         bounds: [3.0, 7.0, 12.0, 20.0],
         weights: [[80, 0, 0, 10, 10], [40, 40, 0, 10, 10], [0, 80, 0, 10, 10], [0, 40, 40, 10, 10], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Safeties', sma: 200 }
+        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
     },
     {
         id: 'Aggressive Daily Pure',
-        group: 'Aggressive',
+        group: 'Basic',
         text: 'Aggressive 1x-4x pure equity ladder. Ultra-fast ramp up on minor drawdowns.',
         bounds: [3.0, 7.0, 12.0, 20.0],
         weights: [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Pure', sma: 200 }
+        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
     },
-    {
-        id: 'Aggressive Ratchet Safeties',
-        group: 'Aggressive',
-        text: 'Aggressive 1x-4x Safeties with Ratchet logic.',
-        bounds: [3.0, 7.0, 12.0, 20.0],
-        weights: [[80, 0, 0, 10, 10], [40, 40, 0, 10, 10], [0, 80, 0, 10, 10], [0, 40, 40, 10, 10], [0, 0, 100, 0, 0]],
-        params: { logic: 'Ratchet', mix: 'Safeties', sma: 200 }
-    },
-    {
-        id: 'Aggressive Ratchet Pure',
-        group: 'Aggressive',
-        text: 'Aggressive 1x-4x Pure with Ratchet logic.',
-        bounds: [3.0, 7.0, 12.0, 20.0],
-        weights: [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Ratchet', mix: 'Pure', sma: 200 }
-    },
-
-    // === CATEGORY: CONSERVATIVE ===
     {
         id: 'Conservative Daily Safeties',
-        group: 'Conservative',
+        group: 'Basic',
         text: 'Conservative 1x-4x transition with wide bounds and 20% safety margin.',
         bounds: [10.0, 20.0, 35.0, 50.0],
         weights: [[80, 0, 0, 10, 10], [40, 40, 0, 10, 10], [0, 80, 0, 10, 10], [0, 40, 40, 10, 10], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Safeties', sma: 200 }
+        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
     },
     {
         id: 'Conservative Daily Pure',
-        group: 'Conservative',
+        group: 'Basic',
         text: 'Conservative 1x-4x pure equity ladder. Only ramps up during major crashes.',
         bounds: [10.0, 20.0, 35.0, 50.0],
         weights: [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', mix: 'Pure', sma: 200 }
+        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
+    },
+
+    // === CATEGORY: ADVANCED ARCHETYPES ===
+    {
+        id: 'Advanced THE PHOENIX',
+        group: 'Advanced',
+        text: 'Rapid-Recapture model. Scaled to max leverage at just 4% drawdown to catch the exact meat of V-recoveries.',
+        bounds: [2.0, 4.0, 6.0, 10.0],
+        weights: [
+            [100, 0, 0, 0, 0], // Bench
+            [50, 50, 0, 0, 0], // Tier 1
+            [0, 0, 100, 0, 0], // Tier 2 (4x)
+            [0, 0, 100, 0, 0], // Tier 3 (4x)
+            [0, 0, 100, 0, 0]  // Tier 4 (4x)
+        ],
+        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
     },
     {
-        id: 'Conservative Ratchet Safeties',
-        group: 'Conservative',
-        text: 'Conservative 1x-4x Safeties with Ratchet logic.',
-        bounds: [10.0, 20.0, 35.0, 50.0],
-        weights: [[80, 0, 0, 10, 10], [40, 40, 0, 10, 10], [0, 80, 0, 10, 10], [0, 40, 40, 10, 10], [0, 0, 100, 0, 0]],
-        params: { logic: 'Ratchet', mix: 'Safeties', sma: 200 }
+        id: 'Advanced THE KRAKEN',
+        group: 'Advanced',
+        text: 'Hedged Momentum model. Aggressive equity ladder that shifts 100% to DJP (Commodities) during terminal drawdowns (>25%).',
+        bounds: [3.0, 7.0, 15.0, 25.0],
+        weights: [
+            [100, 0, 0, 0, 0],
+            [0, 100, 0, 0, 0],
+            [0, 50, 50, 0, 0],
+            [0, 0, 100, 0, 0],
+            [0, 0, 0, 100, 0] // Shift to DJP
+        ],
+        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
     },
     {
-        id: 'Conservative Ratchet Pure',
-        group: 'Conservative',
-        text: 'Conservative 1x-4x Pure with Ratchet logic.',
-        bounds: [10.0, 20.0, 35.0, 50.0],
+        id: 'Advanced THE SPECTRE',
+        group: 'Advanced',
+        text: 'Momentum Shadow model. Uses Ratchet logic to lock in leverage gains but maintains a HARD STOP to Cash when below SMA 200.',
+        bounds: [2.0, 5.0, 10.0, 20.0],
         weights: [[100, 0, 0, 0, 0], [50, 50, 0, 0, 0], [0, 100, 0, 0, 0], [0, 50, 50, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Ratchet', mix: 'Pure', sma: 200 }
+        params: { logic: 'Ratchet', sma: 200, smaMode: 'Cash' }
     },
 
     // === CATEGORY: SPECIAL (HALL OF FAME) ===
@@ -173,7 +159,7 @@ const STRATEGY_REGISTRY_DATA = [
             [0, 0, 100, 0, 0],
             [13, 0, 9, 48, 30]
         ],
-        params: { logic: 'Daily', mix: 'Safeties', sma: 200 }
+        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
     },
     {
         id: 'Special SCALPEL',
@@ -187,27 +173,13 @@ const STRATEGY_REGISTRY_DATA = [
             [25, 9, 22, 20, 24],
             [87, 10, 0, 3, 0]
         ],
-        params: { logic: 'Daily', mix: 'Pure', sma: 200, smaMode: 'T0' }
-    },
-    {
-        id: 'Special SHIELD',
-        group: 'Special',
-        text: 'Maximizes risk-mitigation using BILL/DJP during stability.',
-        bounds: [5.0, 10.0, 39.0, 58.0],
-        weights: [
-            [1, 7, 1, 0, 91],
-            [4, 0, 0, 80, 16],
-            [2, 22, 0, 1, 75],
-            [73, 0, 20, 5, 2],
-            [1, 34, 1, 63, 1]
-        ],
-        params: { logic: 'Daily', mix: 'Safeties', sma: 200, smaMode: 'Cash' }
+        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
     }
 ];
 
 // Metadata for UI generation
 const STRATEGY_METADATA = {
-    groups: ['Benchmark', 'Standard', 'Aggressive', 'Conservative', 'Special'],
+    groups: ['Benchmark', 'Special', 'Advanced', 'Basic'],
     logics: ['Daily', 'Ratchet'],
     mixes: ['Safeties', 'Pure'],
     sma: ['SMA 200', 'None'],

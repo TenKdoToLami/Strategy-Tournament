@@ -80,9 +80,8 @@
                         <div class="filter-options" id="filter-level">
                             <div class="pill active" data-value="Benchmark">Benchmarks</div>
                             <div class="pill active" data-value="Special">Special</div>
-                            <div class="pill active" data-value="Standard">Standard</div>
-                            <div class="pill active" data-value="Aggressive">Aggressive</div>
-                            <div class="pill active" data-value="Conservative">Conservative</div>
+                            <div class="pill active" data-value="Advanced">Advanced</div>
+                            <div class="pill active" data-value="Basic">Basic</div>
                         </div>
                     </div>
                     <div class="filter-group">
@@ -166,21 +165,35 @@
             <div id="tab-explorer" class="tab-content">
                 <section class="explorer-grid">
                     <div class="explorer-hero">
-                        <div>
-                            <div class="explorer-title" id="explorer-name">Select Strategy</div>
-                            <div id="explorer-meta-pills" class="pill-group" style="margin-top: 8px;">
-                                <!-- Context pills like 'Ratchet ON' added here -->
+                        <div class="header-main-row">
+                            <div>
+                                <div class="explorer-title" id="explorer-name">Select Strategy</div>
+                                <div id="explorer-meta-pills" class="pill-group" style="margin-top: 8px;">
+                                    <!-- Context pills like 'Ratchet ON' added here -->
+                                </div>
                             </div>
-                            <div id="explorer-description" style="margin-top: 12px; max-width: 800px;"></div>
+
+                            <div class="explorer-actions" style="display: flex; gap: 12px; margin-bottom: 0;">
+                                <select id="explorer-picker" class="btn-ghost" style="flex: 1; min-width: 200px;">
+                                    <option value="">Primary Asset...</option>
+                                </select>
+                                <select id="explorer-compare-picker" class="btn-ghost" style="flex: 1; min-width: 200px; border-color: rgba(255,255,255,0.1)">
+                                    <option value="">Compare with...</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="explorer-actions" style="display: flex; gap: 12px;">
-                            <select id="explorer-picker" class="btn-ghost" style="max-width: 250px;">
-                                <option value="">Primary Asset...</option>
-                            </select>
-                            <select id="explorer-compare-picker" class="btn-ghost" style="max-width: 250px; border-color: rgba(255,255,255,0.1)">
-                                <option value="">Compare with...</option>
-                            </select>
+
+                        <!-- Strategy Methodology Field -->
+                        <div class="strategy-logic-container">
+                            <label class="field-label">Strategy Methodology</label>
+                            <div id="explorer-description" class="strategy-description-area"></div>
                         </div>
+
+
+                        <!-- Unified Analytics Strip -->
+                        <div id="explorer-analytics-strip" class="risk-metrics-grid" style="margin-top: 10px; display: none;"></div>
+
+
                     </div>
 
                     <div class="card">
@@ -287,8 +300,12 @@
                         <div class="lab-input-group" style="width: 100px;">
                             <label style="font-size: 0.6rem; margin-bottom: 2px;">Bearish Target</label>
                             <select id="lab-sma-mode" class="btn-ghost" style="padding: 2px; font-size: 0.75rem; width:100%;">
-                                <option value="T0">T0 Portfolio</option>
                                 <option value="Cash">100% Cash</option>
+                                <option value="T0">Tier 0 Target</option>
+                                <option value="T1">Tier 1 Target</option>
+                                <option value="T2">Tier 2 Target</option>
+                                <option value="T3">Tier 3 Target</option>
+                                <option value="T4">Tier 4 Target</option>
                             </select>
                         </div>
                         <div class="lab-spacer"></div>
@@ -298,19 +315,33 @@
 
                 <div id="lab-results" class="explorer-grid" style="display: none; border-top: 1px solid rgba(255,255,255,0.05); margin-top: 40px; padding-top: 40px;">
                     <div class="explorer-hero">
-                        <div>
-                            <div class="explorer-title" id="lab-name">Lab Result</div>
-                            <div id="lab-meta-pills" class="pill-group" style="margin-top: 8px;"></div>
-                            <div id="lab-description" style="margin-top: 12px; max-width: 800px;"></div>
+                        <div class="header-main-row">
+                            <div>
+                                <div class="explorer-title" id="lab-name">Lab Result</div>
+                                <div id="lab-meta-pills" class="pill-group" style="margin-top: 8px;"></div>
+                            </div>
+
+                            <div class="explorer-actions" style="display: flex; gap: 12px; margin-bottom: 0;">
+                                <select id="lab-compare-picker" class="btn-ghost" style="flex: 1; min-width: 200px; border-color: rgba(255,255,255,0.1)">
+                                    <option value="">Compare with...</option>
+                                </select>
+                                <button onclick="resetLabResults()" class="btn-ghost" style="border-color: rgba(255,100,100,0.2); color: var(--red)">
+                                    Clear Results
+                                </button>
+                            </div>
                         </div>
-                        <div class="explorer-actions" style="display: flex; gap: 12px;">
-                            <select id="lab-compare-picker" class="btn-ghost" style="max-width: 250px; border-color: rgba(255,255,255,0.1)">
-                                <option value="">Compare with...</option>
-                            </select>
-                            <button onclick="resetLabResults()" class="btn-ghost" style="border-color: rgba(255,100,100,0.2); color: var(--red)">
-                                Clear Results
-                            </button>
+
+                        <!-- Strategy Methodology Field -->
+                        <div class="strategy-logic-container">
+                            <label class="field-label">Strategy Methodology</label>
+                            <div id="lab-description" class="strategy-description-area"></div>
                         </div>
+
+
+                        <!-- Unified Lab Analytics Strip -->
+                        <div id="lab-analytics-strip" class="risk-metrics-grid" style="margin-top: 10px; display: none;"></div>
+
+
                     </div>
 
                     <div class="card">
