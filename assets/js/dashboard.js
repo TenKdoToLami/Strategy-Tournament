@@ -286,6 +286,10 @@ const BENCHMARK_COLORS = {
     'Benchmark SPYU (4x)': '#ee3344',
     'Benchmark DJP (1x)': '#4ecdc4',
     'Inflation (CPI)': '#8892b0',
+    'Legacy BEAST': '#ff79c6',
+    'Special BEAST (v2)': '#bd93f9',
+    'Special SCALPEL (v2)': '#8be9fd',
+    'Special PREDATOR': '#50fa7b',
     'Special BEAST': '#ff79c6',
     'Special SCALPEL': '#8be9fd',
     'Special SHIELD': '#f1fa8c'
@@ -475,6 +479,98 @@ function simulateCustomStrategy(bounds, useRatchet, useSMA, smaPeriod = 200, use
     return { returns: results, leverage };
 }
 
+// ── Mechanism Visualization Logic ──────────────────────────────────
+function getStrategySignals(name, startIndex, endIndex) {
+    const prices = getSpyPrices();
+    const meta = parseStrategy(name);
+    const p = meta.params || {};
+    
+    let res = { prices: prices.slice(startIndex, endIndex + 1), sma: null, ema: null, panic: [] };
+    
+    if (p.sma > 0) {
+        const smaFull = calculateSMAVector(prices, p.sma);
+        res.sma = smaFull.slice(startIndex, endIndex + 1);
+    }
+    if (p.ema > 0) {
+        const emaFull = calculateEMAVector(prices, p.ema);
+        res.ema = emaFull.slice(startIndex, endIndex + 1);
+    }
+
+    // Determine Panic State (Below trend)
+    const n = res.prices.length;
+    for (let i = 0; i < n; i++) {
+        let isPanic = false;
+        if (res.sma && res.prices[i] < res.sma[i]) isPanic = true;
+        if (res.ema && res.prices[i] < res.ema[i]) isPanic = true;
+        res.panic.push(isPanic);
+    }
+    
+    return res;
+}
+
+function renderMechanismChart(prefix, name, startIndex, endIndex) {
+    const chartId = `chart-${prefix}-mechanism`;
+    const container = document.getElementById(chartId);
+    if (!container) return;
+
+    const data = getStrategySignals(name, startIndex, endIndex);
+    const dates = globalData.dates.slice(startIndex, endIndex + 1);
+    
+    const traces = [
+        {
+            x: dates, y: data.prices, name: 'VOO Price',
+            line: { color: '#ffffff', width: 2 }, type: 'scatter', mode: 'lines'
+        }
+    ];
+
+    if (data.sma) {
+        traces.push({
+            x: dates, y: data.sma, name: 'SMA Trend',
+            line: { color: '#bd93f9', width: 1.5, dash: 'dot' }, type: 'scatter', mode: 'lines'
+        });
+    }
+    if (data.ema) {
+        traces.push({
+            x: dates, y: data.ema, name: 'EMA Trend',
+            line: { color: '#8be9fd', width: 1.5, dash: 'dot' }, type: 'scatter', mode: 'lines'
+        });
+    }
+
+    // Generate Panic Shapes
+    const shapes = [];
+    let start = null;
+    for (let i = 0; i < data.panic.length; i++) {
+        if (data.panic[i] && start === null) {
+            start = dates[i];
+        } else if (!data.panic[i] && start !== null) {
+            shapes.push({
+                type: 'rect', xref: 'x', yref: 'paper',
+                x0: start, x1: dates[i - 1], y0: 0, y1: 1,
+                fillcolor: 'rgba(255, 85, 85, 0.15)',
+                line: { width: 0 }, layer: 'below'
+            });
+            start = null;
+        }
+    }
+    if (start !== null) {
+        shapes.push({
+            type: 'rect', xref: 'x', yref: 'paper',
+            x0: start, x1: dates[dates.length - 1], y0: 0, y1: 1,
+            fillcolor: 'rgba(255, 85, 85, 0.15)',
+            line: { width: 0 }, layer: 'below'
+        });
+    }
+
+    const layout = {
+        ...cloneLayout(),
+        yaxis: { ...PLOTLY_LAYOUT.yaxis, type: 'log', title: 'Price (Log)' },
+        shapes: shapes,
+        height: 400
+    };
+
+    Plotly.react(chartId, traces, layout, PLOTLY_CONFIG);
+}
+
 // ── Main Update Loop ───────────────────────────────────────────────
 function update() {
     if (!globalData) return;
@@ -563,7 +659,7 @@ function update() {
         const meta = parseStrategy(name);
         let color;
         if (isCustom) color = '#39ff14';
-        else if (meta.level === 'Benchmark' || meta.level === 'Special') color = BENCHMARK_COLORS[name];
+        else if ((meta.level === 'Benchmark' || meta.level === 'Special') && BENCHMARK_COLORS[name]) color = BENCHMARK_COLORS[name];
         else color = getAdaptiveColor(filteredMetrics.indexOf(m), filteredMetrics.length);
         m.color = color;
 
@@ -997,7 +1093,10 @@ function renderAnalysisSuite(prefix, name, compareName) {
     const yTraces = [{ x: years, y: years.map(y => pY[y] - 1), name, type: 'bar', marker: { color: m.color }, hoverinfo: 'none' }];
     if (cY) yTraces.push({ x: Object.keys(cY).sort(), y: Object.keys(cY).sort().map(y => cY[y] - 1), name: compareName, type: 'bar', marker: { color: 'rgba(255,255,255,0.2)' }, hoverinfo: 'none' });
     Plotly.react(`chart-${prefix}-yearly`, yTraces, { ...expBaseLayout, barmode: 'group', yaxis: { title: 'Yearly Return (%)', tickformat: '.0%' }, height: 450 }, PLOTLY_CONFIG);
-    initTooltipEngine([`chart-${prefix}-linear`, `chart-${prefix}-log`, `chart-${prefix}-drawdown`, `chart-${prefix}-vol`, `chart-${prefix}-leverage`, `chart-${prefix}-real`, `chart-${prefix}-yearly`]);
+    
+    renderMechanismChart(prefix, name, startIndex, globalData.dates.length - 1);
+    
+    initTooltipEngine([`chart-${prefix}-linear`, `chart-${prefix}-log`, `chart-${prefix}-drawdown`, `chart-${prefix}-vol`, `chart-${prefix}-leverage`, `chart-${prefix}-real`, `chart-${prefix}-yearly`, `chart-${prefix}-mechanism`]);
 }
 
 function updateExplorer() {

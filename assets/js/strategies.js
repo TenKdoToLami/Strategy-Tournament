@@ -148,9 +148,9 @@ const STRATEGY_REGISTRY_DATA = [
 
     // === CATEGORY: SPECIAL (HALL OF FAME) ===
     {
-        id: 'Special BEAST',
+        id: 'Legacy BEAST',
         group: 'Special',
-        text: 'The Ultimate Optimizer. High precision bounds for peak CAGR recovery.',
+        text: 'The original genetic champion. Optimized for long-term consistency and CAGR recovery using a classic 200-day trend filter.',
         bounds: [1.0, 5.0, 9.0, 53.0],
         weights: [
             [38, 21, 1, 40, 0],
@@ -162,18 +162,32 @@ const STRATEGY_REGISTRY_DATA = [
         params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
     },
     {
-        id: 'Special SCALPEL',
+        id: 'Special BEAST (v2)',
         group: 'Special',
-        text: 'Precision timing focused on extreme recovery leverage.',
-        bounds: [1.0, 5.0, 30.0, 60.0],
+        text: 'The God Mode Apex. Evolved via 50-epoch deep-search. Discovered an ultimate 1,530x growth path using a 362/400-day Trend Hybrid and specialized aggression in Tier 4 recovery.',
+        bounds: [1, 10, 27, 71],
         weights: [
-            [13, 2, 0, 7, 78],
-            [59, 3, 0, 32, 6],
-            [6, 7, 0, 81, 6],
-            [25, 9, 22, 20, 24],
-            [87, 10, 0, 3, 0]
+            [0, 0, 0, 100, 0],
+            [0, 0, 100, 0, 0],
+            [0, 0, 0, 0, 100],
+            [0, 0, 100, 0, 0],
+            [45, 20, 23, 11, 1]
         ],
-        params: { logic: 'Daily', sma: 200, ema: 0, smaMode: 'T0' }
+        params: { logic: 'Daily', sma: 362, ema: 400, smaMode: 'T4' }
+    },
+    {
+        id: 'Special SCALPEL (v2)',
+        group: 'Special',
+        text: 'The Efficiency Master. Optimized for Sharpe ratio and recovery speed. Uses a 291-day SMA and pivots to a defensive T4 Cash-heavy position.',
+        bounds: [26, 33, 34, 44],
+        weights: [
+            [1, 2, 1, 95, 1],
+            [0, 36, 45, 0, 19],
+            [27, 49, 12, 3, 9],
+            [44, 0, 37, 14, 5],
+            [2, 3, 2, 2, 91]
+        ],
+        params: { logic: 'Daily', sma: 291, smaMode: 'T4' }
     },
     {
         id: 'Special PREDATOR',
