@@ -178,16 +178,16 @@ const STRATEGY_REGISTRY_DATA = [
     {
         id: 'Special SCALPEL (v2)',
         group: 'Special',
-        text: 'The Efficiency Master. Optimized for Sharpe ratio and recovery speed. Uses a 291-day SMA and pivots to a defensive T4 Cash-heavy position.',
-        bounds: [26, 33, 34, 44],
+        text: 'The Institutional Apex. Evolved for maximum Sharpe Ratio (1.30). Discovered a 22.5x growth path that doubles SPY performance with surgical precision and ultra-low volatility drag.',
+        bounds: [1, 5, 30, 42],
         weights: [
-            [1, 2, 1, 95, 1],
-            [0, 36, 45, 0, 19],
-            [27, 49, 12, 3, 9],
-            [44, 0, 37, 14, 5],
-            [2, 3, 2, 2, 91]
+            [0, 0, 0, 36, 64],
+            [28, 0, 18, 23, 31],
+            [7, 1, 0, 64, 28],
+            [16, 12, 59, 4, 9],
+            [1, 3, 2, 0, 94]
         ],
-        params: { logic: 'Daily', sma: 291, smaMode: 'T4' }
+        params: { logic: 'Daily', sma: 232, ema: 124, smaMode: 'T4' }
     },
     {
         id: 'Special PREDATOR',

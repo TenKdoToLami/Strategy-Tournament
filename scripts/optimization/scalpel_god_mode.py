@@ -33,7 +33,7 @@ def get_base_data():
     sim_indices = np.where(df.index >= pd.to_datetime(SIM_START))[0]
     n_days = len(ret_matrix)
 
-    # Correct Drawdown Calculation: DD(day i) based on ATH up to day i
+    # Drawdown Calculation
     prices_slice = raw_prices[:sim_indices[-1]+1]
     ath_series = np.maximum.accumulate(prices_slice)
     dd_series = (prices_slice - ath_series) / ath_series
@@ -41,30 +41,28 @@ def get_base_data():
     y_price = raw_prices[sim_indices - 1]
 
     # --- THE GOD CACHE ---
-    # Precompute all Bear Signals for SMA/EMA 20-400
-    print("Building The God Cache (Precomputing 760 trend signals)...")
+    print("Building The God Cache (Targeting Sharpe peaks)...")
     sma_cache = np.zeros((401, n_days), dtype=bool)
     ema_cache = np.zeros((401, n_days), dtype=bool)
     
     for p in range(20, 401):
-        # SMA
         s_vals = pd.Series(raw_prices).rolling(p).mean().values
         sma_cache[p] = (y_price < s_vals[sim_indices - 1])
-        # EMA
         e_vals = pd.Series(raw_prices).ewm(span=p, adjust=False).mean().values
         ema_cache[p] = (y_price < e_vals[sim_indices - 1])
     
-    return ret_matrix, y_dd, sma_cache, ema_cache
+    # Calculate SPY Baseline
+    spy_mult = np.exp(np.sum(np.log1p(ret_matrix[:, 0])))
+    
+    return ret_matrix, y_dd, sma_cache, ema_cache, spy_mult
 
-def simulation_core(ret_matrix, y_dd, sma_cache, ema_cache, sma_p, ema_p, use_sma, use_ema, target_tier, logic, bounds, w_matrix):
+def simulation_core(ret_matrix, y_dd, sma_cache, ema_cache, sma_p, ema_p, use_sma, use_ema, target_tier, logic, bounds, w_matrix, spy_mult):
     n_days = len(ret_matrix)
     
-    # Instant Bear Signal Look-up
     is_bear = np.zeros(n_days, dtype=bool)
     if use_sma and sma_p >= 20: is_bear |= sma_cache[sma_p]
     if use_ema and ema_p >= 20: is_bear |= ema_cache[ema_p]
 
-    # Tier mapping (NumPy Vectorized)
     tiers_base = np.zeros(n_days, dtype=int)
     for idx, b in enumerate(bounds):
         tiers_base[y_dd <= -b/100.0] = idx + 1
@@ -80,16 +78,22 @@ def simulation_core(ret_matrix, y_dd, sma_cache, ema_cache, sma_p, ema_p, use_sm
         tiers = tiers_base.copy()
         tiers[is_bear] = target_tier
         
-    # Weight Application (Vectorized Sum)
     w_norm = w_matrix / 100.0
     day_rets = np.sum(w_norm[tiers] * ret_matrix, axis=1)
     
-    # Metric Calculation
-    # final_val = exp(sum(log1p(rets))) is fastest/stable way to get CAGR multiplier
+    # --- SHARPE CALCULATION ---
     multiplier = np.exp(np.sum(np.log1p(day_rets)))
     
-    # We only care about CAGR for God Mode
-    return multiplier
+    # CONSTRAINT: Performance must at least double SPY
+    if multiplier < (spy_mult * 2.0):
+        return 0.0, multiplier
+
+    mean_ret = np.mean(day_rets)
+    std_ret = np.std(day_rets)
+    if std_ret < 1e-9: return 0.0, multiplier 
+    
+    sharpe = (mean_ret / std_ret) * np.sqrt(252)
+    return sharpe, multiplier
 
 class Individual:
     def __init__(self, dna=None):
@@ -101,13 +105,13 @@ class Individual:
             self.logic = random.choice(["Daily", "Ratchet"])
             self.bounds = sorted(random.sample(range(1, 80), 4))
             self.weights = np.array([self.gen_weights() for _ in range(5)])
-            self.sma = random.randint(0, 400) # 0 means off
+            self.sma = random.randint(0, 400)
             self.ema = random.randint(0, 400)
             self.use_sma = (self.sma >= 20)
             self.use_ema = (self.ema >= 20)
             self.target_tier = random.randint(0, 4)
             if not self.use_sma and not self.use_ema:
-                self.sma = 224 # Guarantee at least one starting signal
+                self.sma = 200
                 self.use_sma = True
             
         self.fitness = 0.0
@@ -146,50 +150,46 @@ def mutate(ind):
     if random.random() < 0.1: ind.logic = "Ratchet" if ind.logic == "Daily" else "Daily"
     if random.random() < 0.3:
         idx = random.randint(0, 3)
-        ind.bounds[idx] = max(1, min(85, ind.bounds[idx] + random.randint(-10, 10)))
+        ind.bounds[idx] = max(1, min(85, ind.bounds[idx] + random.randint(-12, 12)))
         ind.bounds.sort()
-    if random.random() < 0.4: ind.sma = max(0, min(400, ind.sma + random.randint(-30, 30))); ind.use_sma = (ind.sma >= 20)
-    if random.random() < 0.4: ind.ema = max(0, min(400, ind.ema + random.randint(-30, 30))); ind.use_ema = (ind.ema >= 20)
+    if random.random() < 0.4: ind.sma = max(0, min(400, ind.sma + random.randint(-40, 40))); ind.use_sma = (ind.sma >= 20)
+    if random.random() < 0.4: ind.ema = max(0, min(400, ind.ema + random.randint(-40, 40))); ind.use_ema = (ind.ema >= 20)
     if random.random() < 0.2: ind.target_tier = random.randint(0, 4)
     if random.random() < 0.6:
         tier = random.randint(0, 4)
         i1, i2 = random.sample(range(5), 2)
-        n = random.randint(1, 20)
+        n = random.randint(1, 25)
         if ind.weights[tier][i1] >= n:
             ind.weights[tier][i1] -= n
             ind.weights[tier][i2] += n
 
 def evolve_island(data, population, gens):
-    ret_matrix, y_dd, sma_cache, ema_cache = data
+    ret_matrix, y_dd, sma_cache, ema_cache, spy_mult = data
     for g in range(gens):
         for ind in population:
-            ind.multiplier = simulation_core(ret_matrix, y_dd, sma_cache, ema_cache, ind.sma, ind.ema, ind.use_sma, ind.use_ema, ind.target_tier, ind.logic, ind.bounds, ind.weights)
-            ind.fitness = ind.multiplier
+            ind.fitness, ind.multiplier = simulation_core(ret_matrix, y_dd, sma_cache, ema_cache, ind.sma, ind.ema, ind.use_sma, ind.use_ema, ind.target_tier, ind.logic, ind.bounds, ind.weights, spy_mult)
         
         population.sort(key=lambda x: x.fitness, reverse=True)
-        # Use local population size to avoid global scope issues in multiprocessing
         pop_size = len(population)
-        elites = population[:max(1, pop_size // 10)] # Top 10%
+        elites = population[:max(1, pop_size // 10)]
         new_pop = elites.copy()
         while len(new_pop) < pop_size:
             p1, p2 = random.sample(elites, 2)
             child = crossover(p1, p2)
-            if random.random() < 0.6: mutate(child) # High mutation for God Mode
+            if random.random() < 0.7: mutate(child)
             new_pop.append(child)
         population = new_pop
     return population
 
 def run_optimizer():
-    global POP_SIZE
     data = get_base_data()
     THREADS = os.cpu_count() or 4
-    POP_SIZE = 2000 #Massive population
+    POP_SIZE = 2000
     TOTAL_EPOCHS = 40
     SUB_GENS = 500
     
-    print(f"BEAST GOD MODE: Initiating Massive Random Search ({THREADS} threads x {TOTAL_EPOCHS*SUB_GENS} gens)...")
+    print(f"SCALPEL GOD MODE: Optimizing for SHARPE peak ({THREADS} threads x {TOTAL_EPOCHS*SUB_GENS} gens)...")
     
-    # Initialize purely random populations
     islands = [[Individual() for _ in range(POP_SIZE // THREADS)] for _ in range(THREADS)]
     best_ever = None
 
@@ -201,36 +201,33 @@ def run_optimizer():
                 futures = [executor.submit(evolve_island, data, islands[i], SUB_GENS) for i in range(THREADS)]
                 islands = [f.result() for f in as_completed(futures)]
             
-            # Merge and Migrate
             all_ind = []
             for isl in islands: all_ind.extend(isl)
             all_ind.sort(key=lambda x: x.fitness, reverse=True)
+            
             queen = all_ind[0]
             if best_ever is None or queen.fitness > best_ever.fitness:
                 best_ever = queen
                 sma_str = f"{queen.sma}" if queen.use_sma else "OFF"
                 ema_str = f"{queen.ema}" if queen.use_ema else "OFF"
-                print(f"  [NEW GOD PEAK] Multiplier: {queen.multiplier:,.2f}x | SMA: {sma_str} | EMA: {ema_str} | Target: T{queen.target_tier}")
-                with open('beast_god_mode_best.json', 'w') as f:
+                print(f"  [NEW SHARPE PEAK] Sharpe: {queen.fitness:.3f} | Multiplier: {queen.multiplier:,.1f}x | SMA: {sma_str} | EMA: {ema_str}")
+                with open('scalpel_god_mode_best.json', 'w') as f:
                     json.dump(queen.to_dna(), f, indent=4)
             
-            # Migration: Distribute the best genetic traits back to islands
             top_migrants = all_ind[:20]
             for i in range(THREADS):
                 for j in range(20): islands[i][-(j+1)] = random.choice(top_migrants)
     except KeyboardInterrupt:
-        print("\n[!] Optimization Aborted by User. Finalizing best results...")
+        print("\n[!] Optimization Aborted. Finalizing results...")
 
-    print("\n--- GOD MODE EVOLUTION COMPLETE ---")
+    print("\n--- SCALPEL EVOLUTION COMPLETE ---")
     if best_ever:
-        print(f"ULTIMATE PREDATOR FOUND: {best_ever.multiplier:,.2f}x since 2002.")
+        print(f"ULTIMATE SHARPE FOUND: {best_ever.fitness:.3f} (Multiplier: {best_ever.multiplier:,.1f}x)")
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
     start_t = time.time()
-    
     run_optimizer()
-    
     end_t = time.time()
     duration = end_t - start_t
-    print(f"\nEvolution Duration: {duration/60:.1f} minutes ({duration:.0f} seconds)")
+    print(f"\nExecution Duration: {duration/60:.1f} minutes")
