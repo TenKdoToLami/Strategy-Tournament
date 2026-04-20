@@ -67,6 +67,13 @@ def get_precomputed_data():
             spy_sma_cache[period] = raw_df[TICKERS['VOO']].rolling(period).mean()
         return spy_sma_cache[period]
 
+    spy_ema_cache = {}
+    def get_spy_ema(period):
+        if period <= 0: return None
+        if period not in spy_ema_cache:
+            spy_ema_cache[period] = raw_df[TICKERS['VOO']].ewm(span=period, adjust=False).mean()
+        return spy_ema_cache[period]
+
     # --- Fetch Inflation (CPI) ---
     print("  Calculating inflation baseline...")
     try:
@@ -80,7 +87,7 @@ def get_precomputed_data():
         days = (raw_df.index - raw_df.index[0]).days
         inflation_levels = pd.Series(np.exp(days * np.log(1.025) / 365.25), index=raw_df.index)
 
-    def simulate_strategy(bounds, sma_period=0, is_ratchet=False, custom_weights=None, sma_mode='T0'):
+    def simulate_strategy(bounds, sma_period=0, ema_period=0, is_ratchet=False, custom_weights=None, sma_mode='T0'):
         # Normalize weights to standard format [VOO, SSO, SPYU, DJP, BILL]
         ws = custom_weights
         if ws is None:
@@ -93,7 +100,14 @@ def get_precomputed_data():
         
         y_dd = spy_dd_global.shift(1).fillna(0)
         y_price = raw_df[TICKERS['VOO']].shift(1)
-        y_sma = get_spy_sma(sma_period).shift(1) if sma_period > 0 else None
+        
+        is_bear = pd.Series(False, index=y_dd.index)
+        if sma_period > 0:
+            y_sma = get_spy_sma(sma_period).shift(1)
+            is_bear |= (y_price < y_sma)
+        if ema_period > 0:
+            y_ema = get_spy_ema(ema_period).shift(1)
+            is_bear |= (y_price < y_ema)
         
         def get_tier(dd):
             if dd <= -norm_bounds[3]: return 4
@@ -115,14 +129,12 @@ def get_precomputed_data():
         else:
             daily_tiers = y_dd.apply(get_tier)
         
-        # Apply SMA Mode Filter
-        if sma_period > 0:
-            is_bear = (y_price < y_sma)
-            if sma_mode.startswith('T'):
-                target_tier = int(sma_mode[1])
-                daily_tiers.loc[is_bear] = target_tier
-            elif sma_mode == 'Cash':
-                daily_tiers.loc[is_bear] = -1 # Sentinel for 100% BILL
+        # Apply Trend Filter (SMA/EMA)
+        if sma_mode.startswith('T'):
+            target_tier = int(sma_mode[1])
+            daily_tiers.loc[is_bear] = target_tier
+        elif sma_mode == 'Cash':
+            daily_tiers.loc[is_bear] = -1 # Sentinel for 100% BILL
 
         def get_weights_for_tier(tier):
             if tier == -1: return [0, 0, 0, 0, 1.0] # Cash Mode
@@ -194,6 +206,7 @@ def get_precomputed_data():
             bounds=strat['bounds'],
             is_ratchet=p.get('logic') == 'Ratchet',
             sma_period=p.get('sma', 0),
+            ema_period=p.get('ema', 0),
             custom_weights=strat['weights'],
             sma_mode=p.get('smaMode', 'T0')
         )

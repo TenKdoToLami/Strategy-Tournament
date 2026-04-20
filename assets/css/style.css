@@ -418,6 +418,13 @@ code {
     height: 16px;
 }
 
+.lab-control-divider {
+    width: 1px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.1);
+    margin: 0 10px;
+}
+
 .lab-spacer {
     flex-grow: 1;
 }

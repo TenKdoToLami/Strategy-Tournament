@@ -362,6 +362,17 @@ function calculateSMAVector(prices, period) {
     return sma;
 }
 
+function calculateEMAVector(prices, period) {
+    const n = prices.length;
+    const ema = new Float32Array(n);
+    const k = 2 / (period + 1);
+    ema[0] = prices[0];
+    for (let i = 1; i < n; i++) {
+        ema[i] = (prices[i] - ema[i - 1]) * k + ema[i - 1];
+    }
+    return ema;
+}
+
 function getSpyPrices() {
     if (window._spyPrices) return window._spyPrices;
     const raw = globalData.raw_returns.VOO;
@@ -376,19 +387,25 @@ function getSpyPrices() {
     return prices;
 }
 
-function simulateCustomStrategy(bounds, useRatchet, useTrend, smaPeriod = 200, smaMode = 'T0') {
+function simulateCustomStrategy(bounds, useRatchet, useSMA, smaPeriod = 200, useEMA = false, emaPeriod = 50, smaMode = 'T0') {
     const raw = globalData.raw_returns;
     const n = raw.VOO.length;
+    const prices = getSpyPrices();
     
-    // Calculate SMA signal dynamically
+    // Calculate SMA signal
     let smaSignal;
-    if (useTrend) {
-        const prices = getSpyPrices();
+    if (useSMA && smaPeriod > 0) {
         const smaValues = calculateSMAVector(prices, smaPeriod);
         smaSignal = new Int8Array(n);
-        for (let i = 0; i < n; i++) {
-            smaSignal[i] = prices[i] >= smaValues[i] ? 1 : 0;
-        }
+        for (let i = 0; i < n; i++) smaSignal[i] = prices[i] >= smaValues[i] ? 1 : 0;
+    }
+
+    // Calculate EMA signal
+    let emaSignal;
+    if (useEMA && emaPeriod > 0) {
+        const emaValues = calculateEMAVector(prices, emaPeriod);
+        emaSignal = new Int8Array(n);
+        for (let i = 0; i < n; i++) emaSignal[i] = prices[i] >= emaValues[i] ? 1 : 0;
     }
 
     let spyCum = 1.0, spyAth = 1.0;
@@ -403,15 +420,20 @@ function simulateCustomStrategy(bounds, useRatchet, useTrend, smaPeriod = 200, s
     let currentMaxTier = 0;
     for (let i = 1; i < n; i++) {
         const yDD = dds[i - 1];
-        const yTrend = useTrend ? smaSignal[i - 1] : 1;
+        
+        // Logical OR: Panic if SMA is bear OR EMA is bear
+        const smaBear = useSMA && smaSignal && (smaSignal[i - 1] === 0);
+        const emaBear = useEMA && emaSignal && (emaSignal[i - 1] === 0);
+        const isPanic = smaBear || emaBear;
+
         let tier = 0;
         if (yDD <= -bounds[3] / 100) tier = 4;
         else if (yDD <= -bounds[2] / 100) tier = 3;
         else if (yDD <= -bounds[1] / 100) tier = 2;
         else if (yDD <= -bounds[0] / 100) tier = 1;
 
-        if (useTrend && yTrend === 0) {
-            // Apply flexible SMA target
+        if (isPanic) {
+            // Apply flexible SMA/EMA target
             if (smaMode.startsWith('T')) {
                 tier = parseInt(smaMode[1]) || 0;
             } else if (smaMode === 'Cash') {
@@ -813,7 +835,8 @@ function renderAnalysisSuite(prefix, name, compareName) {
         const meta = parseStrategy(name);
 
         const isRatchet = meta.logic === 'Ratchet' || (prefix === 'lab' && document.getElementById('lab-ratchet').checked);
-        const useTrend = meta.isTrend || (prefix === 'lab' && document.getElementById('lab-trend').checked);
+        const useSMA = meta.isTrend || (prefix === 'lab' && document.getElementById('lab-trend').checked);
+        const useEMA = (meta.params?.ema > 0) || (prefix === 'lab' && document.getElementById('lab-use-ema').checked);
 
         if (metaContainer) {
             metaContainer.innerHTML = `<span class="pill-badge group-badge">${meta.level}</span>`;
@@ -821,24 +844,31 @@ function renderAnalysisSuite(prefix, name, compareName) {
             if (meta.mix === 'Pure') metaContainer.innerHTML += '<span class="pill-badge">Pure Equity</span>';
             else metaContainer.innerHTML += '<span class="pill-badge active" style="border-color:var(--accent); color:var(--accent)">Safeties Active</span>';
             
-            if (useTrend) {
+            const prices = getSpyPrices();
+            const startIdx = globalData.dates.indexOf(document.getElementById('start-date').value);
+            const endIdx = globalData.dates.indexOf(document.getElementById('end-date').value);
+            const totalDays = endIdx - startIdx + 1;
+            const modeStr = meta.smaMode || (prefix === 'lab' ? document.getElementById('lab-sma-mode').value : 'T0');
+
+            if (useSMA) {
                 const smaPeriod = meta.smaPeriod || (prefix === 'lab' ? parseInt(document.getElementById('lab-sma').value) : 200);
-                const prices = getSpyPrices();
                 const smaValues = calculateSMAVector(prices, smaPeriod);
-                
-                const startIdx = globalData.dates.indexOf(document.getElementById('start-date').value);
-                const endIdx = globalData.dates.indexOf(document.getElementById('end-date').value);
-                
                 let bearDays = 0;
-                let totalDays = 0;
-                for(let i = startIdx; i <= endIdx; i++) {
-                    if (prices[i] < smaValues[i]) bearDays++;
-                    totalDays++;
-                }
+                for(let i = startIdx; i <= endIdx; i++) if (prices[i] < smaValues[i]) bearDays++;
                 const pct = ((bearDays / totalDays) * 100).toFixed(1);
-                const modeStr = meta.smaMode || (prefix === 'lab' ? document.getElementById('lab-sma-mode').value : 'T0');
                 metaContainer.innerHTML += `<span class="pill-badge active" style="background:rgba(255,82,82,0.1); border-color:var(--red); color:#ff5252">SMA ${smaPeriod} (Target: ${modeStr}): ${bearDays.toLocaleString()} Days Protected (${pct}%)</span>`;
-            } else {
+            }
+            
+            if (useEMA) {
+                const emaPeriod = (meta.params?.ema) || (prefix === 'lab' ? parseInt(document.getElementById('lab-ema').value) : 50);
+                const emaValues = calculateEMAVector(prices, emaPeriod);
+                let bearDays = 0;
+                for(let i = startIdx; i <= endIdx; i++) if (prices[i] < emaValues[i]) bearDays++;
+                const pct = ((bearDays / totalDays) * 100).toFixed(1);
+                metaContainer.innerHTML += `<span class="pill-badge active" style="background:rgba(255,160,0,0.1); border-color:var(--orange); color:#ffa000">EMA ${emaPeriod} (Target: ${modeStr}): ${bearDays.toLocaleString()} Days Protected (${pct}%)</span>`;
+            }
+
+            if (!useSMA && !useEMA) {
                 metaContainer.innerHTML += '<span class="pill-badge" style="opacity:0.5">No Trend Filter (Always 100% Active)</span>';
             }
         }
@@ -850,7 +880,18 @@ function renderAnalysisSuite(prefix, name, compareName) {
 
 
         let weights = entry.weights;
-        if (prefix === 'lab') weights = labWeights.map(r => [r.VOO, r.SSO, r.SPYU, r.DJP, r.BILL]);
+        if (prefix === 'lab') {
+            weights = labWeights.map(r => {
+                const rowSum = (r.VOO + r.SSO + r.SPYU + r.DJP + r.BILL) || 100;
+                return [
+                    (r.VOO / rowSum) * 100,
+                    (r.SSO / rowSum) * 100,
+                    (r.SPYU / rowSum) * 100,
+                    (r.DJP / rowSum) * 100,
+                    (r.BILL / rowSum) * 100
+                ];
+            });
+        }
 
         let b = entry.bounds;
         if (prefix === 'lab' || name === '🧪 USER CUSTOM LAB') {
@@ -870,7 +911,7 @@ function renderAnalysisSuite(prefix, name, compareName) {
             
             const modeStr = meta.smaMode || (prefix === 'lab' ? document.getElementById('lab-sma-mode').value : 'T0');
             const targetTier = modeStr.startsWith('T') ? parseInt(modeStr[1]) : -99;
-            const isTrendTarget = (useTrend && i === targetTier);
+            const isTrendTarget = ((useSMA || useEMA) && i === targetTier);
             
             tableHtml += `<tr>
                 <td class="tier-highlight">
@@ -1177,8 +1218,17 @@ async function init() {
         document.getElementById('lab-run').onclick = () => {
             const bounds = [parseFloat(document.getElementById('lab-b1').value), parseFloat(document.getElementById('lab-b2').value), parseFloat(document.getElementById('lab-b3').value), parseFloat(document.getElementById('lab-b4').value)];
             const smaPeriod = parseInt(document.getElementById('lab-sma').value) || 200;
+            const emaPeriod = parseInt(document.getElementById('lab-ema').value) || 50;
             const smaMode = document.getElementById('lab-sma-mode').value;
-            window.customStrategyResult = simulateCustomStrategy(bounds, document.getElementById('lab-ratchet').checked, document.getElementById('lab-trend').checked, smaPeriod, smaMode);
+            window.customStrategyResult = simulateCustomStrategy(
+                bounds, 
+                document.getElementById('lab-ratchet').checked, 
+                document.getElementById('lab-trend').checked, 
+                smaPeriod, 
+                document.getElementById('lab-use-ema').checked, 
+                emaPeriod, 
+                smaMode
+            );
             update();
             updateLabResults();
         };

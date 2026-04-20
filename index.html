@@ -292,12 +292,19 @@
 
                     <div class="lab-controls">
                         <label class="lab-toggle"><input type="checkbox" id="lab-ratchet"> Ratchet Logic</label>
-                        <label class="lab-toggle"><input type="checkbox" id="lab-trend" checked> Trend Filter</label>
-                        <div class="lab-input-group" style="width: 80px; margin: 0 10px;">
+                        <div class="lab-control-divider"></div>
+                        <label class="lab-toggle"><input type="checkbox" id="lab-trend" checked> SMA Filter</label>
+                        <div class="lab-input-group" style="width: 70px; margin-right: 15px;">
                             <label style="font-size: 0.6rem; margin-bottom: 2px;">SMA Days</label>
                             <input type="number" id="lab-sma" value="200" style="padding: 4px; font-size: 0.8rem;">
                         </div>
-                        <div class="lab-input-group" style="width: 100px;">
+                        <label class="lab-toggle"><input type="checkbox" id="lab-use-ema"> EMA Filter</label>
+                        <div class="lab-input-group" style="width: 70px; margin-right: 15px;">
+                            <label style="font-size: 0.6rem; margin-bottom: 2px;">EMA Days</label>
+                            <input type="number" id="lab-ema" value="50" style="padding: 4px; font-size: 0.8rem;">
+                        </div>
+                        <div class="lab-control-divider"></div>
+                        <div class="lab-input-group" style="width: 110px;">
                             <label style="font-size: 0.6rem; margin-bottom: 2px;">Bearish Target</label>
                             <select id="lab-sma-mode" class="btn-ghost" style="padding: 2px; font-size: 0.75rem; width:100%;">
                                 <option value="Cash">100% Cash</option>

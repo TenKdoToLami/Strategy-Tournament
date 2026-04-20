@@ -14,7 +14,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Standard S&P 500 Index tracking. No leverage, no hedging.',
         bounds: [0, 0, 0, 0],
         weights: [[100, 0, 0, 0, 0], [100, 0, 0, 0, 0], [100, 0, 0, 0, 0], [100, 0, 0, 0, 0], [100, 0, 0, 0, 0]],
-        params: { logic: 'Daily', sma: 0 }
+        params: { logic: 'Daily', sma: 0, ema: 0 }
     },
     {
         id: 'Benchmark SSO (2x)',
@@ -22,7 +22,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Standard 2x Leveraged S&P 500 tracking. Constant leverage, no reset.',
         bounds: [0, 0, 0, 0],
         weights: [[0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0]],
-        params: { logic: 'Daily', sma: 0 }
+        params: { logic: 'Daily', sma: 0, ema: 0 }
     },
     {
         id: 'Benchmark SPYU (4x)',
@@ -30,7 +30,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Aggressive 4x Leveraged S&P 500 tracking. High volatility path.',
         bounds: [0, 0, 0, 0],
         weights: [[0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', sma: 0 }
+        params: { logic: 'Daily', sma: 0, ema: 0 }
     },
     {
         id: 'Benchmark DJP (1x)',
@@ -38,7 +38,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: 'Broad Commodity Tracking Index. Used as a hedge against inflation.',
         bounds: [0, 0, 0, 0],
         weights: [[0, 0, 0, 100, 0], [0, 0, 0, 100, 0], [0, 0, 0, 100, 0], [0, 0, 0, 100, 0], [0, 0, 0, 100, 0]],
-        params: { logic: 'Daily', sma: 0 }
+        params: { logic: 'Daily', sma: 0, ema: 0 }
     },
 
     {
@@ -47,7 +47,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: '2x Leveraged benchmark that de-risks to 1x SPY when price is below the SMA 200.',
         bounds: [0, 0, 0, 0],
         weights: [[100, 0, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0]],
-        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
+        params: { logic: 'Daily', sma: 200, ema: 0, smaMode: 'T0' }
     },
     {
         id: 'Benchmark SPYU (4x) + SMA',
@@ -55,7 +55,7 @@ const STRATEGY_REGISTRY_DATA = [
         text: '4x Leveraged benchmark that de-risks to 1x SPY when price is below the SMA 200.',
         bounds: [0, 0, 0, 0],
         weights: [[100, 0, 0, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0]],
-        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
+        params: { logic: 'Daily', sma: 200, ema: 0, smaMode: 'T0' }
     },
 
     // === CATEGORY: BASIC LADDERS ===
@@ -173,7 +173,7 @@ const STRATEGY_REGISTRY_DATA = [
             [25, 9, 22, 20, 24],
             [87, 10, 0, 3, 0]
         ],
-        params: { logic: 'Daily', sma: 200, smaMode: 'T0' }
+        params: { logic: 'Daily', sma: 200, ema: 0, smaMode: 'T0' }
     }
 ];
 
