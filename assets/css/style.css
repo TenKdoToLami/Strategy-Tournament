@@ -1967,7 +1967,7 @@ tr.active-market {
 
 .risk-gauge-header {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
 }
 
@@ -1979,7 +1979,9 @@ tr.active-market {
     letter-spacing: 0.05em;
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
+    text-align: center;
 }
 
 .risk-gauge-title i {
@@ -2002,6 +2004,7 @@ tr.active-market {
     font-family: var(--font-mono);
     color: var(--text-primary);
     margin-bottom: 2px;
+    text-align: center;
 }
 
 

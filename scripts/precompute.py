@@ -49,30 +49,30 @@ def get_precomputed_data():
     raw_df = pd.DataFrame(series).ffill().dropna()
     returns_raw = raw_df.pct_change().fillna(0)
     
-    r_spy = returns_raw[TICKERS['VOO']]
+    r_voo = returns_raw[TICKERS['VOO']]
     r_bill = returns_raw[TICKERS['BILL']]
-    r_djp = returns_raw[TICKERS['DJP']] if TICKERS['DJP'] in returns_raw.columns else pd.Series(0.0, index=r_spy.index)
+    r_djp = returns_raw[TICKERS['DJP']] if TICKERS['DJP'] in returns_raw.columns else pd.Series(0.0, index=r_voo.index)
     
     # Leveraged synthetic assets
-    r_sso  = r_spy * 2 - r_bill * 1
-    r_spyu = r_spy * 4 - r_bill * 3
+    r_voo_2x = r_voo * 2 - r_bill * 1
+    r_voo_4x = r_voo * 4 - r_bill * 3
 
-    spy_cum_global = (1 + r_spy).cumprod()
-    spy_ath_global = spy_cum_global.cummax()
-    spy_dd_global = (spy_cum_global - spy_ath_global) / spy_ath_global
-    spy_sma_cache = {}
-    def get_spy_sma(period):
+    voo_cum_global = (1 + r_voo).cumprod()
+    voo_ath_global = voo_cum_global.cummax()
+    voo_dd_global = (voo_cum_global - voo_ath_global) / voo_ath_global
+    voo_sma_cache = {}
+    def get_voo_sma(period):
         if period <= 0: return None
-        if period not in spy_sma_cache:
-            spy_sma_cache[period] = raw_df[TICKERS['VOO']].rolling(period).mean()
-        return spy_sma_cache[period]
+        if period not in voo_sma_cache:
+            voo_sma_cache[period] = raw_df[TICKERS['VOO']].rolling(period).mean()
+        return voo_sma_cache[period]
 
-    spy_ema_cache = {}
-    def get_spy_ema(period):
+    voo_ema_cache = {}
+    def get_voo_ema(period):
         if period <= 0: return None
-        if period not in spy_ema_cache:
-            spy_ema_cache[period] = raw_df[TICKERS['VOO']].ewm(span=period, adjust=False).mean()
-        return spy_ema_cache[period]
+        if period not in voo_ema_cache:
+            voo_ema_cache[period] = raw_df[TICKERS['VOO']].ewm(span=period, adjust=False).mean()
+        return voo_ema_cache[period]
 
     # --- Fetch Inflation (CPI) ---
     print("  Calculating inflation baseline...")
@@ -98,15 +98,15 @@ def get_precomputed_data():
         processed_ws = [[v / 100.0 for v in tier] for tier in ws]
         norm_bounds = [b / 100.0 for b in bounds]
         
-        y_dd = spy_dd_global.shift(1).fillna(0)
+        y_dd = voo_dd_global.shift(1).fillna(0)
         y_price = raw_df[TICKERS['VOO']].shift(1)
         
         is_bear = pd.Series(False, index=y_dd.index)
         if sma_period > 0:
-            y_sma = get_spy_sma(sma_period).shift(1)
+            y_sma = get_voo_sma(sma_period).shift(1)
             is_bear |= (y_price < y_sma)
         if ema_period > 0:
-            y_ema = get_spy_ema(ema_period).shift(1)
+            y_ema = get_voo_ema(ema_period).shift(1)
             is_bear |= (y_price < y_ema)
         
         def get_tier(dd):
@@ -142,7 +142,7 @@ def get_precomputed_data():
             if t >= len(processed_ws): return processed_ws[-1]
             return processed_ws[t]
 
-        asset_returns = [r_spy, r_sso, r_spyu, r_djp, r_bill]
+        asset_returns = [r_voo, r_voo_2x, r_voo_4x, r_djp, r_bill]
         strat_return = pd.Series(0.0, index=daily_tiers.index)
         eff_lev = pd.Series(0.0, index=daily_tiers.index)
 
@@ -216,10 +216,10 @@ def get_precomputed_data():
         weights_out[name] = [[v if v > 1.1 else v * 100 for v in tier] for tier in strat['weights']]
         bounds_out[name] = strat['bounds']
 
-    dates = variants['Benchmark SPY (1x)'].index.strftime('%Y-%m-%d').tolist()
+    dates = variants['Benchmark VOO (1x)'].index.strftime('%Y-%m-%d').tolist()
     raw_sub = returns_raw.loc[SIM_START:]
     spy_absolute_price = raw_df[TICKERS['VOO']].loc[SIM_START:]
-    signal_sma = (spy_absolute_price > get_spy_sma(200).loc[SIM_START:]).astype(int).tolist()
+    signal_sma = (spy_absolute_price > get_voo_sma(200).loc[SIM_START:]).astype(int).tolist()
     
     def to_df_list(s, start):
         res = s.loc[start:]
@@ -234,8 +234,8 @@ def get_precomputed_data():
         'bounds': bounds_out,
         'raw_returns': {
             'VOO': to_df_list(raw_sub[TICKERS['VOO']], SIM_START),
-            'SSO': to_df_list(r_sso, SIM_START),
-            'SPYU': to_df_list(r_spyu, SIM_START),
+            'VOO2': to_df_list(r_voo_2x, SIM_START),
+            'VOO4': to_df_list(r_voo_4x, SIM_START),
             'BILL': to_df_list(raw_sub[TICKERS['BILL']], SIM_START),
             'DJP': to_df_list(raw_sub[TICKERS['DJP']], SIM_START) if TICKERS['DJP'] in raw_sub.columns else [0.0]*len(dates),
         },

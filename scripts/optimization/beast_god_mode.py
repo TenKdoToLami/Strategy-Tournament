@@ -23,12 +23,12 @@ def get_base_data():
     df = pd.DataFrame(series).ffill().dropna()
     rets = df.pct_change().fillna(0)
     
-    r_spy = rets['VOO']
+    r_voo = rets['VOO']
     r_bill = rets['BILL']
-    rets['SSO'] = r_spy * 2.0 - (r_bill * 1.0)
-    rets['SPYU'] = r_spy * 4.0 - (r_bill * 3.0)
+    rets['SSO'] = r_voo * 2.0 - (r_bill * 1.0)
+    rets['VOO4'] = r_voo * 4.0 - (r_bill * 3.0)
     
-    ret_matrix = rets.loc[SIM_START:, ['VOO', 'SSO', 'SPYU', 'DJP', 'BILL']].values
+    ret_matrix = rets.loc[SIM_START:, ['VOO', 'SSO', 'VOO4', 'DJP', 'BILL']].values
     raw_prices = df['VOO'].values
     sim_indices = np.where(df.index >= pd.to_datetime(SIM_START))[0]
     n_days = len(ret_matrix)

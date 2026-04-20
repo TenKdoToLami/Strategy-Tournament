@@ -21,9 +21,9 @@ A high-performance, interactive backtesting suite that evaluates **dynamic drawd
 ### Asset Universe
 | Asset | Ticker Proxy | Role |
 |:------|:-------------|:-----|
-| **S&P 500** | SPY | 1x Core Equity |
+| **S&P 500** | VOO | 1x Core Equity |
 | **SSO (2x)** | *Simulated* | 2x Daily Leveraged Equity |
-| **SPYU (4x)** | *Simulated* | 4x Daily Leveraged Equity |
+| **VOO (4x)** | *Simulated* | 4x Daily Leveraged Equity |
 | **Treasuries** | VFISX | Cash-equivalent safe haven |
 | **Commodities** | PCRIX | Inflation-hedging component |
 | **CPI** | FRED: CPIAUCSL | Macro inflation context |
@@ -59,7 +59,7 @@ Each strategy dynamically shifts its internal weight matrix based on the **previ
 ### The Standard "Ladder" (0.2x to 3.2x)
 This is our primary Safeties benchmark. It scales internal equity leverage from 1x (T0) to 4x (T4) but reduces the final leverage by 0.8x to allocate into a 50/50 Bond/Commodity buffer.
 
-| Tier | Drawdown Range | VOO (1x) | SSO (2x) | SPYU (4x) | DJP | BILL | Eff. Leverage |
+| Tier | Drawdown Range | VOO (1x) | SSO (2x) | VOO (4x) | DJP | BILL | Eff. Leverage |
 |:-----|:---------------|:---------|:---------|:----------|:----|:-----|:--------------|
 | **Safe (T0)** | 0% to −5% | 80% | 0% | 0% | 10% | 10% | **0.8x** |
 | **T1** | −5% to −10% | 40% | 40% | 0% | 10% | 10% | **1.2x** |
@@ -70,7 +70,7 @@ This is our primary Safeties benchmark. It scales internal equity leverage from 
 ### The Pure "Ladder" (1.0x to 4.0x)
 Maintains 100% equity exposure at all times.
 
-| Tier | Drawdown Range | VOO (1x) | SSO (2x) | SPYU (4x) | Eff. Leverage |
+| Tier | Drawdown Range | VOO (1x) | SSO (2x) | VOO (4x) | Eff. Leverage |
 |:-----|:---------------|:---------|:---------|:----------|:--------------|
 | **Safe (T0)** | 0% to −5% | 100% | 0% | 0% | **1.0x** |
 | **T1** | −5% to −10% | 50% | 50% | 0% | **1.5x** |
@@ -85,7 +85,7 @@ Maintains 100% equity exposure at all times.
 The **Special** variants are the result of a **500,000-iteration** global optimization at 5% resolution using strictly lagged data.
 
 - **Special BEAST**: The maximum growth engine. Achieves **20.03% CAGR** using Ratchet Logic and 5% resolution weights. Optimized for absolute wealth accumulation.
-- **Special SCALPEL**: The "Growth Scalpel." Specifically optimized to **beat SPY (11.15% vs 10.65%)** while maintaining an ultra-low **-23.6% Max Drawdown**.
+- **Special SCALPEL**: The "Growth Scalpel." Specifically optimized to **beat VOO (11.15% vs 10.65%)** while maintaining an ultra-low **-23.6% Max Drawdown**.
 - **Special SHIELD**: The hybrid efficiency king. Achieves **14.35% CAGR** with a **0.68 Sharpe Ratio**, using high-resolution Daily rebalancing.
 
 ---

@@ -292,8 +292,8 @@
                                 <tr>
                                     <th>Tier</th>
                                     <th>VOO (1x)</th>
-                                    <th>SSO (2x)</th>
-                                    <th>SPYU (4x)</th>
+                                    <th>VOO (2x)</th>
+                                    <th>VOO (4x)</th>
                                     <th>DJP</th>
                                     <th>BILL</th>
                                     <th>Sum</th>
@@ -585,7 +585,7 @@
                             serves as our high-fidelity proxy for the <strong>Bloomberg Commodity Index (DJP)</strong>.
                         </p>
                         <div class="doc-alert info">
-                            <strong>Why not 1993?</strong> While SPY launched in 1993, adding Commodities to the mix
+                            <strong>Why not 1993?</strong> While the underlying S&P 500 total return data (SPY) launched in 1993, adding Commodities to the mix
                             requires overlapping data. By anchoring to the 2002 threshold, we eliminate the risk of
                             mismatched correlations and statistical extrapolation error in the early years of the
                             backtest.
@@ -606,21 +606,21 @@
                                 </thead>
                                 <tbody>
                                     <tr>
-                                        <td><strong>SPY (VOO)</strong></td>
+                                        <td><strong>VOO</strong></td>
                                         <td>Yahoo Finance</td>
                                         <td>Adjusted Close</td>
                                         <td>S&P 500 Index (Total Return)</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>SSO (2x)</strong></td>
+                                        <td><strong>VOO (2x)</strong></td>
                                         <td>Synthetic (Calculated)</td>
-                                        <td>2&times; SPY &minus; 1&times; BILL</td>
+                                        <td>2&times; VOO &minus; 1&times; BILL</td>
                                         <td>2x Leveraged S&P 500</td>
                                     </tr>
                                     <tr>
-                                        <td><strong>SPYU (4x)</strong></td>
+                                        <td><strong>VOO (4x)</strong></td>
                                         <td>Synthetic (Calculated)</td>
-                                        <td>4&times; SPY &minus; 3&times; BILL</td>
+                                        <td>4&times; VOO &minus; 3&times; BILL</td>
                                         <td>4x Leveraged S&P 500</td>
                                     </tr>
                                     <tr>
@@ -660,30 +660,30 @@
 
                         <ul>
                             <li><strong>R_lev</strong>: The daily return of the leveraged synthetic asset.</li>
-                            <li><strong>L</strong>: The leverage factor (2.0 for SSO, 4.0 for SPYU).</li>
+                            <li><strong>L</strong>: The leverage factor (2.0 for VOO-2x, 4.0 for VOO-4x).</li>
                             <li><strong>R_fin</strong>: The daily financing rate, proxied by <strong>VFISX (Short-Term
                                     Treasuries)</strong>.</li>
                         </ul>
-                        <p><strong>Example (4x SPYU)</strong>: If the S&P 500 rises 1% and the treasury rate is 0.01%,
+                        <p><strong>Example (4x VOO)</strong>: If the S&P 500 rises 1% and the treasury rate is 0.01%,
                             the synthetic 4x return is calculated as <code>(0.01 * 4) - (0.0001 * 3) = 3.97%</code>.
                             This ensures our backtests account for the real-world cost of borrowing capital to achieved
                             elevated exposure.</p>
 
                         <h3>The Proof: Why Borrowing Costs Matter</h3>
-                        <p>A common question is: <em>"Why is the formula for SSO 2x SPY minus 1x BILL?"</em>. To
+                        <p>A common question is: <em>"Why is the formula for VOO (2x) 2x VOO minus 1x BILL?"</em>. To
                             understand this, we must look at the balance sheet of a leveraged trade.</p>
 
                         <p>Imagine you have <strong>$10,000</strong> and you want 2x leverage. To achieve this, you
                             must:</p>
                         <ol>
-                            <li>Use your <strong>$10,000</strong> to buy SPY.</li>
+                            <li>Use your <strong>$10,000</strong> to buy VOO.</li>
                             <li><strong>Borrow another $10,000</strong> in cash.</li>
-                            <li>Use that borrowed $10,000 to buy more SPY.</li>
+                            <li>Use that borrowed $10,000 to buy more VOO.</li>
                         </ol>
 
                         <div class="doc-alert info">
                             <strong>Your Position:</strong><br>
-                            &bull; <strong>Assets:</strong> $20,000 worth of SPY (200% exposure)<br>
+                            &bull; <strong>Assets:</strong> $20,000 worth of VOO (200% exposure)<br>
                             &bull; <strong>Liabilities:</strong> $10,000 loan (100% financing)
                         </div>
 
@@ -692,10 +692,10 @@
                                 (VFISX)</strong> as the proxy for that interest rate.</p>
 
                         <div class="math-block">
-                            Net Return = (200\% \times R_{spy}) - (100\% \times R_{bill}) = 2R_{spy} - 1R_{bill}
+                            Net Return = (200\% \times R_{voo}) - (100\% \times R_{bill}) = 2R_{voo} - 1R_{bill}
                         </div>
 
-                        <p>For <strong>4x SPYU</strong>, the logic scales accordingly. To reach 400% exposure, you must
+                        <p>For <strong>4x VOO</strong>, the logic scales accordingly. To reach 400% exposure, you must
                             borrow <strong>300%</strong> of your capital's value, which leads to the formula:
                             <code>4R - 3Rf</code>.</p>
                     </div>
@@ -713,8 +713,8 @@
                                 <thead>
                                     <tr>
                                         <th>Day</th>
-                                        <th>SPY (1x)</th>
-                                        <th>SPYU (4x)</th>
+                                        <th>VOO (1x)</th>
+                                        <th>VOO (4x)</th>
                                         <th>Result</th>
                                     </tr>
                                 </thead>
@@ -742,7 +742,7 @@
                         </div>
 
                         <div class="doc-alert warning">
-                            Even though SPY returned to its original price, the 4x leveraged asset is still down
+                            Even though VOO returned to its original price, the 4x leveraged asset is still down
                             <strong>13.34%</strong>. This is why "Blind" leverage is a recipe for long-term failure. Our
                             strategy is designed specifically to solve this by de-risking during high-volatility
                             regimes.

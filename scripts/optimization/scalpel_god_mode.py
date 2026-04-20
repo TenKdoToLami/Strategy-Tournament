@@ -23,12 +23,12 @@ def get_base_data():
     df = pd.DataFrame(series).ffill().dropna()
     rets = df.pct_change().fillna(0)
     
-    r_spy = rets['VOO']
+    r_voo = rets['VOO']
     r_bill = rets['BILL']
-    rets['SSO'] = r_spy * 2.0 - (r_bill * 1.0)
-    rets['SPYU'] = r_spy * 4.0 - (r_bill * 3.0)
+    rets['SSO'] = r_voo * 2.0 - (r_bill * 1.0)
+    rets['VOO4'] = r_voo * 4.0 - (r_bill * 3.0)
     
-    ret_matrix = rets.loc[SIM_START:, ['VOO', 'SSO', 'SPYU', 'DJP', 'BILL']].values
+    ret_matrix = rets.loc[SIM_START:, ['VOO', 'SSO', 'VOO4', 'DJP', 'BILL']].values
     raw_prices = df['VOO'].values
     sim_indices = np.where(df.index >= pd.to_datetime(SIM_START))[0]
     n_days = len(ret_matrix)
@@ -51,12 +51,12 @@ def get_base_data():
         e_vals = pd.Series(raw_prices).ewm(span=p, adjust=False).mean().values
         ema_cache[p] = (y_price < e_vals[sim_indices - 1])
     
-    # Calculate SPY Baseline
-    spy_mult = np.exp(np.sum(np.log1p(ret_matrix[:, 0])))
+    # Calculate VOO Baseline
+    voo_mult = np.exp(np.sum(np.log1p(ret_matrix[:, 0])))
     
-    return ret_matrix, y_dd, sma_cache, ema_cache, spy_mult
+    return ret_matrix, y_dd, sma_cache, ema_cache, voo_mult
 
-def simulation_core(ret_matrix, y_dd, sma_cache, ema_cache, sma_p, ema_p, use_sma, use_ema, target_tier, logic, bounds, w_matrix, spy_mult):
+def simulation_core(ret_matrix, y_dd, sma_cache, ema_cache, sma_p, ema_p, use_sma, use_ema, target_tier, logic, bounds, w_matrix, voo_mult):
     n_days = len(ret_matrix)
     
     is_bear = np.zeros(n_days, dtype=bool)
@@ -84,8 +84,8 @@ def simulation_core(ret_matrix, y_dd, sma_cache, ema_cache, sma_p, ema_p, use_sm
     # --- SHARPE CALCULATION ---
     multiplier = np.exp(np.sum(np.log1p(day_rets)))
     
-    # CONSTRAINT: Performance must at least double SPY
-    if multiplier < (spy_mult * 2.0):
+    # CONSTRAINT: Performance must at least double VOO
+    if multiplier < (voo_mult * 2.0):
         return 0.0, multiplier
 
     mean_ret = np.mean(day_rets)
@@ -164,10 +164,10 @@ def mutate(ind):
             ind.weights[tier][i2] += n
 
 def evolve_island(data, population, gens):
-    ret_matrix, y_dd, sma_cache, ema_cache, spy_mult = data
+    ret_matrix, y_dd, sma_cache, ema_cache, voo_mult = data
     for g in range(gens):
         for ind in population:
-            ind.fitness, ind.multiplier = simulation_core(ret_matrix, y_dd, sma_cache, ema_cache, ind.sma, ind.ema, ind.use_sma, ind.use_ema, ind.target_tier, ind.logic, ind.bounds, ind.weights, spy_mult)
+            ind.fitness, ind.multiplier = simulation_core(ret_matrix, y_dd, sma_cache, ema_cache, ind.sma, ind.ema, ind.use_sma, ind.use_ema, ind.target_tier, ind.logic, ind.bounds, ind.weights, voo_mult)
         
         population.sort(key=lambda x: x.fitness, reverse=True)
         pop_size = len(population)

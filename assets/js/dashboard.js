@@ -255,11 +255,11 @@ const activeFilters = {
 };
 
 let labWeights = [
-    { VOO: 100, SSO: 0, SPYU: 0, DJP: 0, BILL: 0 },
-    { VOO: 50, SSO: 50, SPYU: 0, DJP: 0, BILL: 0 },
-    { VOO: 0, SSO: 100, SPYU: 0, DJP: 0, BILL: 0 },
-    { VOO: 0, SSO: 50, SPYU: 50, DJP: 0, BILL: 0 },
-    { VOO: 0, SSO: 0, SPYU: 100, DJP: 0, BILL: 0 }
+    { VOO: 100, VOO2: 0, VOO4: 0, DJP: 0, BILL: 0 },
+    { VOO: 50, VOO2: 50, VOO4: 0, DJP: 0, BILL: 0 },
+    { VOO: 0, VOO2: 100, VOO4: 0, DJP: 0, BILL: 0 },
+    { VOO: 0, VOO2: 50, VOO4: 50, DJP: 0, BILL: 0 },
+    { VOO: 0, VOO2: 0, VOO4: 100, DJP: 0, BILL: 0 }
 ];
 
 let globalData = null;
@@ -281,9 +281,9 @@ function toggleVisibility(name, event) {
 
 // ── Color System ───────────────────────────────────────────────────
 const BENCHMARK_COLORS = {
-    'Benchmark SPY (1x)': '#ffd866',
-    'Benchmark SSO (2x)': '#ff6b6b',
-    'Benchmark SPYU (4x)': '#ee3344',
+    'Benchmark VOO (1x)': '#ffd866',
+    'Benchmark VOO (2x)': '#ff6b6b',
+    'Benchmark VOO (4x)': '#ee3344',
     'Benchmark DJP (1x)': '#4ecdc4',
     'Inflation (CPI)': '#8892b0',
     'Legacy BEAST': '#ff79c6',
@@ -343,7 +343,20 @@ function parseStrategy(name) {
         const entry = { weights: labWeights };
         let mix = 'Pure';
         if (labWeights.some(w => w.DJP > 0 || w.BILL > 0)) mix = 'Safeties';
-        return { name, level: 'Custom', logic: 'Linear', mix, text: 'Custom Lab strategy based on user-defined bounds and leverage weights.' };
+        
+        // Pull active lab params for signals/mechanisms
+        const smaPeriod = document.getElementById('lab-trend')?.checked ? (parseInt(document.getElementById('lab-sma')?.value) || 0) : 0;
+        const emaPeriod = document.getElementById('lab-use-ema')?.checked ? (parseInt(document.getElementById('lab-ema')?.value) || 0) : 0;
+        const smaMode = document.getElementById('lab-sma-mode')?.value || 'T0';
+
+        return { 
+            name, level: 'Custom', logic: 'Linear', mix, 
+            text: 'Custom Lab strategy based on user-defined bounds and leverage weights.',
+            params: { sma: smaPeriod, ema: emaPeriod, smaMode: smaMode },
+            isTrend: smaPeriod > 0 || emaPeriod > 0,
+            smaPeriod,
+            smaMode
+        };
     }
 
     if (name.startsWith('Benchmark')) return { name, level: 'Benchmark', logic: 'Daily', mix: 'Pure' };
@@ -377,24 +390,24 @@ function calculateEMAVector(prices, period) {
     return ema;
 }
 
-function getSpyPrices() {
-    if (window._spyPrices) return window._spyPrices;
+function getVooPrices() {
+    if (window._vooPrices) return window._vooPrices;
     const raw = globalData.raw_returns.VOO;
     const n = raw.length;
     const prices = new Float32Array(n);
-    let spyPrice = 1.0;
+    let vooPrice = 1.0;
     for (let i = 0; i < n; i++) {
-        spyPrice *= (1 + raw[i]);
-        prices[i] = spyPrice;
+        vooPrice *= (1 + raw[i]);
+        prices[i] = vooPrice;
     }
-    window._spyPrices = prices;
+    window._vooPrices = prices;
     return prices;
 }
 
 function simulateCustomStrategy(bounds, useRatchet, useSMA, smaPeriod = 200, useEMA = false, emaPeriod = 50, smaMode = 'T0') {
     const raw = globalData.raw_returns;
     const n = raw.VOO.length;
-    const prices = getSpyPrices();
+    const prices = getVooPrices();
     
     // Calculate SMA signal
     let smaSignal;
@@ -412,12 +425,12 @@ function simulateCustomStrategy(bounds, useRatchet, useSMA, smaPeriod = 200, use
         for (let i = 0; i < n; i++) emaSignal[i] = prices[i] >= emaValues[i] ? 1 : 0;
     }
 
-    let spyCum = 1.0, spyAth = 1.0;
+    let vooCum = 1.0, vooAth = 1.0;
     const dds = new Float32Array(n);
     for (let i = 0; i < n; i++) {
-        spyCum *= (1 + raw.VOO[i]);
-        if (spyCum > spyAth) spyAth = spyCum;
-        dds[i] = (spyCum - spyAth) / spyAth;
+        vooCum *= (1 + raw.VOO[i]);
+        if (vooCum > vooAth) vooAth = vooCum;
+        dds[i] = (vooCum - vooAth) / vooAth;
     }
 
     const tiers = new Int8Array(n);
@@ -459,8 +472,8 @@ function simulateCustomStrategy(bounds, useRatchet, useSMA, smaPeriod = 200, use
     const results = new Float32Array(n);
     const leverage = new Float32Array(n);
     const normWeights = labWeights.map(row => {
-        const sum = (row.VOO + row.SSO + row.SPYU + row.DJP + row.BILL) || 100;
-        return { VOO: row.VOO / sum, SSO: row.SSO / sum, SPYU: row.SPYU / sum, DJP: row.DJP / sum, BILL: row.BILL / sum };
+        const sum = (row.VOO + row.VOO2 + row.VOO4 + row.DJP + row.BILL) || 100;
+        return { VOO: row.VOO / sum, VOO2: row.VOO2 / sum, VOO4: row.VOO4 / sum, DJP: row.DJP / sum, BILL: row.BILL / sum };
     });
 
     for (let i = 0; i < n; i++) {
@@ -468,20 +481,20 @@ function simulateCustomStrategy(bounds, useRatchet, useSMA, smaPeriod = 200, use
         let w;
         
         if (t === -1) {
-            w = { VOO: 0, SSO: 0, SPYU: 0, DJP: 0, BILL: 1.0 };
+            w = { VOO: 0, VOO2: 0, VOO4: 0, DJP: 0, BILL: 1.0 };
         } else {
             w = normWeights[t] || normWeights[0];
         }
 
-        results[i] = raw.VOO[i] * w.VOO + raw.SSO[i] * w.SSO + raw.SPYU[i] * w.SPYU + raw.DJP[i] * w.DJP + raw.BILL[i] * w.BILL;
-        leverage[i] = w.VOO + w.SSO * 2 + w.SPYU * 4 + w.DJP;
+        results[i] = raw.VOO[i] * w.VOO + raw.VOO2[i] * w.VOO2 + raw.VOO4[i] * w.VOO4 + raw.DJP[i] * w.DJP + raw.BILL[i] * w.BILL;
+        leverage[i] = w.VOO + w.VOO2 * 2 + w.VOO4 * 4 + w.DJP;
     }
     return { returns: results, leverage };
 }
 
 // ── Mechanism Visualization Logic ──────────────────────────────────
 function getStrategySignals(name, startIndex, endIndex) {
-    const prices = getSpyPrices();
+    const prices = getVooPrices();
     const meta = parseStrategy(name);
     const p = meta.params || {};
     
@@ -498,11 +511,15 @@ function getStrategySignals(name, startIndex, endIndex) {
 
     // Determine Panic State (Below trend)
     const n = res.prices.length;
+    res.panicState = [];
     for (let i = 0; i < n; i++) {
-        let isPanic = false;
-        if (res.sma && res.prices[i] < res.sma[i]) isPanic = true;
-        if (res.ema && res.prices[i] < res.ema[i]) isPanic = true;
-        res.panic.push(isPanic);
+        const smaBear = res.sma && (res.prices[i] < res.sma[i]);
+        const emaBear = res.ema && (res.prices[i] < res.ema[i]);
+        
+        if (smaBear && emaBear) res.panicState.push('both');
+        else if (smaBear) res.panicState.push('sma');
+        else if (emaBear) res.panicState.push('ema');
+        else res.panicState.push(null);
     }
     
     return res;
@@ -519,44 +536,61 @@ function renderMechanismChart(prefix, name, startIndex, endIndex) {
     const traces = [
         {
             x: dates, y: data.prices, name: 'VOO Price',
-            line: { color: '#ffffff', width: 2 }, type: 'scatter', mode: 'lines'
+            line: { color: '#ffffff', width: 2 }, type: 'scatter', mode: 'lines',
+            hoverinfo: 'none'
         }
     ];
 
     if (data.sma) {
         traces.push({
             x: dates, y: data.sma, name: 'SMA Trend',
-            line: { color: '#bd93f9', width: 1.5, dash: 'dot' }, type: 'scatter', mode: 'lines'
+            line: { color: '#ffd866', width: 1.5, dash: 'dot' }, type: 'scatter', mode: 'lines',
+            hoverinfo: 'none'
         });
     }
     if (data.ema) {
         traces.push({
             x: dates, y: data.ema, name: 'EMA Trend',
-            line: { color: '#8be9fd', width: 1.5, dash: 'dot' }, type: 'scatter', mode: 'lines'
+            line: { color: '#bd93f9', width: 1.5, dash: 'dot' }, type: 'scatter', mode: 'lines',
+            hoverinfo: 'none'
         });
     }
 
     // Generate Panic Shapes
     const shapes = [];
     let start = null;
-    for (let i = 0; i < data.panic.length; i++) {
-        if (data.panic[i] && start === null) {
-            start = dates[i];
-        } else if (!data.panic[i] && start !== null) {
-            shapes.push({
-                type: 'rect', xref: 'x', yref: 'paper',
-                x0: start, x1: dates[i - 1], y0: 0, y1: 1,
-                fillcolor: 'rgba(255, 85, 85, 0.15)',
-                line: { width: 0 }, layer: 'below'
-            });
-            start = null;
+    let currentState = null;
+
+    const STATE_COLORS = {
+        'sma': 'rgba(255, 216, 102, 0.12)', // Gold
+        'ema': 'rgba(189, 147, 249, 0.12)', // Purple
+        'both': 'rgba(255, 83, 112, 0.15)'   // Red
+    };
+
+    for (let i = 0; i < data.panicState.length; i++) {
+        const state = data.panicState[i];
+        
+        if (state !== currentState) {
+            // Close previous shape if any
+            if (currentState !== null && start !== null) {
+                shapes.push({
+                    type: 'rect', xref: 'x', yref: 'paper',
+                    x0: start, x1: dates[i - 1], y0: 0, y1: 1,
+                    fillcolor: STATE_COLORS[currentState],
+                    line: { width: 0 }, layer: 'below'
+                });
+            }
+            // Start new shape
+            start = state !== null ? dates[i] : null;
+            currentState = state;
         }
     }
-    if (start !== null) {
+    // Handle final open shape
+    if (currentState !== null && start !== null) {
         shapes.push({
             type: 'rect', xref: 'x', yref: 'paper',
             x0: start, x1: dates[dates.length - 1], y0: 0, y1: 1,
-            fillcolor: 'rgba(255, 85, 85, 0.15)',
+            fillcolor: STATE_COLORS[currentState],
             line: { width: 0 }, layer: 'below'
         });
     }
@@ -845,13 +879,31 @@ function renderUnifiedAnalyticsStrip(containerId, mPrimary, ratiosPrimary, mComp
             }
         };
 
+        const tradeConfig = [
+            { title: 'Total Pivots', value: ratios.totalPivots.toLocaleString(), 
+              calc: 'Count of days where the strategy changed its allocation or leverage.',
+              meaning: 'Indicates the churn rate. More pivots mean more potential slippage/commission costs.' },
+            { title: 'Trades / Mo', value: ratios.tradesPerMonth.toFixed(1), 
+              calc: 'Total Pivots / Total Months in period.',
+              meaning: 'Average monthly rebalancing frequency.' },
+            { title: 'Avg Leverage', value: ratios.avgLeverage.toFixed(2) + 'x', 
+              calc: 'Average daily leverage factor over the period.',
+              meaning: 'The real-world "heaviness" of the portfolio.' }
+        ];
+
+        const edgeConfig = [
+            { title: 'Expectancy', value: (ratios.expectancy * 100).toFixed(2) + '%', 
+              calc: 'The average expected return per trading day.',
+              meaning: 'Mathematical "Edge" per day of market exposure.' }
+        ];
+
         let rowHtml = `
             <div class="risk-row-group">
                 <div class="risk-row-label">${label}</div>
-                <div class="risk-row-data">
+                <div class="risk-row-data text-row">
         `;
 
-        perfConfig.forEach(c => {
+        [...perfConfig, ...tradeConfig, ...edgeConfig].forEach(c => {
             rowHtml += `
                 <div class="risk-gauge-card">
                     <div class="risk-gauge-header">
@@ -863,10 +915,12 @@ function renderUnifiedAnalyticsStrip(containerId, mPrimary, ratiosPrimary, mComp
                                data-title="${c.title}"></i>
                         </div>
                     </div>
-                    <div class="risk-gauge-value ${c.class}">${c.value}</div>
+                    <div class="risk-gauge-value ${c.class || ''}" ${c.title === 'Avg Leverage' ? 'style="color:var(--blue)"' : ''}>${c.value}</div>
                 </div>
             `;
         });
+
+        rowHtml += `</div><div class="risk-row-data gauge-row">`;
 
         Object.keys(riskConfig).forEach(k => {
             const c = riskConfig[k];
@@ -947,7 +1001,7 @@ function renderAnalysisSuite(prefix, name, compareName) {
             if (meta.mix === 'Pure') metaContainer.innerHTML += '<span class="pill-badge">Pure Equity</span>';
             else metaContainer.innerHTML += '<span class="pill-badge active" style="border-color:var(--accent); color:var(--accent)">Safeties Active</span>';
             
-            const prices = getSpyPrices();
+            const prices = getVooPrices();
             const startVal = document.getElementById('start-date').value;
             const endVal = document.getElementById('end-date').value;
             const startIdx = globalData.dates.findIndex(d => d >= startVal);
@@ -990,11 +1044,11 @@ function renderAnalysisSuite(prefix, name, compareName) {
         let weights = entry.weights;
         if (prefix === 'lab') {
             weights = labWeights.map(r => {
-                const rowSum = (r.VOO + r.SSO + r.SPYU + r.DJP + r.BILL) || 100;
+                const rowSum = (r.VOO + r.VOO2 + r.VOO4 + r.DJP + r.BILL) || 100;
                 return [
                     (r.VOO / rowSum) * 100,
-                    (r.SSO / rowSum) * 100,
-                    (r.SPYU / rowSum) * 100,
+                    (r.VOO2 / rowSum) * 100,
+                    (r.VOO4 / rowSum) * 100,
                     (r.DJP / rowSum) * 100,
                     (r.BILL / rowSum) * 100
                 ];
@@ -1011,7 +1065,7 @@ function renderAnalysisSuite(prefix, name, compareName) {
             ]; // Values are already percentages from inputs
         }
 
-        let tableHtml = `<table class="weights-table-explorer"><thead><tr><th>Tier / Drawdown</th><th>VOO</th><th>SSO</th><th>SPYU</th><th>DJP</th><th>BILL</th><th>Lev</th></tr></thead><tbody>`;
+        let tableHtml = `<table class="weights-table-explorer"><thead><tr><th>Tier / Drawdown</th><th>VOO</th><th>VOO (2x)</th><th>VOO (4x)</th><th>DJP</th><th>BILL</th><th>Lev</th></tr></thead><tbody>`;
         weights.forEach((w, i) => {
             const lev = (w[0] * 1 + w[1] * 2 + w[2] * 4 + w[3] * 1) / 100;
             
@@ -1081,12 +1135,37 @@ function renderAnalysisSuite(prefix, name, compareName) {
     const rfRaw = globalData.raw_returns['BILL'].slice(startIdx, endIdx + 1);
     const pRaw = (name === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.returns : globalData.variants[name]).slice(startIdx, endIdx + 1);
     
+    const calculateEdgeStats = (rets) => {
+        const pos = rets.filter(r => r > 0);
+        const neg = rets.filter(r => r < 0);
+        
+        return {
+            expectancy: rets.reduce((a, b) => a + b, 0) / rets.length
+        };
+    };
+
+    const calculateLogistics = (lev) => {
+        let pivots = 0;
+        for (let i = 1; i < lev.length; i++) if (lev[i] !== lev[i-1]) pivots++;
+        const yrs = lev.length / 252;
+        return {
+            totalPivots: pivots,
+            tradesPerMonth: pivots / (yrs * 12 || 1),
+            avgLeverage: lev.reduce((a, b) => a + b, 0) / lev.length
+        };
+    };
+
     const ratios = calculateAdvancedRiskRatios(pRaw, bRaw, rfRaw);
+    Object.assign(ratios, calculateLogistics(levSlice));
+    Object.assign(ratios, calculateEdgeStats(pRaw));
 
     let ratiosCompare = null;
     if (mCompare) {
         const cRaw = (compareName === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.returns : globalData.variants[compareName]).slice(startIdx, endIdx + 1);
+        const cLev = (compareName === '🧪 USER CUSTOM LAB' ? window.customStrategyResult.leverage : globalData.leverage[compareName]).slice(startIdx, endIdx + 1);
         ratiosCompare = calculateAdvancedRiskRatios(cRaw, bRaw, rfRaw);
+        Object.assign(ratiosCompare, calculateLogistics(cLev));
+        Object.assign(ratiosCompare, calculateEdgeStats(cRaw));
     }
 
     renderUnifiedAnalyticsStrip(`${prefix}-analytics-strip`, m, ratios, mCompare, ratiosCompare);
@@ -1239,7 +1318,7 @@ function updateSimulator() {
     // Render Execution Matrix
     const matrixContainer = document.getElementById('sim-allocation-matrix');
     if (matrixContainer) {
-        let tableHtml = `<table class="excel-table" style="width:100%"><thead><tr><th>Tier</th><th>VOO</th><th>SSO</th><th>SPYU</th><th>DJP</th><th>BILL</th><th>Total</th><th>Lev</th></tr></thead><tbody>`;
+        let tableHtml = `<table class="excel-table" style="width:100%"><thead><tr><th>Tier</th><th>VOO</th><th>VOO (2x)</th><th>VOO (4x)</th><th>DJP</th><th>BILL</th><th>Total</th><th>Lev</th></tr></thead><tbody>`;
         const meta = parseStrategy(selectedName);
         const smaMode = (selectedName === '🧪 USER CUSTOM LAB') ? document.getElementById('lab-sma-mode').value : (meta.smaMode || 'T0');
         const targetTier = (meta.isTrend || (selectedName === '🧪 USER CUSTOM LAB')) ? (smaMode.startsWith('T') ? parseInt(smaMode[1]) : -99) : -99;
@@ -1386,7 +1465,7 @@ function renderWeightTable() {
     tbody.innerHTML = '';
     labWeights.forEach((row, i) => {
         const tr = document.createElement('tr');
-        const assets = ['VOO', 'SSO', 'SPYU', 'DJP', 'BILL'];
+        const assets = ['VOO', 'VOO2', 'VOO4', 'DJP', 'BILL'];
         let html = `<td class="tier-label">T${i}</td>`;
         assets.forEach(asset => {
             html += `<td><input type="number" data-tier="${i}" data-asset="${asset}" value="${row[asset]}" onfocus="this.select()"></td>`;

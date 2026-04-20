@@ -9,7 +9,7 @@
 const STRATEGY_REGISTRY_DATA = [
     // === CATEGORY: BENCHMARKS ===
     {
-        id: 'Benchmark SPY (1x)',
+        id: 'Benchmark VOO (1x)',
         group: 'Benchmark',
         text: 'Standard S&P 500 Index tracking. No leverage, no hedging.',
         bounds: [0, 0, 0, 0],
@@ -17,17 +17,17 @@ const STRATEGY_REGISTRY_DATA = [
         params: { logic: 'Daily', sma: 0, ema: 0 }
     },
     {
-        id: 'Benchmark SSO (2x)',
+        id: 'Benchmark VOO (2x)',
         group: 'Benchmark',
-        text: 'Standard 2x Leveraged S&P 500 tracking. Constant leverage, no reset.',
+        text: 'Standard 2x Leveraged S&P 500 tracking (Synthetic).',
         bounds: [0, 0, 0, 0],
         weights: [[0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0]],
         params: { logic: 'Daily', sma: 0, ema: 0 }
     },
     {
-        id: 'Benchmark SPYU (4x)',
+        id: 'Benchmark VOO (4x)',
         group: 'Benchmark',
-        text: 'Aggressive 4x Leveraged S&P 500 tracking. High volatility path.',
+        text: 'Aggressive 4x Leveraged S&P 500 tracking (Synthetic). High volatility path.',
         bounds: [0, 0, 0, 0],
         weights: [[0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0], [0, 0, 100, 0, 0]],
         params: { logic: 'Daily', sma: 0, ema: 0 }
@@ -42,15 +42,15 @@ const STRATEGY_REGISTRY_DATA = [
     },
 
     {
-        id: 'Benchmark SSO (2x) (With Safety Net)',
+        id: 'Benchmark VOO (2x) (With Safety Net)',
         group: 'Benchmark',
-        text: 'Aggressive 2x strategy optimized for maximum absolute growth (41x+). Uses a 290-day SMA and pivots to 100% VOO (1x) during bearish regimes to maintain recovery speed.',
+        text: 'Standard 2x benchmark that pivots to 100% VOO (1x) during structural bear markets (SMA 200). Ensures survivability during major regimes.',
         bounds: [0, 0, 0, 0],
         weights: [[100, 0, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0], [0, 100, 0, 0, 0]],
-        params: { logic: 'Daily', sma: 290, ema: 0, smaMode: 'T0' }
+        params: { logic: 'Daily', sma: 200, ema: 0, smaMode: 'T0' }
     },
     {
-        id: 'Benchmark SPYU (4x) (With Safety Net)',
+        id: 'Benchmark VOO (4x) (With Safety Net)',
         group: 'Benchmark',
         text: 'Hyper-aggressive 4x strategy optimized for maximum wealth generation (191x+). Uses a 290-day SMA and pivots to a 50/50 VOO/BILL mix for high-leverage recovery.',
         bounds: [0, 0, 0, 0],
@@ -178,7 +178,7 @@ const STRATEGY_REGISTRY_DATA = [
     {
         id: 'Special SCALPEL (v2)',
         group: 'Special',
-        text: 'The Institutional Apex. Evolved for maximum Sharpe Ratio (1.30). Discovered a 22.5x growth path that doubles SPY performance with surgical precision and ultra-low volatility drag.',
+        text: 'The Institutional Apex. Evolved for maximum Sharpe Ratio (1.30). Discovered a 22.5x growth path that doubles VOO performance with surgical precision and ultra-low volatility drag.',
         bounds: [1, 5, 30, 42],
         weights: [
             [0, 0, 0, 36, 64],
