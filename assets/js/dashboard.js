@@ -267,6 +267,7 @@ let currentSortKey = 'CAGR';
 let currentSortAsc = false;
 let currentTab = 'dashboard';
 window.hiddenStrategies = new Set();
+let vaultStrategies = [];
 
 function toggleVisibility(name, event) {
     if (event) event.stopPropagation();
@@ -1585,6 +1586,7 @@ async function init() {
         document.getElementById('explorer-clone').onclick = () => cloneExplorerStrategyToLab();
         document.getElementById('explorer-copy').onclick = (e) => copyExplorerSelection(e.currentTarget);
         document.getElementById('lab-result-copy').onclick = (e) => copyLabResult(e.currentTarget);
+        document.getElementById('lab-vault').onclick = () => promoteToVault();
         document.getElementById('sim-export').onclick = () => exportSimulatorSelection();
 
         // Modal Controls
@@ -1616,9 +1618,33 @@ async function init() {
         const savedHidden = localStorage.getItem('quant_hidden_strategies');
         if (savedHidden) window.hiddenStrategies = new Set(JSON.parse(savedHidden));
 
-        const loader = document.getElementById('loader');
         loader.style.opacity = '0';
         setTimeout(() => loader.style.display = 'none', 300);
+        
+        // Load Vault
+        const savedVault = sessionStorage.getItem('quant_vault_strategies');
+        if (savedVault) {
+            vaultStrategies = JSON.parse(savedVault);
+            if (!STRATEGY_METADATA.groups.includes('Vault')) STRATEGY_METADATA.groups.push('Vault');
+            if (!activeFilters.level.includes('Vault')) activeFilters.level.push('Vault');
+            
+            vaultStrategies.forEach(s => {
+                globalData.variants[s.id] = s.returns;
+                globalData.leverage[s.id] = s.leverage;
+                STRATEGY_REGISTRY_DATA.push(s);
+                STRATEGY_MAP[s.id] = s;
+                
+                // Add to pickers
+                [picker, comparePicker, labCompare, simPicker].forEach(p => {
+                    if (p) {
+                        const opt = document.createElement('option');
+                        opt.value = opt.textContent = s.id;
+                        p.appendChild(opt);
+                    }
+                });
+            });
+        }
+        
         initAnalyticsTooltips();
 
         // Initial State Sync
@@ -1955,4 +1981,76 @@ function exportSimulatorSelection() {
         document.getElementById('export-json').value = formatStrategyForExport(strat);
         document.getElementById('export-modal').style.display = 'flex';
     }
+}
+
+function promoteToVault() {
+    if (!window.customStrategyResult) return;
+    
+    const count = vaultStrategies.length + 1;
+    const vaultId = `Lab Experiment #${count}`;
+    
+    const bounds = [
+        parseFloat(document.getElementById('lab-b1').value) || 0,
+        parseFloat(document.getElementById('lab-b2').value) || 0,
+        parseFloat(document.getElementById('lab-b3').value) || 0,
+        parseFloat(document.getElementById('lab-b4').value) || 0
+    ];
+    const weights = labWeights.map(row => [row.VOO, row.VOO2, row.VOO4, row.DJP, row.BILL]);
+    const params = {
+        logic: document.getElementById('lab-ratchet').checked ? "Ratchet" : "Daily",
+        sma: parseInt(document.getElementById('lab-sma').value) || 0,
+        ema: parseInt(document.getElementById('lab-ema').value) || 0,
+        smaMode: document.getElementById('lab-sma-mode').value
+    };
+    
+    const stratObj = {
+        id: vaultId,
+        group: 'Vault',
+        text: `Experimental strategy stashed from Quant Lab on ${new Date().toLocaleDateString()}. Config: [${weights[0].join('/')}] -> [${weights[4].join('/')}]`,
+        bounds,
+        weights,
+        params,
+        returns: Array.from(window.customStrategyResult.returns), // Convert Float32 to normal array for JSON.stringify
+        leverage: Array.from(window.customStrategyResult.leverage)
+    };
+    
+    vaultStrategies.push(stratObj);
+    sessionStorage.setItem('quant_vault_strategies', JSON.stringify(vaultStrategies));
+    
+    // Inject into runtime
+    globalData.variants[vaultId] = stratObj.returns;
+    globalData.leverage[vaultId] = stratObj.leverage;
+    STRATEGY_REGISTRY_DATA.push(stratObj);
+    STRATEGY_MAP[vaultId] = stratObj;
+    if (!STRATEGY_METADATA.groups.includes('Vault')) STRATEGY_METADATA.groups.push('Vault');
+    if (!activeFilters.level.includes('Vault')) activeFilters.level.push('Vault');
+    
+    // Update Pickers
+    const pickers = [
+        document.getElementById('explorer-picker'),
+        document.getElementById('explorer-compare-picker'),
+        document.getElementById('lab-compare-picker'),
+        document.getElementById('sim-strategy-picker')
+    ];
+    pickers.forEach(p => {
+        if (p) {
+            const opt = document.createElement('option');
+            opt.value = opt.textContent = vaultId;
+            p.appendChild(opt);
+        }
+    });
+    
+    update();
+    
+    // Feedback
+    const btn = document.getElementById('lab-vault');
+    const original = btn.innerHTML;
+    btn.innerHTML = '<i class="fas fa-check"></i> Vaulted';
+    btn.style.color = 'var(--green)';
+    btn.style.borderColor = 'var(--green)';
+    setTimeout(() => {
+        btn.innerHTML = original;
+        btn.style.color = '';
+        btn.style.borderColor = '';
+    }, 2000);
 }
