@@ -174,6 +174,20 @@ const STRATEGY_REGISTRY_DATA = [
             [87, 10, 0, 3, 0]
         ],
         params: { logic: 'Daily', sma: 200, ema: 0, smaMode: 'T0' }
+    },
+    {
+        id: 'Special PREDATOR',
+        group: 'Special',
+        text: 'Evolved Robust Optimizer. Predator dominates the modern era, winning 88% of all monthly entry points against the BEAST since 2020. Utilizing an ultra-resilient 290-day trend logic, it is designed to thrive where standard strategies fail.',
+        bounds: [1, 5, 55, 60],
+        weights: [
+            [13, 22, 1, 0, 64],
+            [0, 0, 100, 0, 0],
+            [0, 0, 85, 15, 0],
+            [12, 11, 3, 17, 57],
+            [42, 1, 8, 24, 25]
+        ],
+        params: { logic: 'Daily', sma: 290, ema: 0, smaMode: 'T0' }
     }
 ];
 
