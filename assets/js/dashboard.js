@@ -362,6 +362,20 @@ function calculateSMAVector(prices, period) {
     return sma;
 }
 
+function getSpyPrices() {
+    if (window._spyPrices) return window._spyPrices;
+    const raw = globalData.raw_returns.VOO;
+    const n = raw.length;
+    const prices = new Float32Array(n);
+    let spyPrice = 1.0;
+    for (let i = 0; i < n; i++) {
+        spyPrice *= (1 + raw[i]);
+        prices[i] = spyPrice;
+    }
+    window._spyPrices = prices;
+    return prices;
+}
+
 function simulateCustomStrategy(bounds, useRatchet, useTrend, smaPeriod = 200, smaMode = 'T0') {
     const raw = globalData.raw_returns;
     const n = raw.VOO.length;
@@ -369,12 +383,7 @@ function simulateCustomStrategy(bounds, useRatchet, useTrend, smaPeriod = 200, s
     // Calculate SMA signal dynamically
     let smaSignal;
     if (useTrend) {
-        let spyPrice = 1.0;
-        const prices = new Float32Array(n);
-        for (let i = 0; i < n; i++) {
-            spyPrice *= (1 + raw.VOO[i]);
-            prices[i] = spyPrice;
-        }
+        const prices = getSpyPrices();
         const smaValues = calculateSMAVector(prices, smaPeriod);
         smaSignal = new Int8Array(n);
         for (let i = 0; i < n; i++) {
@@ -813,11 +822,22 @@ function renderAnalysisSuite(prefix, name, compareName) {
             else metaContainer.innerHTML += '<span class="pill-badge active" style="border-color:var(--accent); color:var(--accent)">Safeties Active</span>';
             
             if (useTrend) {
-                const signalSlice = globalData.signals.sma200.slice(globalData.dates.indexOf(document.getElementById('start-date').value), globalData.dates.indexOf(document.getElementById('end-date').value) + 1);
-                const bearDays = signalSlice.filter(v => v === 0).length;
-                const pct = ((bearDays / signalSlice.length) * 100).toFixed(1);
+                const smaPeriod = meta.smaPeriod || (prefix === 'lab' ? parseInt(document.getElementById('lab-sma').value) : 200);
+                const prices = getSpyPrices();
+                const smaValues = calculateSMAVector(prices, smaPeriod);
+                
+                const startIdx = globalData.dates.indexOf(document.getElementById('start-date').value);
+                const endIdx = globalData.dates.indexOf(document.getElementById('end-date').value);
+                
+                let bearDays = 0;
+                let totalDays = 0;
+                for(let i = startIdx; i <= endIdx; i++) {
+                    if (prices[i] < smaValues[i]) bearDays++;
+                    totalDays++;
+                }
+                const pct = ((bearDays / totalDays) * 100).toFixed(1);
                 const modeStr = meta.smaMode || (prefix === 'lab' ? document.getElementById('lab-sma-mode').value : 'T0');
-                metaContainer.innerHTML += `<span class="pill-badge active" style="background:rgba(255,82,82,0.1); border-color:var(--red); color:#ff5252">SMA 200 (Target: ${modeStr}): ${bearDays.toLocaleString()} Days Protected (${pct}%)</span>`;
+                metaContainer.innerHTML += `<span class="pill-badge active" style="background:rgba(255,82,82,0.1); border-color:var(--red); color:#ff5252">SMA ${smaPeriod} (Target: ${modeStr}): ${bearDays.toLocaleString()} Days Protected (${pct}%)</span>`;
             } else {
                 metaContainer.innerHTML += '<span class="pill-badge" style="opacity:0.5">No Trend Filter (Always 100% Active)</span>';
             }
@@ -847,7 +867,10 @@ function renderAnalysisSuite(prefix, name, compareName) {
             const lev = (w[0] * 1 + w[1] * 2 + w[2] * 4 + w[3] * 1) / 100;
             
             let rangeStr = (i === 0) ? `0 – ${b[0].toFixed(1)}%` : (i === 4) ? `> ${b[3].toFixed(1)}%` : `${b[i - 1].toFixed(1)} – ${b[i].toFixed(1)}%`;
-            const isTrendTarget = (useTrend && i === 0);
+            
+            const modeStr = meta.smaMode || (prefix === 'lab' ? document.getElementById('lab-sma-mode').value : 'T0');
+            const targetTier = modeStr.startsWith('T') ? parseInt(modeStr[1]) : -99;
+            const isTrendTarget = (useTrend && i === targetTier);
             
             tableHtml += `<tr>
                 <td class="tier-highlight">
@@ -1061,13 +1084,22 @@ function updateSimulator() {
     const matrixContainer = document.getElementById('sim-allocation-matrix');
     if (matrixContainer) {
         let tableHtml = `<table class="excel-table" style="width:100%"><thead><tr><th>Tier</th><th>VOO</th><th>SSO</th><th>SPYU</th><th>DJP</th><th>BILL</th><th>Total</th><th>Lev</th></tr></thead><tbody>`;
+        const meta = parseStrategy(selectedName);
+        const smaMode = (selectedName === '🧪 USER CUSTOM LAB') ? document.getElementById('lab-sma-mode').value : (meta.smaMode || 'T0');
+        const targetTier = (meta.isTrend || (selectedName === '🧪 USER CUSTOM LAB')) ? (smaMode.startsWith('T') ? parseInt(smaMode[1]) : -99) : -99;
+
         entry.weights.forEach((w, i) => {
             const lev = (w[0] * 1 + w[1] * 2 + w[2] * 4 + w[3] * 1) / 100;
             const sum = w.reduce((s, v) => s + v, 0);
             const isEff = (i === effectiveTier);
             const isDaily = (i === dailyTier && !isEff);
+            const isTrendTarget = (i === targetTier);
+
             tableHtml += `<tr class="${isEff ? 'active-execution' : ''} ${isDaily ? 'active-market' : ''}">
-                <td class="tier-label">T${i}</td>
+                <td class="tier-label">
+                    T${i}
+                    ${isTrendTarget ? '<div class="trend-tag" style="position:static; margin-top:4px; font-size:0.55rem">SMA Safety Target</div>' : ''}
+                </td>
                 <td><input type="text" readonly value="${w[0].toFixed(0)}%"></td>
                 <td><input type="text" readonly value="${w[1].toFixed(0)}%"></td>
                 <td><input type="text" readonly value="${w[2].toFixed(0)}%"></td>
